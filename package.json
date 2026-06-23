@@ -1,0 +1,25 @@
+{
+  "name": "ecom-os",
+  "private": true,
+  "version": "0.0.0",
+  "description": "EPIOSO's modular dual-engine e-commerce starter kit",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gloxoss/Ecom-os.git"
+  },
+  "author": "EPIOSO (Oussama Zaki) <contact@epioso.com>",
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "dev": "pnpm --filter storefront dev",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test"
+  },
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@11.7.0"
+}

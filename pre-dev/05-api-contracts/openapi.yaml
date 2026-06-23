@@ -1,0 +1,389 @@
+openapi: 3.1.0
+info:
+  title: Ecom OS Storefront API
+  version: 1.0.0-draft
+  description: |
+    Endpoints exposed by the Universal Storefront (Next.js route handlers).
+    Most data flow uses Server Actions and is not REST; this document covers
+    the REST surface only: revalidation, payment webhooks, engine webhooks,
+    and the i18n admin-write API used by EPIOSO companion plugins.
+
+    NOT covered here:
+      - WooCommerce REST/WPGraphQL (owned by WordPress)
+      - Vendure Shop/Admin APIs (owned by Vendure)
+      - EcomEngine TypeScript interface (covered in packages/ecom-engine)
+  contact:
+    name: EPIOSO
+    email: contact@epioso.com
+servers:
+  - url: https://{deployment-host}
+    description: A single Ecom OS deployment
+    variables:
+      deployment-host:
+        default: storefront.example.com
+tags:
+  - name: revalidation
+    description: ISR cache invalidation triggers
+  - name: payment-webhooks
+    description: Inbound payment provider callbacks
+  - name: engine-webhooks
+    description: Inbound webhooks from backend engines
+  - name: i18n-admin
+    description: Translation strings read/write (used by WP/Vendure plugins)
+
+security:
+  - SharedSecret: []
+
+paths:
+  /api/revalidate:
+    post:
+      tags: [revalidation]
+      summary: Trigger on-demand ISR revalidation for one or more paths
+      description: |
+        Called by the active engine's webhook (WooCommerce or Vendure) when content
+        changes. Requires the deployment's revalidation secret as a query parameter
+        or header. Idempotent.
+      parameters:
+        - in: query
+          name: secret
+          schema: { type: string }
+          required: false
+          description: Shared secret. Alternative to X-Revalidate-Secret header.
+        - in: header
+          name: X-Revalidate-Secret
+          schema: { type: string }
+          required: false
+          description: Shared secret. Preferred over query parameter.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paths]
+              properties:
+                paths:
+                  type: array
+                  items: { type: string }
+                  example: ["/fr/products/abaya-noir", "/fr/catalog/shirts"]
+                tags:
+                  type: array
+                  items: { type: string }
+                  description: Cache tags to revalidate (Next.js tag-based cache)
+                  example: ["product:abc123"]
+      responses:
+        '200':
+          description: Revalidation triggered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revalidated: { type: integer, example: 2 }
+                  paths: { type: array, items: { type: string } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/webhooks/stripe:
+    post:
+      tags: [payment-webhooks]
+      summary: Stripe webhook receiver
+      description: |
+        Receives Stripe events (payment_intent.succeeded, payment_intent.payment_failed,
+        charge.refunded). The Stripe-Signature header is verified before any side effect.
+        Idempotent: replaying the same event is a no-op.
+      security: []
+      parameters:
+        - in: header
+          name: Stripe-Signature
+          schema: { type: string }
+          required: true
+          description: HMAC signature emitted by Stripe; verified with webhook secret
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Stripe Event object — opaque, validated by SDK
+      responses:
+        '200': { description: Event handled }
+        '400':
+          description: Invalid signature
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/webhooks/cmi:
+    post:
+      tags: [payment-webhooks]
+      summary: CMI (Morocco) payment callback
+      description: |
+        Receives the signed callback from CMI's hosted payment page. The HMAC hash
+        in the form payload is recomputed and compared before marking the order paid.
+        Invalid signatures are logged with signature_status=invalid and produce a 400.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [oid, ProcReturnCode, Response, HASH]
+              properties:
+                oid: { type: string, description: Order id }
+                ProcReturnCode: { type: string, description: 00 = success }
+                Response: { type: string, description: Approved / Declined / Error }
+                AuthCode: { type: string }
+                TransId: { type: string }
+                HASH: { type: string, description: Base64 HMAC over signed fields }
+                amount: { type: string }
+                currency: { type: string }
+      responses:
+        '200': { description: Callback verified; order marked paid }
+        '400':
+          description: Invalid signature — order NOT marked paid
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/webhooks/engine/woo:
+    post:
+      tags: [engine-webhooks]
+      summary: WooCommerce inbound webhook (product/order events)
+      description: |
+        Receives WC webhooks (product.created, product.updated, product.deleted,
+        order.created, order.updated). Verifies WC's X-WC-Webhook-Signature
+        before triggering ISR revalidation.
+      security: []
+      parameters:
+        - in: header
+          name: X-WC-Webhook-Signature
+          schema: { type: string }
+          required: true
+        - in: header
+          name: X-WC-Webhook-Topic
+          schema: { type: string }
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: WC payload — depends on topic
+      responses:
+        '200': { description: Handled }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/admin/i18n/strings:
+    get:
+      tags: [i18n-admin]
+      summary: List translation strings for a namespace + locale
+      parameters:
+        - in: query
+          name: namespace
+          schema: { type: string, default: 'i18n' }
+          required: false
+        - in: query
+          name: locale
+          schema: { type: string }
+          required: true
+          example: 'ar'
+      responses:
+        '200':
+          description: List of strings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  strings:
+                    type: array
+                    items: { $ref: '#/components/schemas/I18nString' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '500': { $ref: '#/components/responses/ServerError' }
+    put:
+      tags: [i18n-admin]
+      summary: Upsert a translation string
+      description: |
+        Called by the EPIOSO companion plugin (WP or Vendure admin) when a merchant
+        edits a string. Triggers an internal cache invalidation so the storefront
+        reflects the change within ≤60s.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [namespace, key, locale, value]
+              properties:
+                namespace: { type: string, example: 'i18n' }
+                key: { type: string, example: 'cart.add_to_cart' }
+                locale: { type: string, example: 'ar' }
+                value: { type: string, example: 'أضف إلى السلة' }
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/I18nString' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/health:
+    get:
+      tags: [revalidation]
+      summary: Liveness check
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: 'ok' }
+                  engine: { type: string, example: 'woocommerce' }
+                  version: { type: string, example: '1.0.0' }
+
+components:
+  securitySchemes:
+    SharedSecret:
+      type: apiKey
+      in: header
+      name: X-Revalidate-Secret
+      description: |
+        Shared secret per deployment. Configured via env var REVALIDATE_SECRET.
+        Used for revalidation and i18n admin endpoints. Stripe / CMI / WC webhooks
+        use their own provider-native signature schemes instead.
+
+  responses:
+    BadRequest:
+      description: Malformed request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Authenticated but not allowed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unprocessable:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
+    ServerError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: 'invalid_signature' }
+            message: { type: string }
+            requestId: { type: string }
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: 'validation_failed' }
+            message: { type: string }
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  path: { type: array, items: { type: string } }
+                  message: { type: string }
+
+    I18nString:
+      type: object
+      properties:
+        id: { type: string }
+        namespace: { type: string }
+        key: { type: string }
+        locale: { type: string }
+        value: { type: string }
+        updatedAt: { type: string, format: date-time }
+        updatedBy: { type: string, nullable: true }
+
+    Money:
+      type: object
+      required: [amountMinor, currency]
+      properties:
+        amountMinor:
+          type: integer
+          description: Amount in minor units (centimes, cents, etc.)
+        currency:
+          type: string
+          description: ISO 4217 code
+          example: 'MAD'
+
+    # EcomEngine domain shapes — included for cross-system reference,
+    # not exposed as REST endpoints.
+    Product:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        description: { type: string }
+        locale: { type: string }
+        images:
+          type: array
+          items: { type: string, format: uri }
+        variants:
+          type: array
+          items: { $ref: '#/components/schemas/ProductVariant' }
+
+    ProductVariant:
+      type: object
+      properties:
+        id: { type: string }
+        sku: { type: string }
+        attributes:
+          type: object
+          additionalProperties: { type: string }
+        price: { $ref: '#/components/schemas/Money' }
+        stockStatus:
+          type: string
+          enum: [in_stock, out_of_stock, on_backorder]
+
+    Order:
+      type: object
+      properties:
+        id: { type: string }
+        status:
+          type: string
+          enum: [pending, paid, pending_confirmation, fulfilled, cancelled, refunded]
+        subtotal: { $ref: '#/components/schemas/Money' }
+        shipping: { $ref: '#/components/schemas/Money' }
+        total: { $ref: '#/components/schemas/Money' }
+        locale: { type: string }
+        createdAt: { type: string, format: date-time }
