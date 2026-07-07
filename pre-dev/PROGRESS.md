@@ -2,7 +2,7 @@
 
 **Project:** Ecom OS — EPIOSO's modular dual-engine e-commerce starter kit
 **Started:** 2026-06-23
-**Last updated:** 2026-06-23
+**Last updated:** 2026-06-24
 **Current phase:** ✅ Pre-dev complete · 🟡 Build started — Sprint A
 
 ---
@@ -41,7 +41,7 @@
 | 0 — Project Charter | ✅ Complete | 00-project-charter.md |
 | 1 — Discovery & Research | ✅ Complete | 01-market-opportunity.md, 01-competitive-analysis.md, 01-user-personas.md, 01-business-case.md |
 | 2 — Product Requirements | ✅ Complete | 02-PRD.md, 02-SRS.md, 02-user-stories.md |
-| 3 — System Architecture | ✅ Complete | 03-architecture-overview.md, 03-tech-stack-decisions.md, 03-C4-diagrams.md, 03-ADRs/ADR-001..007 |
+| 3 — System Architecture | ✅ Complete | 03-architecture-overview.md, 03-tech-stack-decisions.md, 03-C4-diagrams.md, 03-ADRs/ADR-001..008 |
 | 4 — UX & IA | ✅ Complete | 04-information-architecture.md, 04-user-journey-maps.md, 04-screen-inventory.md |
 | 5 — Data & API | ✅ Complete | 05-ERD.md, 05-database-schema.md, 05-data-flow.md, 05-api-contracts/openapi.yaml |
 | 6 — Security & Compliance | ✅ Complete | 06-threat-model.md, 06-security-requirements.md, 06-privacy-compliance.md |
@@ -55,11 +55,12 @@
 - **v1 addons:** i18n + multi-payment. Multi-branch routing → v1.1.
 - **Timeline:** 8wk WC engine, +8wk custom engine. Part-time.
 - **Pilot client:** TBD (generic-first build).
+- **Co-hosting (ADR-008 · 2026-06-24):** Next.js storefront co-hosted on the same Hostinger account as WordPress. Two modes controlled by `ECOM_DEPLOY_MODE`: **Mode A** (default) = Node.js/PM2 on Hostinger Business+ — full SSR, Server Actions, ISR; **Mode B** = `next export` static HTML on PHP-only plans — products SSG at build time, checkout via client-side WC REST, ~5 min rebuild lag via CI webhook. One env var, no code fork. Domain routing: `yourdomain.com` → storefront, `cms.yourdomain.com` → WordPress.
 
 ## Open from Phase 0
 
 - Q1 Vendure GPL v3 implications
 - Q2 First pilot client
 - Q3 White-label v1 vs v1.1
-- Q4 REST vs WPGraphQL for WC adapter
+- Q4 REST vs WPGraphQL for WC adapter → ✅ Closed — ADR-001 decided WPGraphQL for reads, REST for writes.
 - Q5 Vendure admin vs custom admin

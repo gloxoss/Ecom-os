@@ -1,0 +1,16 @@
+{
+  "name": "@ecom-os/themes",
+  "version": "0.1.0",
+  "description": "Theme registry and tokens for Ecom-os storefronts",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/react": "^18.2.0"
+  }
+}

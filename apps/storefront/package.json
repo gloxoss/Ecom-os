@@ -1,0 +1,42 @@
+{
+  "name": "storefront",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run generate-theme && npm run generate-addons && next dev",
+    "build": "npm run generate-theme && npm run generate-addons && next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "generate-theme": "npx tsx scripts/generate-theme.ts",
+    "generate-addons": "npx tsx ../../scripts/generate-addons.ts"
+  },
+  "dependencies": {
+    "@ecom-os/themes": "workspace:*",
+    "@ecom-os/addons-i18n": "workspace:*",
+    "@ecom-os/addons-multi-payment": "workspace:*",
+    "@ecom-os/brand-config": "workspace:*",
+    "@ecom-os/engine": "workspace:*",
+    "@ecom-os/engine-woocommerce": "workspace:*",
+    "@gsap/react": "^2.1.2",
+    "@stripe/react-stripe-js": "^6.6.0",
+    "@stripe/stripe-js": "^9.8.0",
+    "gsap": "^3.15.0",
+    "next": "16.2.9",
+    "next-intl": "^3.26.5",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

@@ -9,17 +9,33 @@
   },
   "author": "EPIOSO (Oussama Zaki) <contact@epioso.com>",
   "license": "UNLICENSED",
+  "bin": {
+    "create-ecom-os": "scripts/create-ecom-os.ts"
+  },
   "scripts": {
+    "create": "npx tsx scripts/create-ecom-os.ts",
+    "predev": "npx tsx scripts/generate-tokens.ts && npx tsx scripts/generate-addons.ts",
+    "prebuild": "npx tsx scripts/generate-tokens.ts && npx tsx scripts/generate-addons.ts",
     "build": "pnpm -r --if-present build",
     "dev": "pnpm --filter storefront dev",
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
+    "verify": "tsx scripts/check-engine-imports.ts && pnpm lint && pnpm typecheck && pnpm test"
   },
   "engines": {
     "node": ">=22",
     "pnpm": ">=9"
   },
-  "packageManager": "pnpm@11.7.0"
+  "packageManager": "pnpm@11.7.0",
+  "devDependencies": {
+    "@playwright/test": "^1.61.0",
+    "@types/node": "^26.0.0",
+    "@vitest/coverage-v8": "^2.1.9",
+    "tsx": "^4.22.4",
+    "vitest": "^2.1.9"
+  }
 }

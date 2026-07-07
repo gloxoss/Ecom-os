@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Engine-import guard: UI files must NOT import engine adapters directly
+      - name: engine-import guard
+        run: |
+          if grep -rn "engine-woocommerce\|engine-vendure" apps/storefront/src/features apps/storefront/src/components apps/storefront/src/app --include="*.ts" --include="*.tsx" | grep -v "lib/engine.ts"; then
+            echo "VIOLATION: Engine adapter imported outside lib/engine.ts"
+            exit 1
+          fi
+
+      - run: pnpm -r lint
+      - run: pnpm -r typecheck
+      - run: pnpm test:coverage
+
+      # Secret scanning
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Dependency vulnerability scan
+      - uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL
+          exit-code: 1
+
+      - run: pnpm --filter storefront build
+        env:
+          ECOM_ENGINE: fake
+          ECOM_OS_ENCRYPTION_KEY: ${{ secrets.ECOM_OS_ENCRYPTION_KEY_TEST }}
+          REVALIDATE_SECRET: test-revalidate-secret-32byteslong!
+          SESSION_COOKIE_SECRET: test-session-secret-32byteslong!!
+          DEFAULT_LOCALE: en
+          LOCALES: en,fr,ar
+          ADDONS: ""

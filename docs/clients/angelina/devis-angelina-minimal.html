@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Devis — Boutique en Ligne · Angelina Paris · Casablanca</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --gold: #B8922A;
+    --black: #111111;
+    --gray: #666666;
+    --gray-light: #999999;
+    --line: #E5E5E5;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    background: #F0F0EE;
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--black);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    background: #fff;
+    margin: 0 auto;
+    padding: 15mm 22mm 12mm;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 26px;
+  }
+
+  .brand { font-size: 14px; font-weight: 700; letter-spacing: -0.3px; }
+  .brand-sub {
+    font-size: 8px;
+    color: var(--gray-light);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+
+  .meta { text-align: right; font-size: 9px; color: var(--gray); line-height: 1.8; }
+  .meta strong { color: var(--black); font-weight: 600; }
+  .doc-tag {
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  /* TITLE + PRICE */
+  .head-block {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-bottom: 18px;
+    border-bottom: 1.5px solid var(--black);
+    margin-bottom: 22px;
+  }
+
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.8px;
+    line-height: 1.2;
+  }
+
+  h1 em { font-style: normal; color: var(--gold); }
+
+  .price-block { text-align: right; flex-shrink: 0; }
+
+  .price {
+    font-size: 40px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: -1.5px;
+    line-height: 1;
+  }
+
+  .price small {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray);
+    letter-spacing: 0;
+  }
+
+  .price-note { font-size: 9px; color: var(--gray-light); margin-top: 6px; }
+
+  /* BREAKDOWN */
+  .breakdown { margin-bottom: 26px; }
+
+  .bd-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 20px;
+    font-size: 11px;
+    color: #333;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .bd-row em { font-style: normal; color: var(--gray-light); font-size: 9.5px; }
+
+  .bd-price { font-weight: 600; color: var(--black); white-space: nowrap; }
+
+  .bd-row.discount span { color: var(--gold); }
+  .bd-row.discount .bd-price { color: var(--gold); }
+
+  .bd-row.total {
+    border-bottom: none;
+    border-top: 1.5px solid var(--black);
+    padding-top: 10px;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .bd-row.total .bd-price { font-size: 14px; color: var(--gold); }
+
+  .addon-chip {
+    font-size: 7.5px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 20px;
+    padding: 1px 7px;
+    margin-right: 6px;
+    vertical-align: 1px;
+  }
+
+  /* FEATURES */
+  .section-label {
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--gray-light);
+    margin-bottom: 14px;
+  }
+
+  .features {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 32px;
+    margin-bottom: 26px;
+  }
+
+  .features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 11px;
+    color: #333;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tick {
+    color: var(--gold);
+    font-weight: 700;
+    flex-shrink: 0;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .features strong { font-weight: 600; color: var(--black); }
+
+  /* RECURRING */
+  .recurring {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 26px;
+  }
+
+  .rec-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+    font-size: 11px;
+    color: #333;
+  }
+
+  .rec-price { font-weight: 600; color: var(--black); white-space: nowrap; }
+
+  /* TERMS */
+  .terms {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 20px;
+  }
+
+  .term-label {
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gray-light);
+    margin-bottom: 4px;
+  }
+
+  .term-value { font-size: 12px; font-weight: 600; }
+  .term-sub { font-size: 9px; color: var(--gray); margin-top: 2px; }
+
+  /* FOOTER */
+  .footer {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .footer p { font-size: 8.5px; color: var(--gray); line-height: 1.7; }
+  .footer strong { color: var(--black); font-weight: 600; }
+
+  .sig { text-align: right; }
+  .sig-line { width: 130px; height: 1px; background: #ccc; margin-left: auto; margin-bottom: 5px; }
+  .sig-label { font-size: 8px; color: var(--gray-light); font-style: italic; }
+
+  @page { size: A4; margin: 0; }
+  @media print {
+    html, body { background: white; }
+    .page { margin: 0; min-height: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div>
+      <div class="brand">Angelina Paris · Casablanca</div>
+      <div class="brand-sub">Salon de Thé & Pâtisserie</div>
+    </div>
+    <div class="meta">
+      <div class="doc-tag">Devis</div>
+      <p>Oussama Zaki — <strong>EPIOSO</strong></p>
+      <p>Date — <strong>03 Juillet 2026</strong></p>
+      <p>Validité — <strong>30 jours</strong></p>
+    </div>
+  </div>
+
+  <div class="head-block">
+    <h1>Boutique en ligne.<br><em>Add-on CMI inclus.</em></h1>
+    <div class="price-block">
+      <div class="price">8 900 <small>MAD TTC</small></div>
+      <div class="price-note">Valeur 10 400 MAD · remise de lancement incluse</div>
+    </div>
+  </div>
+
+  <div class="section-label">Détail du prix</div>
+  <div class="breakdown">
+    <div class="bd-row">
+      <span>Pack Essentiel — boutique e-commerce complète <em>(design, catalogue, commande COD, suivi, formation)</em></span>
+      <span class="bd-price">6 900 MAD</span>
+    </div>
+    <div class="bd-row">
+      <span><span class="addon-chip">Add-on</span> Paiement en ligne CMI — intégration, tests bancaires &amp; validation</span>
+      <span class="bd-price">+ 3 500 MAD</span>
+    </div>
+    <div class="bd-row discount">
+      <span>Remise de lancement — branche Casablanca</span>
+      <span class="bd-price">− 1 500 MAD</span>
+    </div>
+    <div class="bd-row total">
+      <span>Total forfait</span>
+      <span class="bd-price">8 900 MAD TTC</span>
+    </div>
+  </div>
+
+  <div class="section-label">Ce qui est inclus</div>
+  <ul class="features">
+    <li><span class="tick">—</span><span><strong>Design sur-mesure</strong> fidèle à l'identité Angelina Paris, responsive mobile & desktop</span></li>
+    <li><span class="tick">—</span><span><strong>Catalogue pâtisseries</strong> — jusqu'à 30 produits intégrés, géré en autonomie (WooCommerce)</span></li>
+    <li><span class="tick">—</span><span><strong>Commande en ligne</strong> — panier, checkout, zones et frais de livraison Casablanca</span></li>
+    <li><span class="tick">—</span><span><span class="addon-chip">Add-on</span><strong>Paiement CMI</strong> — carte bancaire en ligne + paiement à la livraison (COD)</span></li>
+    <li><span class="tick">—</span><span><strong>Suivi de commande</strong> — notifications client automatiques : reçue, en préparation, en livraison</span></li>
+    <li><span class="tick">—</span><span><strong>Back-office complet</strong> — produits, prix, stocks, commandes gérés par votre équipe</span></li>
+    <li><span class="tick">—</span><span><strong>SEO & performance</strong> — référencement de base, vitesse mobile, Google Maps</span></li>
+    <li><span class="tick">—</span><span><strong>Formation 1h</strong> + guide de gestion + 1 tour de révisions inclus</span></li>
+  </ul>
+
+  <div class="section-label">Services annuels</div>
+  <div class="recurring">
+    <div class="rec-item"><span>Hébergement + domaine + SSL + sauvegardes</span><span class="rec-price">1 200 MAD/an</span></div>
+    <div class="rec-item"><span>Maintenance & support (après livraison)</span><span class="rec-price">600 MAD/mois</span></div>
+  </div>
+
+  <div class="terms">
+    <div>
+      <div class="term-label">Délai</div>
+      <div class="term-value">4 semaines</div>
+      <div class="term-sub">après réception des contenus</div>
+    </div>
+    <div>
+      <div class="term-label">Paiement</div>
+      <div class="term-value">50% · 50%</div>
+      <div class="term-sub">4 450 à la commande · 4 450 à la livraison</div>
+    </div>
+    <div>
+      <div class="term-label">Prérequis CMI</div>
+      <div class="term-value">Contrat CMI client</div>
+      <div class="term-sub">société + compte bancaire pro requis</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>
+      <p><strong>Oussama Zaki</strong> — EPIOSO · Studio IT & Ingénierie, Casablanca</p>
+      <p>Contenus (photos, textes, charte graphique) fournis par le client. Toute demande hors périmètre fait l'objet d'un devis complémentaire.</p>
+    </div>
+    <div class="sig">
+      <div class="sig-line"></div>
+      <div class="sig-label">Signature client — "Bon pour accord"</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

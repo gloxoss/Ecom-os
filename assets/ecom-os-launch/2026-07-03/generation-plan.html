@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generation Plan — brand-hero-post · ecom-os-launch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0A0A; --card:#1A1A1A; --line:#2A2A2A;
+    --text:#F5F5F0; --meta:#9A9A9A; --accent:#FF6B2D;
+    --mono:ui-monospace,"SF Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:"Space Grotesk",system-ui,-apple-system,sans-serif;line-height:1.6;padding:56px 24px}
+  .wrap{max-width:880px;margin:0 auto}
+  header{margin-bottom:56px;border-bottom:1px solid var(--line);padding-bottom:32px}
+  h1{font-size:40px;font-weight:700;letter-spacing:-0.02em;line-height:1.1}
+  .kicker{color:var(--accent);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:block}
+  .meta{color:var(--meta);font-size:14px;margin-top:16px}
+  .meta strong{color:var(--text);font-weight:500}
+  section{background:var(--card);border:1px solid var(--line);padding:32px;margin-bottom:24px}
+  h2{font-size:22px;font-weight:700;margin-bottom:16px;letter-spacing:-0.01em}
+  pre{font-family:var(--mono);font-size:13px;line-height:1.75;background:#0F0F0F;border:1px solid var(--line);padding:20px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;color:var(--text)}
+  p, li{color:var(--meta);font-size:15px}
+  p strong, li strong{color:var(--text);font-weight:500}
+  ul{padding-left:20px;margin:12px 0}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}
+  th{text-align:left;color:var(--meta);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;padding:8px 12px 8px 0;border-bottom:1px solid var(--line)}
+  td{padding:10px 12px 10px 0;border-bottom:1px solid var(--line);color:var(--text);vertical-align:top}
+  td.dim{color:var(--meta)}
+  .risk{border-left:2px solid var(--accent);padding-left:16px;margin:10px 0}
+  .pill{display:inline-block;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);padding:6px 14px}
+  .refslot{border:1px dashed var(--line);padding:18px;margin:10px 0;font-size:14px;color:var(--meta)}
+  .refslot span{color:var(--text)}
+  .swatches{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .sw{width:120px;border:1px solid var(--line)}
+  .sw div{height:48px}
+  .sw p{font-family:var(--mono);font-size:11px;padding:6px 8px}
+  footer{border-top:1px solid var(--line);padding-top:32px;margin-top:48px}
+  footer p{font-size:15px;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="kicker">Kie Generation Plan — Approval Required · v2 (DESIGN.md palette)</span>
+  <h1>brand-hero-post</h1>
+  <p class="meta">
+    Campaign <strong>ecom-os-launch</strong> · Date <strong>2026-07-03</strong> ·
+    Destination <strong>Organic social post (LinkedIn primary, Instagram cross-post)</strong> ·
+    Format <strong>Still image · 1:1 · 2K</strong> ·
+    Source <strong>content-asset-orchestrator, Phase 3 prep</strong> ·
+    Palette <strong>DESIGN.md v2.0 (Noir/Cacao/Ember/Warm White)</strong>
+  </p>
+</header>
+
+<section>
+  <span class="kicker">01 — Prompt</span>
+  <h2>Exact positive prompt</h2>
+  <pre>Minimal editorial brand launch poster, square 1:1 composition. Warm off-white background (#FFFBFA) with very subtle paper grain texture. Upper-left two-thirds: a 2x2 grid of four rounded squares (corner radius 25% of tile width), three tiles in pure black (#000000), the top-right tile in vivid warm orange (#FA7400), offset about 10% outward from the grid as if snapping into place, each tile casting a faint soft shadow on the paper. One thin deep-brown (#763B00) hairline connects the offset tile back to the grid. Lower third, left-aligned: headline text "The 80% is done." set in a bold geometric sans-serif (Space Grotesk style), pure black (#000000), sentence case. Directly beneath it, a smaller monospace line in vivid warm orange (#FA7400): "2 weeks · your source code · AR FR EN". Swiss grid alignment, generous negative space, flat vector-graphic style with restrained dimensional depth, even studio lighting.</pre>
+  <h2 style="margin-top:24px">Negative prompt</h2>
+  <pre>gradients, glassmorphism, blur panels, neon glow, chrome, glossy 3D render, heavy drop shadows, pure white background, pure black background, extra tiles, missing tiles, recolored tiles, red-orange hue shift, photograph of people, hands, faces, laptop, office stock photo, clutter, decorative icons, emoji, watermark, signature, misspelled text, distorted letterforms, gradient text, purple-pink AI gradient</pre>
+  <p style="margin-top:16px">Single variant queued (the master "Launch hero"). The photoreal / ad-crop / editorial / isometric variants live in <strong>content/ecom-os-launch/brand-hero-post/02-visual-prompt.md</strong> and would each be a separate approved plan.</p>
+  <div class="swatches">
+    <div class="sw"><div style="background:#FFFBFA"></div><p>#FFFBFA Warm White</p></div>
+    <div class="sw"><div style="background:#000000"></div><p>#000000 Noir</p></div>
+    <div class="sw"><div style="background:#FA7400"></div><p>#FA7400 Ember</p></div>
+    <div class="sw"><div style="background:#763B00"></div><p>#763B00 Cacao</p></div>
+    <div class="sw"><div style="background:#FFFFFF"></div><p>#FFFFFF White</p></div>
+  </div>
+</section>
+
+<section>
+  <span class="kicker">02 — References</span>
+  <h2>Reference images</h2>
+  <p>This is a pure text-to-image run — the Ecom OS logo does not exist as a file yet, so there are no brand-asset references to attach. Four Pinterest-style references (rounded-tile metaball logo clusters) were supplied in-chat and inform the style language; for logo generation runs (see content/ecom-os-launch/logo-prompts.md) attach them via an image-to-image slug. Live Pinterest pulls remain <strong>blocked on a stale Zapier↔Pinterest authentication</strong>.</p>
+  <div class="refslot"><span>SLOT A — pending:</span> Pinterest search "geometric modular grid tech brand poster design" → 2–3 pins as style frames</div>
+  <div class="refslot"><span>SLOT B — pending:</span> Pinterest search "black orange minimal brand poster design" → 2–3 pins as palette/mood frames</div>
+  <p>Re-auth URL: <strong>https://mcp.zapier.com/mcp/servers/8c906218-ed28-41c9-95df-0fc770f73404/app-auth/PinterestCLIAPI</strong></p>
+</section>
+
+<section>
+  <span class="kicker">03 — Model &amp; Config</span>
+  <h2>Recommended: Nano Banana Pro (Google)</h2>
+  <p>The headline typography IS the asset — this run lives or dies on letter-perfect text rendering, which is Nano Banana Pro's strongest tier. Shortlist considered:</p>
+  <table>
+    <tr><th>Model</th><th>Why / why not</th><th>Est. cost</th></tr>
+    <tr><td>Nano Banana Pro ★</td><td class="dim">Best-tier text rendering, 2K native — chosen for typography fidelity</td><td>~18 credits (~$0.09)/image</td></tr>
+    <tr><td>FLUX.2</td><td class="dim">Good text, best value — the cheap-iteration fallback if we loop</td><td>~5 credits (~$0.025)/image</td></tr>
+    <tr><td>GPT Image 2</td><td class="dim">Sharp text, 16 refs — better once real refs/logo exist (i2i)</td><td>higher</td></tr>
+    <tr><td>Seedream 4.5</td><td class="dim">Strong 4K + editing, text slightly weaker for dense typography</td><td>~6.5 credits/image</td></tr>
+  </table>
+  <table>
+    <tr><th>Parameter</th><th>Value</th></tr>
+    <tr><td>API family</td><td class="dim">Generic Market — POST /api/v1/jobs/createTask</td></tr>
+    <tr><td>Model slug</td><td class="dim">google/nano-banana-pro (re-verify at docs.kie.ai/market/google before firing — snapshot knowledge, not live-checked)</td></tr>
+    <tr><td>Aspect ratio</td><td class="dim">1:1</td></tr>
+    <tr><td>Resolution</td><td class="dim">2K</td></tr>
+    <tr><td>Outputs this task</td><td class="dim">1</td></tr>
+    <tr><td>Estimated cost</td><td class="dim">~18 credits ≈ $0.09</td></tr>
+    <tr><td>Prerequisite</td><td class="dim">KIE_API_KEY is NOT yet set in this project's .env — add it before running. Then check balance: GET /api/v1/chat/credit</td></tr>
+  </table>
+</section>
+
+<section>
+  <span class="kicker">04 — Command</span>
+  <h2>Exact command (what Step 3 will run)</h2>
+  <pre>curl -s -X POST https://api.kie.ai/api/v1/jobs/createTask \
+  -H "Authorization: Bearer $KIE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+  "model": "google/nano-banana-pro",
+  "input": {
+    "prompt": "Minimal editorial brand launch poster, square 1:1 composition. Warm off-white background (#FFFBFA) with very subtle paper grain texture. Upper-left two-thirds: a 2x2 grid of four rounded squares (corner radius 25% of tile width), three tiles in pure black (#000000), the top-right tile in vivid warm orange (#FA7400), offset about 10% outward from the grid as if snapping into place, each tile casting a faint soft shadow on the paper. One thin deep-brown (#763B00) hairline connects the offset tile back to the grid. Lower third, left-aligned: headline text \"The 80% is done.\" set in a bold geometric sans-serif (Space Grotesk style), pure black (#000000), sentence case. Directly beneath it, a smaller monospace line in vivid warm orange (#FA7400): \"2 weeks · your source code · AR FR EN\". Swiss grid alignment, generous negative space, flat vector-graphic style with restrained dimensional depth, even studio lighting. Avoid: gradients, glassmorphism, neon glow, glossy 3D, pure white or pure black background, extra or recolored tiles, red-orange hue shift, people, clutter, watermark, misspelled or distorted text.",
+    "aspect_ratio": "1:1",
+    "resolution": "2K"
+  }
+}'</pre>
+  <p style="margin-top:12px">Note: the negative prompt is folded into an "Avoid:" clause because the Market input schema for this model may not expose a separate negative_prompt field — confirm on the model's docs page when verifying the slug; if a dedicated field exists, split it back out.</p>
+</section>
+
+<section>
+  <span class="kicker">05 — What to Expect</span>
+  <h2>Expected result</h2>
+  <p>A warm paper-white square poster. Upper-left: four rounded tiles — three pure black, one vivid warm orange pulling slightly out of formation, tied back by a single thin deep-brown hairline. Lower-left: "The 80% is done." in bold geometric type, with a small orange monospace proof line under it. Calm, Swiss, confident — a brand poster, not an AI render.</p>
+  <div class="risk"><p><strong>Risk 1 — Typography.</strong> Verify both text strings letter-by-letter, including "80%" and the "·" separators. Any drift = regenerate; this is the whole asset.</p></div>
+  <div class="risk"><p><strong>Risk 2 — Hex drift.</strong> Orange must read as #FA7400 — not EPIOSO's #FF6B2D, not red-orange; the brown hairline must stay deep brown, not fade to gray.</p></div>
+  <div class="risk"><p><strong>Risk 3 — Tile count.</strong> Exactly 4 tiles, exactly one orange, offset top-right.</p></div>
+  <div class="risk"><p><strong>Risk 4 — Background.</strong> Must stay warm off-white #FFFBFA, not clinical white or black.</p></div>
+</section>
+
+<footer>
+  <span class="pill">Awaiting approval</span>
+  <p style="margin-top:20px"><strong>Nothing has been generated yet. No credits have been spent.</strong> Reply to approve this plan (and confirm the model choice), or ask for changes.</p>
+</footer>
+
+</div>
+</body>
+</html>

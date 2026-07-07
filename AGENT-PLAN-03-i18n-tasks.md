@@ -1,0 +1,11 @@
+- [x] Task 0: Update `generate-addons.ts` to support `packages/addons-*`
+- [x] Task 1: Create `packages/addons-i18n/` package
+- [x] Task 2: Update `next.config.ts` to wire next-intl plugin
+- [x] Task 3: Update `middleware.ts` to integrate next-intl routing
+- [x] Task 4: Move app directory to support `[locale]` routing
+- [x] Task 5: Wire `useTranslations()` into storefront components
+- [x] Task 6: Language switcher component
+- [x] Task 7: RTL: audit and replace directional CSS
+- [x] Task 8: Minimal structured logger
+- [x] Task 9: Update `.env.example` with i18n vars
+- [ ] Task 10: Tests

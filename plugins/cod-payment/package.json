@@ -1,0 +1,8 @@
+{
+  "name": "@ecom-os/addons-cod",
+  "main": "index.ts",
+  "ecom-os": {
+    "addon": true,
+    "flag": "cod"
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "nav": {
+    "catalog": "Catalog",
+    "account": "Account",
+    "cart": "Cart"
+  },
+  "home": {
+    "featured": "Featured Products"
+  },
+  "catalog": {
+    "title": "All Products",
+    "all": "All",
+    "empty": "No products found.",
+    "filterBy": "Filter by category",
+    "allProducts": "All products",
+    "showing": "Showing {count} products",
+    "noResults": "No products found in this category."
+  },
+  "product": {
+    "addToCart": "Add to Cart"
+  },
+  "cart": {
+    "title": "Cart",
+    "empty": "Your cart is empty.",
+    "total": "Total",
+    "checkout": "Checkout",
+    "pageTitle": "Your Cart",
+    "remove": "Remove",
+    "continueShopping": "Continue shopping",
+    "proceedToCheckout": "Proceed to checkout",
+    "itemCount": "{count} items"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "contact": "Contact",
+    "shipping": "Shipping",
+    "payment": "Payment",
+    "cod": "Cash on Delivery",
+    "codDescription": "Pay when you receive your order",
+    "summary": "Order summary",
+    "estimatedTotal": "Estimated total",
+    "priceNote": "Final price confirmed by server at order time.",
+    "placeOrder": "Place Order",
+    "cartEmpty": "Your cart is empty.",
+    "browse": "Browse products"
+  },
+  "success": {
+    "title": "Order confirmed!",
+    "order": "Order #",
+    "message": "Thank you for your order. You will receive a confirmation shortly.",
+    "continue": "Continue shopping"
+  },
+  "account": {
+    "title": "My Account",
+    "orders": "My Orders",
+    "signOut": "Sign out",
+    "signIn": "Sign in",
+    "createAccount": "Create account",
+    "email": "Email address",
+    "password": "Password",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "noAccount": "No account?",
+    "createOne": "Create one",
+    "haveAccount": "Already have an account?",
+    "invalidCredentials": "Invalid email or password. Please try again.",
+    "registrationFailed": "Registration failed. This email may already be in use.",
+    "profile": "Profile",
+    "profileSaved": "Profile saved.",
+    "saveChanges": "Save changes",
+    "back": "← My Account"
+  },
+  "orders": {
+    "title": "My Orders",
+    "back": "← Account",
+    "empty": "No orders yet.",
+    "order": "Order #",
+    "orderDetail": "Order detail",
+    "placedOn": "Placed on",
+    "items": "Items",
+    "status": "Status",
+    "total": "Total",
+    "shippingTo": "Shipping to",
+    "paymentMethod": "Payment method",
+    "notFound": "Order not found."
+  },
+  "footer": {
+    "tagline": "Modern e-commerce, built for growth.",
+    "catalog": "Catalog",
+    "account": "Account",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "returns": "Returns"
+  },
+  "errors": {
+    "notFound": "Page not found.",
+    "backHome": "Back to home",
+    "tryAgain": "Try again",
+    "somethingWrong": "Something went wrong."
+  },
+  "search": {
+    "title": "Search results",
+    "placeholder": "Search products...",
+    "empty": "No results found for '{query}'",
+    "results": "{total} results for '{query}'",
+    "button": "Search"
+  },
+  "pagination": {
+    "prev": "Previous",
+    "next": "Next"
+  },
+  "addresses": {
+    "title": "Address Book",
+    "back": "← My Account",
+    "empty": "You have no saved addresses.",
+    "add": "Add new address",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save address",
+    "cancel": "Cancel",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "street": "Street Address",
+    "city": "City",
+    "postalCode": "Postal Code",
+    "country": "Country",
+    "isDefaultShipping": "Set as default shipping",
+    "isDefaultBilling": "Set as default billing"
+  },
+  "auth": {
+    "forgotPassword": "Forgot password?",
+    "resetTitle": "Reset your password",
+    "resetInstructions": "Enter your email address and we'll send you a link to reset your password.",
+    "sendResetLink": "Send reset link",
+    "resetSent": "If an account exists with that email, a reset link has been sent.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "updatePassword": "Update password",
+    "passwordMismatch": "Passwords do not match.",
+    "passwordUpdated": "Your password has been updated. You can now log in.",
+    "backToLogin": "← Back to login",
+    "tokenInvalid": "Invalid or expired reset link. Please request a new one.",
+    "unknownError": "Something went wrong. Please try again."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@ecom-os/addons-multi-payment",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "ecom-os": {
+    "addon": true,
+    "flag": "multi-payment"
+  },
+  "dependencies": {
+    "@ecom-os/engine": "workspace:*",
+    "stripe": "^16.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "vitest": "^2.0.0"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}

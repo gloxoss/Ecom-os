@@ -1,0 +1,14 @@
+{
+  "name": "--help",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predev": "npx tsx scripts/generate-tokens.ts && npx tsx scripts/generate-addons.ts",
+    "prebuild": "npx tsx scripts/generate-tokens.ts && npx tsx scripts/generate-addons.ts",
+    "dev": "pnpm --filter storefront dev",
+    "build": "pnpm --filter storefront build",
+    "deploy:hostinger": "npx tsx scripts/deploy-hostinger.ts"
+  },
+  "engines": { "node": ">=22", "pnpm": ">=9" },
+  "devDependencies": { "tsx": "^4.22.4" }
+}

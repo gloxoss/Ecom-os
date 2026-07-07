@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Devis — Boutique E-commerce · Angelina Paris · Casablanca</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --gold: #B8922A;
+    --gold-light: #D4A843;
+    --gold-faint: #F5EDD8;
+    --black: #111111;
+    --gray-1: #333333;
+    --gray-2: #666666;
+    --gray-3: #999999;
+    --gray-4: #CCCCCC;
+    --gray-5: #EEEEEE;
+    --gray-6: #F7F7F7;
+    --white: #FFFFFF;
+    --border: #E2E2E2;
+    --accent-bg: #FAFAF8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    background: #F0F0EE;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--black);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    background: var(--white);
+    margin: 0 auto 10px;
+    padding: 13mm 14mm 11mm;
+    page-break-after: always;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: 9px;
+    border-bottom: 1.5px solid var(--black);
+    margin-bottom: 11px;
+  }
+
+  .brand-name {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--black);
+  }
+
+  .brand-sub {
+    font-size: 7.5px;
+    color: var(--gray-3);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 2px;
+    font-weight: 400;
+  }
+
+  .header-meta { text-align: right; }
+
+  .doc-label {
+    font-size: 7px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+
+  .header-meta p {
+    font-size: 8px;
+    color: var(--gray-2);
+    line-height: 1.7;
+  }
+
+  .header-meta span {
+    color: var(--black);
+    font-weight: 500;
+  }
+
+  /* ── INTRO ── */
+  .intro {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .intro h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--black);
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+  }
+
+  .intro h1 em {
+    font-style: normal;
+    color: var(--gold);
+  }
+
+  .intro-sub {
+    font-size: 8.5px;
+    color: var(--gray-2);
+    max-width: 230px;
+    text-align: right;
+    line-height: 1.6;
+    flex-shrink: 0;
+  }
+
+  /* ── HERO OFFER ── */
+  .hero-offer {
+    border: 1.5px solid var(--gold);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--white);
+    margin-bottom: 9px;
+  }
+
+  .hero-top {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    background: var(--gold-faint);
+    border-bottom: 1px solid #E8D5A8;
+  }
+
+  .hero-left { padding: 12px 14px 12px; }
+
+  .hero-tag {
+    font-size: 7px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .hero-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--black);
+    line-height: 1.18;
+    letter-spacing: -0.4px;
+    margin-bottom: 6px;
+  }
+
+  .hero-desc {
+    font-size: 8.5px;
+    color: var(--gray-1);
+    line-height: 1.55;
+    max-width: 95%;
+  }
+
+  .hero-right {
+    padding: 12px 14px;
+    border-left: 1px solid #E8D5A8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .price-wrap { display: flex; align-items: baseline; gap: 4px; }
+
+  .price-amount {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: -1.2px;
+    line-height: 1;
+  }
+
+  .price-currency {
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--gray-2);
+  }
+
+  .price-delivery {
+    text-align: right;
+    border-left: 1px solid #E8D5A8;
+    padding-left: 10px;
+  }
+
+  .delivery-days {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--black);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .delivery-label {
+    font-size: 7px;
+    color: var(--gray-2);
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── VALUE BAR ── */
+  .ai-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    background: var(--black);
+    color: var(--white);
+  }
+
+  .ai-cell {
+    padding: 9px 12px;
+    border-right: 1px solid #2a2a2a;
+  }
+
+  .ai-cell:last-child { border-right: none; }
+
+  .ai-icon {
+    font-size: 10px;
+    color: var(--gold-light);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 3px;
+  }
+
+  .ai-title {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 1px;
+  }
+
+  .ai-desc {
+    font-size: 7px;
+    color: #aaa;
+    line-height: 1.4;
+  }
+
+  /* ── SCOPE GRID ── */
+  .scope-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 9px;
+    padding: 12px 14px;
+  }
+
+  .scope-col { display: flex; flex-direction: column; gap: 4px; }
+
+  .scope-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed var(--gray-4);
+  }
+
+  .scope-num {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--white);
+    background: var(--black);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .scope-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--black);
+    letter-spacing: -0.2px;
+  }
+
+  .scope-sub {
+    font-size: 7.5px;
+    color: var(--gray-3);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-left: auto;
+  }
+
+  /* ── BOTTOM ROW ── */
+  .bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 9px;
+  }
+
+  .info-card {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 13px;
+    background: var(--white);
+  }
+
+  .info-card h4 {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--black);
+    margin-bottom: 8px;
+  }
+
+  /* ── FEATURE LIST ── */
+  .feature-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 3.5px;
+  }
+
+  .feature-list li {
+    font-size: 8.5px;
+    color: var(--gray-1);
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.4;
+    font-weight: 400;
+  }
+
+  .dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gray-4);
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .dot.gold { background: var(--gold); }
+  .dot.green { background: #6BAA8E; }
+  .dot.warn { background: #C08040; }
+
+  .feature-list li.muted { color: var(--gray-3); font-style: italic; }
+
+  /* ── PAYMENT ── */
+  .payment-rows { display: flex; flex-direction: column; gap: 5px; }
+
+  .pay-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--gray-5);
+  }
+
+  .pay-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+
+  .pay-label { font-size: 8px; color: var(--gray-2); }
+
+  .pay-chip {
+    font-size: 7.5px;
+    font-weight: 600;
+    color: var(--gold);
+    background: var(--gold-faint);
+    border: 1px solid #E8D5A8;
+    border-radius: 3px;
+    padding: 2px 6px;
+  }
+
+  .methods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px solid var(--gray-5);
+  }
+
+  .method-tag {
+    font-size: 7px;
+    color: var(--gray-2);
+    background: var(--gray-6);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 7px;
+  }
+
+  /* ── NI LIST ── */
+  .ni-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .ni-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--gray-5);
+  }
+
+  .ni-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .ni-label { color: var(--gray-2); }
+  .ni-price { font-weight: 500; color: var(--black); }
+
+  /* ── REFERENCES ── */
+  .references {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 13px;
+    margin-bottom: 10px;
+    background: var(--white);
+  }
+
+  .references h4 {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--black);
+    margin-bottom: 8px;
+  }
+
+  .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .ref-item {
+    background: var(--gray-6);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 7px 9px;
+  }
+
+  .ref-name {
+    font-size: 8px;
+    font-weight: 600;
+    color: var(--black);
+    margin-bottom: 1px;
+  }
+
+  .ref-url {
+    font-size: 7px;
+    color: var(--gold);
+    margin-bottom: 3px;
+    font-weight: 500;
+  }
+
+  .ref-desc {
+    font-size: 7px;
+    color: var(--gray-3);
+    line-height: 1.4;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding-top: 9px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .footer-left p {
+    font-size: 7.5px;
+    color: var(--gray-2);
+    line-height: 1.7;
+  }
+
+  .footer-left strong { color: var(--black); font-weight: 600; }
+
+  .footer-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .validity-tag {
+    font-size: 7px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid #E8D5A8;
+    background: var(--gold-faint);
+    border-radius: 20px;
+    padding: 3px 10px;
+  }
+
+  .sig-block { text-align: right; }
+
+  .sig-line {
+    width: 110px;
+    height: 1px;
+    background: var(--gray-4);
+    margin-left: auto;
+    margin-bottom: 4px;
+  }
+
+  .sig-label {
+    font-size: 7px;
+    color: var(--gray-3);
+    font-style: italic;
+  }
+
+  /* ── PAGE 2 : PHASES ── */
+  .section-block {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 11px 13px;
+    margin-bottom: 9px;
+    background: var(--white);
+  }
+
+  .section-block h3 {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--black);
+    margin-bottom: 8px;
+  }
+
+  .phases-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .phases-table th {
+    font-size: 7px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--gray-3);
+    text-align: left;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--gray-4);
+  }
+
+  .phases-table td {
+    font-size: 8.5px;
+    color: var(--gray-1);
+    padding: 6px;
+    border-bottom: 1px solid var(--gray-5);
+    vertical-align: top;
+  }
+
+  .phases-table tr:last-child td { border-bottom: none; }
+
+  .phase-name { font-weight: 600; color: var(--black); white-space: nowrap; }
+  .phase-week {
+    font-size: 7.5px;
+    font-weight: 600;
+    color: var(--gold);
+    white-space: nowrap;
+  }
+
+  .recap-total td {
+    font-weight: 700;
+    color: var(--black);
+    background: var(--gold-faint);
+  }
+
+  /* ── PAGE 3 : QUESTIONS ── */
+  .q-group { margin-bottom: 10px; }
+
+  .q-group-head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed var(--gray-4);
+  }
+
+  .q-num {
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--white);
+    background: var(--gold);
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .q-group-title {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--black);
+  }
+
+  .q-critical {
+    font-size: 7px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #B04030;
+    background: #FBEEEC;
+    border: 1px solid #EBCFC9;
+    border-radius: 20px;
+    padding: 1px 7px;
+    margin-left: auto;
+  }
+
+  .q-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .q-list li {
+    font-size: 8.5px;
+    color: var(--gray-1);
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.45;
+  }
+
+  .q-check {
+    width: 7px;
+    height: 7px;
+    border: 1px solid var(--gray-4);
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 2.5px;
+  }
+
+  .q-why {
+    color: var(--gray-3);
+    font-style: italic;
+  }
+
+  .q-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 14px;
+  }
+
+  /* ── PRINT ── */
+  @page { size: A4; margin: 0; }
+
+  @media print {
+    html, body { background: white; }
+    .page { margin: 0; width: 210mm; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════ PAGE 1 — DEVIS ════════════════ -->
+<div class="page">
+
+  <div class="header">
+    <div>
+      <div class="brand-name">Angelina Paris · Casablanca</div>
+      <div class="brand-sub">Salon de Thé & Pâtisserie · Franchise Maroc</div>
+    </div>
+    <div class="header-meta">
+      <div class="doc-label">Devis · Boutique E-commerce</div>
+      <p>Développeur — <span>Oussama Zaki · EPIOSO</span></p>
+      <p>Date — <span>03 Juillet 2026</span></p>
+      <p>Validité — <span>30 jours</span></p>
+    </div>
+  </div>
+
+  <div class="intro">
+    <h1>Une boutique en ligne.<br><em>À la hauteur de la maison.</em></h1>
+    <div class="intro-sub">Le lancement digital de la branche Casablanca — commande en ligne, gestion autonome des produits, et suivi de commande pour vos clients. Fidèle à l'élégance Angelina.</div>
+  </div>
+
+  <div class="hero-offer">
+
+    <div class="hero-top">
+      <div class="hero-left">
+        <div class="hero-tag">Pack Essentiel · E-commerce Premium</div>
+        <div class="hero-title">Boutique E-commerce<br>CMS WooCommerce + Suivi Commande</div>
+        <div class="hero-desc">Un site e-commerce complet et raffiné : catalogue de pâtisseries géré en autonomie via WordPress / WooCommerce, commande en ligne avec paiement à la livraison, et notifications automatiques du statut de commande — reçue, en préparation, en livraison.</div>
+      </div>
+      <div class="hero-right">
+        <div class="price-wrap">
+          <div class="price-amount">6 900</div>
+          <div class="price-currency">MAD TTC</div>
+        </div>
+        <div class="price-delivery">
+          <div class="delivery-days">3 sem.</div>
+          <div class="delivery-label">après réception contenus</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-bar">
+      <div class="ai-cell">
+        <div class="ai-icon">◆ CMS</div>
+        <div class="ai-title">WordPress + WooCommerce</div>
+        <div class="ai-desc">Produits, prix, photos, commandes — gérés par votre équipe</div>
+      </div>
+      <div class="ai-cell">
+        <div class="ai-icon">◆ COD</div>
+        <div class="ai-title">Paiement à la livraison</div>
+        <div class="ai-desc">Commande en ligne, encaissement à la porte — zéro friction</div>
+      </div>
+      <div class="ai-cell">
+        <div class="ai-icon">◆ SUIVI</div>
+        <div class="ai-title">Statut de commande client</div>
+        <div class="ai-desc">Notifications auto WhatsApp / e-mail à chaque étape</div>
+      </div>
+      <div class="ai-cell">
+        <div class="ai-icon">◆ SEO</div>
+        <div class="ai-title">Performance & référencement</div>
+        <div class="ai-desc">Vitesse mobile · WebP · meta tags · Google Maps</div>
+      </div>
+    </div>
+
+    <div class="scope-grid">
+
+      <div class="scope-col">
+        <div class="scope-head">
+          <div class="scope-num">1</div>
+          <div class="scope-title">La Boutique</div>
+          <div class="scope-sub">Expérience client</div>
+        </div>
+        <ul class="feature-list">
+          <li><span class="dot gold"></span>Accueil éditorial — héro plein écran fidèle à la charte Angelina</li>
+          <li><span class="dot gold"></span>Catalogue pâtisseries par catégories (jusqu'à 30 produits intégrés)</li>
+          <li><span class="dot gold"></span>Fiches produit — photos, description, prix, allergènes</li>
+          <li><span class="dot gold"></span>Panier & commande — checkout simple, paiement à la livraison</li>
+          <li><span class="dot gold"></span>Zones & frais de livraison Casablanca configurés</li>
+          <li><span class="dot gold"></span>Page boutique physique — adresse, horaires, carte, réseaux</li>
+        </ul>
+      </div>
+
+      <div class="scope-col">
+        <div class="scope-head">
+          <div class="scope-num">2</div>
+          <div class="scope-title">Gestion & Suivi</div>
+          <div class="scope-sub">Back-office & opérations</div>
+        </div>
+        <ul class="feature-list">
+          <li><span class="dot gold"></span>Back-office WooCommerce — produits, stocks, prix, commandes</li>
+          <li><span class="dot gold"></span>Statuts de commande : reçue → en préparation → en livraison → livrée</li>
+          <li><span class="dot gold"></span>Notification automatique au client à chaque changement de statut</li>
+          <li><span class="dot gold"></span>Alertes nouvelles commandes pour l'équipe (e-mail / WhatsApp)</li>
+          <li><span class="dot gold"></span>Formation 1h — gérer produits & commandes en autonomie</li>
+          <li><span class="dot gold"></span>Site en français · responsive mobile / tablette / desktop</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="bottom-row">
+
+    <div class="info-card">
+      <h4>Inclus dans le Forfait</h4>
+      <ul class="feature-list">
+        <li><span class="dot green"></span>Design sur-mesure fidèle à l'identité visuelle Angelina Paris</li>
+        <li><span class="dot green"></span>CMS WooCommerce complet — autonomie totale après livraison</li>
+        <li><span class="dot green"></span>SEO on-page de base + Open Graph + Google Business</li>
+        <li><span class="dot green"></span>Optimisation vitesse (lazy load, WebP, compression)</li>
+        <li><span class="dot green"></span>1 tour de révisions inclus</li>
+        <li><span class="dot green"></span>Formation + guide de gestion simple</li>
+        <li class="muted"><span class="dot warn"></span>Contenu (photos, textes, charte graphique) fourni par le client</li>
+      </ul>
+    </div>
+
+    <div class="info-card">
+      <h4>Conditions de Paiement</h4>
+      <div class="payment-rows">
+        <div class="pay-row">
+          <span class="pay-label">50% à la commande</span>
+          <span class="pay-chip">3 450 MAD</span>
+        </div>
+        <div class="pay-row">
+          <span class="pay-label">50% à la livraison</span>
+          <span class="pay-chip">3 450 MAD</span>
+        </div>
+      </div>
+      <div class="methods">
+        <span class="method-tag">Virement</span>
+        <span class="method-tag">CIH</span>
+        <span class="method-tag">Barid Bank</span>
+        <span class="method-tag">Cash</span>
+      </div>
+      <h4 style="margin-top: 10px;">Non Inclus — Options</h4>
+      <ul class="ni-list">
+        <li class="ni-row"><span class="ni-label">Paiement en ligne CMI (carte bancaire)</span><span class="ni-price">+3 500 MAD</span></li>
+        <li class="ni-row"><span class="ni-label">Page suivi de commande temps réel</span><span class="ni-price">+4 000 MAD</span></li>
+        <li class="ni-row"><span class="ni-label">Version arabe du site</span><span class="ni-price">+2 500 MAD</span></li>
+        <li class="ni-row"><span class="ni-label">Hébergement + domaine + SSL + sauvegardes</span><span class="ni-price">1 200 MAD/an</span></li>
+        <li class="ni-row"><span class="ni-label">Maintenance mensuelle (voir page 2)</span><span class="ni-price">600 MAD/mois</span></li>
+        <li class="ni-row"><span class="ni-label">Shooting photo produits</span><span class="ni-price">Sur devis</span></li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="references">
+    <h4>Références — Projets Livrés & Direction Artistique</h4>
+    <div class="ref-grid">
+      <div class="ref-item">
+        <div class="ref-name">VetaProf</div>
+        <div class="ref-url">vetaprof.com</div>
+        <div class="ref-desc">E-commerce WooCommerce — marque française, livré par EPIOSO</div>
+      </div>
+      <div class="ref-item">
+        <div class="ref-name">TFS</div>
+        <div class="ref-url">tfs.ma</div>
+        <div class="ref-desc">Plateforme e-commerce mode complète — Maroc</div>
+      </div>
+      <div class="ref-item">
+        <div class="ref-name">ZDream</div>
+        <div class="ref-url">zdream-f.com</div>
+        <div class="ref-desc">Plateforme web marque fashion marocaine</div>
+      </div>
+      <div class="ref-item">
+        <div class="ref-name">Angelina Paris</div>
+        <div class="ref-url">angelina-paris.fr</div>
+        <div class="ref-desc">Référence de marque — codes visuels de la maison mère</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">
+      <p><strong>Oussama Zaki</strong> — EPIOSO · Studio IT & Ingénierie, Casablanca</p>
+      <p>Le délai commence à la validation du devis, versement de l'acompte et réception des contenus (charte, photos, textes).</p>
+    </div>
+    <div class="footer-right">
+      <span class="validity-tag">Valide 30 jours</span>
+      <div class="sig-block">
+        <div class="sig-line"></div>
+        <div class="sig-label">Signature client — "Bon pour accord"</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════ PAGE 2 — PROPOSITION ════════════════ -->
+<div class="page">
+
+  <div class="header">
+    <div>
+      <div class="brand-name">Angelina Paris · Casablanca</div>
+      <div class="brand-sub">Proposition de Projet · E-commerce</div>
+    </div>
+    <div class="header-meta">
+      <div class="doc-label">Page 2 · Déroulement & Engagement</div>
+      <p>Développeur — <span>Oussama Zaki · EPIOSO</span></p>
+      <p>Date — <span>03 Juillet 2026</span></p>
+    </div>
+  </div>
+
+  <div class="intro">
+    <h1>Comment on livre.<br><em>Et ce qui vient après.</em></h1>
+    <div class="intro-sub">Quatre phases, trois semaines, un interlocuteur unique. Puis un accompagnement continu après la mise en ligne.</div>
+  </div>
+
+  <div class="section-block">
+    <h3>Déroulement du Projet — 4 Phases</h3>
+    <table class="phases-table">
+      <tr>
+        <th style="width:18%">Phase</th>
+        <th style="width:12%">Période</th>
+        <th>Livrables</th>
+      </tr>
+      <tr>
+        <td class="phase-name">1 · Cadrage & Contenus</td>
+        <td class="phase-week">Semaine 1</td>
+        <td>Validation des réponses au questionnaire (page 3) · réception charte graphique, photos et textes · liste produits & prix · zones de livraison · configuration hébergement + domaine.</td>
+      </tr>
+      <tr>
+        <td class="phase-name">2 · Design & Identité</td>
+        <td class="phase-week">Semaine 1–2</td>
+        <td>Maquette accueil + fiche produit fidèle aux codes Angelina Paris · validation client · déclinaison sur l'ensemble des pages.</td>
+      </tr>
+      <tr>
+        <td class="phase-name">3 · Boutique & Commande</td>
+        <td class="phase-week">Semaine 2–3</td>
+        <td>Intégration catalogue dans WooCommerce · panier & checkout COD · zones et frais de livraison · notifications de statut client & équipe.</td>
+      </tr>
+      <tr>
+        <td class="phase-name">4 · Formation & Mise en Ligne</td>
+        <td class="phase-week">Semaine 3</td>
+        <td>Tests complets (mobile, commande réelle, notifications) · formation 1h de l'équipe · guide de gestion · mise en production · remise des accès.</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="bottom-row">
+    <div class="info-card">
+      <h4>Prérequis Côté Client</h4>
+      <ul class="feature-list">
+        <li><span class="dot warn"></span><strong>Autorisation du franchiseur</strong> — accord écrit d'Angelina Paris pour l'usage de la marque en ligne</li>
+        <li><span class="dot warn"></span>Charte graphique officielle (logo, couleurs, typographies)</li>
+        <li><span class="dot gold"></span>Photos produits en haute qualité (ou shooting sur devis)</li>
+        <li><span class="dot gold"></span>Liste produits, prix, descriptions</li>
+        <li><span class="dot gold"></span>Personne référente pour la gestion quotidienne des commandes</li>
+        <li><span class="dot gold"></span>Pour l'option CMI : société immatriculée + compte bancaire pro + contrat CMI (délai 2–4 semaines côté banque)</li>
+      </ul>
+    </div>
+
+    <div class="info-card">
+      <h4>Maintenance & Accompagnement — 600 MAD/mois</h4>
+      <ul class="feature-list">
+        <li><span class="dot green"></span>Mises à jour techniques (WordPress, WooCommerce, sécurité)</li>
+        <li><span class="dot green"></span>Sauvegardes hebdomadaires + restauration en cas d'incident</li>
+        <li><span class="dot green"></span>2h de modifications par mois (produits, textes, visuels, sections)</li>
+        <li><span class="dot green"></span>Support prioritaire WhatsApp — réponse sous 24h ouvrées</li>
+        <li><span class="dot green"></span>Rapport mensuel simple : visites, commandes, performances</li>
+        <li class="muted"><span class="dot warn"></span>Engagement 6 mois minimum · résiliable ensuite avec préavis 1 mois</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <h3>Récapitulatif Financier — Année 1</h3>
+    <table class="phases-table">
+      <tr>
+        <th>Poste</th>
+        <th style="width:16%">Type</th>
+        <th style="width:18%; text-align:right">Montant</th>
+      </tr>
+      <tr>
+        <td>Pack Essentiel — conception & développement boutique</td>
+        <td>Unique</td>
+        <td style="text-align:right; font-weight:600">6 900 MAD</td>
+      </tr>
+      <tr>
+        <td>Hébergement + nom de domaine + SSL + sauvegardes</td>
+        <td>Annuel</td>
+        <td style="text-align:right; font-weight:600">1 200 MAD</td>
+      </tr>
+      <tr>
+        <td class="phase-name" style="white-space:normal">Total à la commande</td>
+        <td></td>
+        <td style="text-align:right; font-weight:700; color:var(--gold)">8 100 MAD</td>
+      </tr>
+      <tr>
+        <td>Maintenance mensuelle (démarre après livraison)</td>
+        <td>Mensuel</td>
+        <td style="text-align:right; font-weight:600">600 MAD/mois</td>
+      </tr>
+      <tr>
+        <td style="color:var(--gray-3); font-style:italic">Options activables à tout moment : CMI +3 500 · Suivi temps réel +4 000 · Version arabe +2 500</td>
+        <td></td>
+        <td></td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section-block">
+    <h3>Pourquoi EPIOSO</h3>
+    <ul class="feature-list">
+      <li><span class="dot gold"></span>E-commerce WooCommerce déjà livré pour une marque française (vetaprof.com) — même exigence, même standard.</li>
+      <li><span class="dot gold"></span>Basé à Casablanca : réunions sur place, connaissance du marché local, livraison et paiement adaptés aux habitudes marocaines.</li>
+      <li><span class="dot gold"></span>Un seul interlocuteur du design à la mise en ligne — pas de sous-traitance.</li>
+      <li><span class="dot gold"></span>Le site est pensé pour évoluer : CMI, arabe, suivi temps réel s'activent sans refonte.</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">
+      <p><strong>Oussama Zaki</strong> — EPIOSO · Studio IT & Ingénierie, Casablanca</p>
+      <p>Toute demande hors périmètre fait l'objet d'un devis complémentaire. Contenus fournis par le client.</p>
+    </div>
+    <div class="footer-right">
+      <span class="validity-tag">Valide 30 jours</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════ PAGE 3 — QUESTIONS DE CADRAGE ════════════════ -->
+<div class="page">
+
+  <div class="header">
+    <div>
+      <div class="brand-name">Angelina Paris · Casablanca</div>
+      <div class="brand-sub">Questionnaire de Cadrage · Avant Démarrage</div>
+    </div>
+    <div class="header-meta">
+      <div class="doc-label">Page 3 · Questions Clés</div>
+      <p>À compléter avec — <span>le client</span></p>
+      <p>Date — <span>03 Juillet 2026</span></p>
+    </div>
+  </div>
+
+  <div class="intro">
+    <h1>Avant d'écrire une ligne.<br><em>On pose les bonnes questions.</em></h1>
+    <div class="intro-sub">Les réponses à ce questionnaire déterminent le périmètre exact du projet. Les points marqués « bloquant » conditionnent le démarrage.</div>
+  </div>
+
+  <div class="q-cols">
+
+    <div>
+      <div class="q-group">
+        <div class="q-group-head">
+          <div class="q-num">1</div>
+          <div class="q-group-title">Marque & Franchise</div>
+          <span class="q-critical">Bloquant</span>
+        </div>
+        <ul class="q-list">
+          <li><span class="q-check"></span>Accord écrit du franchiseur pour un site e-commerce local ?</li>
+          <li><span class="q-check"></span>Charte graphique officielle fournie (logo, couleurs, typos) ?</li>
+          <li><span class="q-check"></span>Règles imposées par la maison mère (nom de domaine, design, mentions) ?</li>
+          <li><span class="q-check"></span>Domaine déjà possédé ? Préférence (.ma / .com) ?</li>
+          <li><span class="q-check"></span>Le site doit-il pointer / être lié à angelina-paris.fr ?</li>
+        </ul>
+      </div>
+
+      <div class="q-group">
+        <div class="q-group-head">
+          <div class="q-num">2</div>
+          <div class="q-group-title">Produits & Catalogue</div>
+        </div>
+        <ul class="q-list">
+          <li><span class="q-check"></span>Nombre de produits au lancement ? Catégories ?</li>
+          <li><span class="q-check"></span>Photos existantes ou shooting nécessaire ?</li>
+          <li><span class="q-check"></span>Produits à variantes — taille de gâteau, nombre de parts, parfums ?</li>
+          <li><span class="q-check"></span>Gâteaux personnalisés (message, décor) — champ texte à la commande ?</li>
+          <li><span class="q-check"></span>Stock limité par jour ou fabrication à la demande ?</li>
+          <li><span class="q-check"></span>Produits saisonniers (Ramadan, fêtes, Saint-Valentin) — précommandes ?</li>
+        </ul>
+      </div>
+
+      <div class="q-group">
+        <div class="q-group-head">
+          <div class="q-num">3</div>
+          <div class="q-group-title">Livraison & Retrait</div>
+        </div>
+        <ul class="q-list">
+          <li><span class="q-check"></span>Casablanca uniquement ou national ? Quels quartiers / zones ?</li>
+          <li><span class="q-check"></span>Livreurs internes ou transporteur (Ozone, Cathedis…) ?</li>
+          <li><span class="q-check"></span>Frais de livraison : fixes, par zone, offerts au-delà d'un montant ?</li>
+          <li><span class="q-check"></span>Click & collect — retrait en boutique proposé ?</li>
+          <li><span class="q-check"></span>Délai de préparation : commande le jour même ou J+1 ? Heure limite ?</li>
+          <li><span class="q-check"></span>Choix de date / créneau de livraison à la commande ?</li>
+        </ul>
+      </div>
+
+      <div class="q-group">
+        <div class="q-group-head">
+          <div class="q-num">4</div>
+          <div class="q-group-title">Paiement</div>
+        </div>
+        <ul class="q-list">
+          <li><span class="q-check"></span>COD seul au lancement, ou CMI dès le premier jour ?</li>
+          <li><span class="q-check"></span>Société immatriculée + compte bancaire pro existants ? <span class="q-why">(requis CMI)</span></li>
+          <li><span class="q-check"></span>Montant minimum de commande ?</li>
+          <li><span class="q-check"></span>Acompte exigé pour les grosses commandes / gâteaux sur-mesure ?</li>
+        </ul>
+      </div>
+    </div>
+
+    <div>
+      <div class="q-group">
+        <div class="q-group-head">
+          <div class="q-num">5</div>
+          <div class="q-group-title">Opérations Quotidiennes</div>
+        </div>
+        <ul class="q-list">
+          <li><span class="q-check"></span>Qui gère les commandes au quotidien ? Une ou plusieurs personnes ?</li>
+          <li><span class="q-check"></span>Qui répond au WhatsApp de la boutique ?</li>
+          <li><span class="q-check"></span>Horaires d'ouverture — le site accepte-t-il des commandes hors horaires ?</li>
+          <li><span class="q-check"></span>Procédure d'annulation / remboursement d'une commande ?</li>
+          <li><span class="q-check"></span>Besoin de factures officielles (ICE, TVA) sur les commandes ?</li>
+        </ul>
+      </div>
+
+      <div class="q-group">
+        <div class="q-group-head">
+          <div class="q-num">6</div>
+          <div class="q-group-title">Langues & Communication</div>
+        </div>
+        <ul class="q-list">
+          <li><span class="q-check"></span>Français seul, ou français + arabe ? Anglais utile (touristes) ?</li>
+          <li><span class="q-check"></span>Comptes Instagram / Facebook / TikTok à intégrer ?</li>
+          <li><span class="q-check"></span>Fiche Google Business existante (Maps, avis) ?</li>
+          <li><span class="q-check"></span>E-mail professionnel @domaine souhaité (contact@…) ?</li>
+          <li><span class="q-check"></span>Newsletter / collecte d'e-mails clients dès le lancement ?</li>
+          <li><span class="q-check"></span>Pixel Meta / Google Analytics pour la publicité future ?</li>
+        </ul>
+      </div>
+
+      <div class="q-group">
+        <div class="q-group-head">
+          <div class="q-num">7</div>
+          <div class="q-group-title">Légal & Contenus</div>
+        </div>
+        <ul class="q-list">
+          <li><span class="q-check"></span>CGV, politique de livraison et de remboursement — textes existants ?</li>
+          <li><span class="q-check"></span>Mentions légales : raison sociale, RC, ICE de la société ?</li>
+          <li><span class="q-check"></span>Allergènes / ingrédients à afficher sur les fiches produit ?</li>
+          <li><span class="q-check"></span>Textes de présentation (histoire de la maison, la branche Casablanca) ?</li>
+        </ul>
+      </div>
+
+      <div class="q-group">
+        <div class="q-group-head">
+          <div class="q-num">8</div>
+          <div class="q-group-title">Budget & Décision</div>
+          <span class="q-critical">Bloquant</span>
+        </div>
+        <ul class="q-list">
+          <li><span class="q-check"></span>Date de lancement cible ? Événement lié (ouverture boutique) ?</li>
+          <li><span class="q-check"></span>Qui valide et qui signe — le franchisé directement ou un intermédiaire ?</li>
+          <li><span class="q-check"></span>Qui paie — et sur quelle entité (société marocaine) ?</li>
+          <li><span class="q-check"></span>Budget confirmé pour le pack + hébergement + maintenance ?</li>
+          <li><span class="q-check"></span>Vision 6 mois : CMI ? version arabe ? publicité en ligne ?</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <div class="footer-left">
+      <p><strong>Oussama Zaki</strong> — EPIOSO · Studio IT & Ingénierie, Casablanca</p>
+      <p>Ce questionnaire complété vaut annexe de cadrage au devis. Toute réponse modifiant le périmètre fera l'objet d'un avenant.</p>
+    </div>
+    <div class="footer-right">
+      <span class="validity-tag">Annexe · Cadrage</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

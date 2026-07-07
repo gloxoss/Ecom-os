@@ -1,0 +1,145 @@
+{
+  "nav": {
+    "catalog": "Catalogue",
+    "account": "Compte",
+    "cart": "Panier"
+  },
+  "home": {
+    "featured": "Produits en vedette"
+  },
+  "catalog": {
+    "title": "Tous les produits",
+    "all": "Tous",
+    "empty": "Aucun produit trouvé.",
+    "filterBy": "Filtrer par catégorie",
+    "allProducts": "Tous les produits",
+    "showing": "Affichage de {count} produits",
+    "noResults": "Aucun produit trouvé dans cette catégorie."
+  },
+  "product": {
+    "addToCart": "Ajouter au panier"
+  },
+  "cart": {
+    "title": "Panier",
+    "empty": "Votre panier est vide.",
+    "total": "Total",
+    "checkout": "Commander",
+    "pageTitle": "Votre panier",
+    "remove": "Supprimer",
+    "continueShopping": "Continuer les achats",
+    "proceedToCheckout": "Passer à la caisse",
+    "itemCount": "{count} articles"
+  },
+  "checkout": {
+    "title": "Commande",
+    "contact": "Contact",
+    "shipping": "Livraison",
+    "payment": "Paiement",
+    "cod": "Paiement à la livraison",
+    "codDescription": "Payez à la réception de votre commande",
+    "summary": "Récapitulatif",
+    "estimatedTotal": "Total estimé",
+    "priceNote": "Prix final confirmé par le serveur à la commande.",
+    "placeOrder": "Passer la commande",
+    "cartEmpty": "Votre panier est vide.",
+    "browse": "Parcourir les produits"
+  },
+  "success": {
+    "title": "Commande confirmée !",
+    "order": "Commande n°",
+    "message": "Merci pour votre commande. Vous recevrez une confirmation sous peu.",
+    "continue": "Continuer les achats"
+  },
+  "account": {
+    "title": "Mon compte",
+    "orders": "Mes commandes",
+    "signOut": "Se déconnecter",
+    "signIn": "Se connecter",
+    "createAccount": "Créer un compte",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "noAccount": "Pas de compte ?",
+    "createOne": "En créer un",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "invalidCredentials": "E-mail ou mot de passe incorrect. Veuillez réessayer.",
+    "registrationFailed": "Inscription échouée. Cet e-mail est peut-être déjà utilisé.",
+    "profile": "Profil",
+    "profileSaved": "Profil enregistré.",
+    "saveChanges": "Enregistrer les modifications",
+    "back": "← Mon compte"
+  },
+  "orders": {
+    "title": "Mes commandes",
+    "back": "← Compte",
+    "empty": "Pas encore de commandes.",
+    "order": "Commande n°",
+    "orderDetail": "Détail de la commande",
+    "placedOn": "Passée le",
+    "items": "Articles",
+    "status": "Statut",
+    "total": "Total",
+    "shippingTo": "Livraison à",
+    "paymentMethod": "Méthode de paiement",
+    "notFound": "Commande introuvable."
+  },
+  "footer": {
+    "tagline": "E-commerce moderne, conçu pour la croissance.",
+    "catalog": "Catalogue",
+    "account": "Compte",
+    "privacy": "Confidentialité",
+    "terms": "Conditions",
+    "returns": "Retours"
+  },
+  "errors": {
+    "notFound": "Page non trouvée.",
+    "backHome": "Retour à l'accueil",
+    "tryAgain": "Réessayer",
+    "somethingWrong": "Une erreur s'est produite."
+  },
+  "search": {
+    "title": "Résultats de recherche",
+    "placeholder": "Rechercher des produits...",
+    "empty": "Aucun résultat trouvé pour '{query}'",
+    "results": "{total} résultats pour '{query}'",
+    "button": "Rechercher"
+  },
+  "pagination": {
+    "prev": "Précédent",
+    "next": "Suivant"
+  },
+  "addresses": {
+    "title": "Carnet d'adresses",
+    "back": "← Mon compte",
+    "empty": "Vous n'avez aucune adresse enregistrée.",
+    "add": "Ajouter une nouvelle adresse",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "save": "Enregistrer l'adresse",
+    "cancel": "Annuler",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "street": "Adresse",
+    "city": "Ville",
+    "postalCode": "Code postal",
+    "country": "Pays",
+    "isDefaultShipping": "Définir comme adresse de livraison par défaut",
+    "isDefaultBilling": "Définir comme adresse de facturation par défaut"
+  },
+  "auth": {
+    "forgotPassword": "Mot de passe oublié ?",
+    "resetTitle": "Réinitialiser votre mot de passe",
+    "resetInstructions": "Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+    "sendResetLink": "Envoyer le lien de réinitialisation",
+    "resetSent": "Si un compte existe avec cet e-mail, un lien de réinitialisation a été envoyé.",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "updatePassword": "Mettre à jour le mot de passe",
+    "passwordMismatch": "Les mots de passe ne correspondent pas.",
+    "passwordUpdated": "Votre mot de passe a été mis à jour. Vous pouvez maintenant vous connecter.",
+    "backToLogin": "← Retour à la connexion",
+    "tokenInvalid": "Lien de réinitialisation invalide ou expiré. Veuillez en demander un nouveau.",
+    "unknownError": "Une erreur s'est produite. Veuillez réessayer."
+  }
+}
