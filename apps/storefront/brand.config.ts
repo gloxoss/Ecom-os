@@ -1,27 +1,27 @@
 import { BrandConfig } from '@ecom-os/brand-config';
 
 export const brandConfig: BrandConfig = {
-  name: 'EPIOSO Store',
+  name: 'Angelina Paris',
   logos: {
-    light: '/logo-light.svg',
-    dark: '/logo-dark.svg',
+    light: '/logo-angelina.svg',
+    dark: '/logo-angelina-dark.svg',
   },
   colors: {
-    primary: '#000000',
-    secondary: '#666666',
-    accent: '#3b82f6',
+    primary: '#aa631a',
+    secondary: '#c69951',
+    accent: '#ffcebf',
     background: '#ffffff',
-    foreground: '#111111',
-    muted: '#f3f4f6',
+    foreground: '#3f100a',
+    muted: '#d9a594',
   },
   fonts: {
-    sans: 'Inter',
+    sans: 'Inter Tight Variable',
     mono: 'monospace',
   },
   radii: {
-    sm: '4px',
-    md: '8px',
-    lg: '12px',
+    sm: '12px',
+    md: '16px',
+    lg: '20px',
   },
   hero: {
     headline: 'Next-Generation Commerce',

@@ -1,0 +1,146 @@
+{
+  "hot-chocolate-mix": {
+    "specs": [
+      { "label": "Preparation", "value": "Whisk into warm milk or water" },
+      { "label": "Best enjoyed", "value": "Any time of day, especially cold afternoons" },
+      { "label": "Taste", "value": "Dense cocoa, lightly sweet, silky finish" },
+      { "label": "Composition", "value": "Cocoa sourced from West Africa and South America" }
+    ],
+    "description": [
+      "Our house hot chocolate mix is built from a blend of dark and milk cocoas, ground fine enough to melt seamlessly into hot milk without any grit or chalkiness.",
+      "It's the same recipe served in the salon, just for home — whisk two spoonfuls into a cup of warm milk and finish with a spoon of whipped cream for the full Maison ritual."
+    ]
+  },
+  "signature-mont-blanc": {
+    "specs": [
+      { "label": "Serving", "value": "1 individual pastry, chilled" },
+      { "label": "Best enjoyed", "value": "Same day, with a cup of hot chocolate" },
+      { "label": "Taste", "value": "Chestnut cream, light meringue, soft whipped cream" },
+      { "label": "Allergens", "value": "Contains dairy, egg, gluten" }
+    ],
+    "description": [
+      "The Mont-Blanc is our most requested signature — a crisp meringue base layered with whipped cream and finished with fine strands of piped chestnut purée.",
+      "Each one is piped to order by hand in the kitchen. Best enjoyed the same day, ideally seated, with a spoon and no rush."
+    ]
+  },
+  "macaron-gift-box": {
+    "specs": [
+      { "label": "Box size", "value": "12 macarons, 4 flavors" },
+      { "label": "Best by", "value": "5 days from purchase" },
+      { "label": "Taste", "value": "Rose, chocolate, pistachio, raspberry" },
+      { "label": "Allergens", "value": "Contains egg, dairy, almond" }
+    ],
+    "description": [
+      "Crisp on the outside, soft in the center — our macaron box brings together four of the collection's most popular flavors in one gift-ready set.",
+      "Keep them refrigerated and bring to room temperature about 15 minutes before serving for the best texture."
+    ]
+  },
+  "dark-chocolate-crispy-crepes": {
+    "specs": [
+      { "label": "Format", "value": "180g box, individually wrapped pieces" },
+      { "label": "Best by", "value": "6 weeks from purchase" },
+      { "label": "Taste", "value": "Dark chocolate, delicate crunch, light bitterness" },
+      { "label": "Composition", "value": "70% dark chocolate, thin crispy crepe" }
+    ],
+    "description": [
+      "A textural favorite — thin, crisp crepe pieces enrobed in dark chocolate, snapped into small squares for easy sharing.",
+      "Store in a cool, dry place. They pair particularly well with a pot of black tea in the afternoon."
+    ]
+  },
+  "mini-giandujas": {
+    "specs": [
+      { "label": "Format", "value": "120g gift tin" },
+      { "label": "Best by", "value": "2 months from purchase" },
+      { "label": "Taste", "value": "Hazelnut chocolate, smooth and rich" },
+      { "label": "Allergens", "value": "Contains hazelnut, dairy" }
+    ],
+    "description": [
+      "Small, gold-wrapped bites of gianduja — a classic hazelnut-and-chocolate paste, pressed into bite-sized pieces and finished with a light dusting of cocoa.",
+      "The tin is designed to be reused once empty, and travels well as a gift."
+    ]
+  },
+  "salted-butter-caramels": {
+    "specs": [
+      { "label": "Format", "value": "160g box" },
+      { "label": "Best by", "value": "3 weeks from purchase" },
+      { "label": "Taste", "value": "Butter caramel, sea salt, soft vanilla finish" },
+      { "label": "Allergens", "value": "Contains dairy" }
+    ],
+    "description": [
+      "Soft-set caramels made with brown butter and a touch of sea salt, finished with a whisper of vanilla to round out the sweetness.",
+      "Best kept in a cool room rather than the refrigerator, which can dull the texture."
+    ]
+  },
+  "parisian-heart-praline-box": {
+    "specs": [
+      { "label": "Box size", "value": "16 pralines, heart-shaped box" },
+      { "label": "Best by", "value": "3 weeks from purchase" },
+      { "label": "Taste", "value": "Praline, milk chocolate, roasted nut finish" },
+      { "label": "Allergens", "value": "Contains hazelnut, almond, dairy" }
+    ],
+    "description": [
+      "Our praline box pairs a crunchy roasted-nut praline core with a milk chocolate shell, boxed in the Maison's signature heart-shaped case.",
+      "A favorite for gifting — the box alone is often kept and reused long after the pralines are gone."
+    ]
+  },
+  "discovery-tea-box": {
+    "specs": [
+      { "label": "Format", "value": "20 individually wrapped sachets" },
+      { "label": "Caffeine", "value": "Oolong and black tea varieties" },
+      { "label": "Taste", "value": "Delicate florals, gentle malt notes" },
+      { "label": "Steep", "value": "3–4 minutes, just off the boil" }
+    ],
+    "description": [
+      "A sampler box built to introduce the tea list — a rotating mix of our oolong and black tea blends, each individually sachet-wrapped for freshness.",
+      "A good starting point if you're not sure which loose-leaf tin to commit to next."
+    ]
+  },
+  "french-chestnut-spread": {
+    "specs": [
+      { "label": "Format", "value": "220g jar" },
+      { "label": "Best by", "value": "3 months, unopened" },
+      { "label": "Taste", "value": "Chestnut cream, vanilla, lightly toasted" },
+      { "label": "Composition", "value": "Chestnut purée, sugar, vanilla" }
+    ],
+    "description": [
+      "The same chestnut cream piped onto our Mont-Blanc, jarred for spreading — smooth, lightly sweet, and best on warm toasted brioche.",
+      "Stir before opening if any natural separation has occurred; this is normal and doesn't affect the flavor."
+    ]
+  },
+  "oolong-loose-tea-tin": {
+    "specs": [
+      { "label": "Format", "value": "100g loose-leaf tin" },
+      { "label": "Caffeine", "value": "Moderate" },
+      { "label": "Taste", "value": "Soft florals, honeyed finish" },
+      { "label": "Steep", "value": "2–3 minutes, 85°C water" }
+    ],
+    "description": [
+      "A single-origin oolong selected for its floral aromatics and smooth, honeyed finish — served in the salon and now available loose in a resealable tin.",
+      "Re-steeps well; the second infusion often reveals notes the first pass misses."
+    ]
+  },
+  "assorted-chocolates-box": {
+    "specs": [
+      { "label": "Box size", "value": "24 pieces, mixed selection" },
+      { "label": "Best by", "value": "3 weeks from purchase" },
+      { "label": "Taste", "value": "Pralines, ganaches, dark chocolate" },
+      { "label": "Allergens", "value": "Contains nuts, dairy — see box insert for full list" }
+    ],
+    "description": [
+      "Our largest gifting box, bringing together the full range of the chocolate collection — pralines, soft ganaches, and pure dark chocolate pieces.",
+      "Comes with a printed guide inside the lid so you know what you're picking up before you bite."
+    ]
+  },
+  "breakfast-patisserie-set": {
+    "specs": [
+      { "label": "Serving", "value": "Set for 2, best ordered the morning of" },
+      { "label": "Includes", "value": "Croissant, brioche, jam" },
+      { "label": "Taste", "value": "Buttery, lightly sweet, classic salon breakfast" },
+      { "label": "Allergens", "value": "Contains dairy, egg, gluten" }
+    ],
+    "description": [
+      "A small version of the salon's own breakfast service — a fresh croissant, a slice of brioche, and a jar of jam, boxed together for a morning at home.",
+      "Best picked up the same morning; the pastries don't hold their texture much past a day."
+    ]
+  }
+}

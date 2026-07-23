@@ -1,0 +1,469 @@
+{
+  "$doc": "Home page animation spec — Webflow IX2 → GSAP conversion. Companion doc: home-animations.md. Raw decoded IX2 source: webflow-ix2-home.raw.json (extracted from webflow.028da9dc bundle).",
+  "meta": {
+    "sourcePage": "localized-html/index.html (Webflow page 69700209399c1d34b8f11622)",
+    "engine": "Webflow IX2 (events + actionLists) + custom GSAP SplitText module (button letter roll)",
+    "mediaQueries": { "main": ">=992px", "medium": "768-991px", "small": "480-767px", "tiny": "<480px" },
+    "easingMap": {
+      "inOutQuad": "power1.inOut",
+      "outQuad": "power1.out",
+      "inOutQuart": "power3.inOut",
+      "outQuart": "power3.out",
+      "inOutQuint": "power4.inOut",
+      "ease": "power1.out",
+      "easeInOut": "power1.inOut"
+    },
+    "recipes": {
+      "riseBlurFade": {
+        "description": "The site's signature reveal. Used by actionLists a-10 / a-33 / a-48 / a-172 — identical motion, different delay.",
+        "gsap": {
+          "set": { "y": 20, "opacity": 0, "filter": "blur(3px)" },
+          "to": { "y": 0, "opacity": 1, "filter": "blur(0px)", "duration": 0.7, "ease": "power1.inOut" }
+        },
+        "variants": {
+          "a-10": { "duration": 0.7, "delay": 0.15, "ease": "power1.inOut" },
+          "a-48": { "duration": 1.0, "delay": 0.3, "ease": "power3.inOut" },
+          "a-33": { "duration": 1.0, "delay": 0.55, "ease": "power3.inOut" },
+          "a-172": { "duration": 1.0, "delay": 1.0, "ease": "power3.inOut" }
+        }
+      },
+      "curtainWipe": {
+        "description": "actionList a-32 — a solid overlay (.image-overly-bg, white or primary) collapses from height:100% to 0, revealing the image beneath (bottom-anchored, so it wipes upward).",
+        "gsap": {
+          "set": { "height": "100%" },
+          "to": { "height": "0%", "duration": 1.2, "ease": "power1.inOut" }
+        },
+        "note": "Height animation on a plain overlay div — acceptable here (no layout thrash, absolute-positioned). Alternative: scaleY with transform-origin:bottom for compositor-only."
+      },
+      "scrollIntoView": {
+        "description": "IX2 SCROLL_INTO_VIEW with offset 0% == GSAP ScrollTrigger { start: 'top bottom', toggleActions: 'play none none none', once: true }"
+      }
+    }
+  },
+  "sections": [
+    {
+      "section": "navbar",
+      "component": "src/components/shared/site-header-client.tsx",
+      "animations": [
+        {
+          "id": "nav-scroll-recolor",
+          "name": "Navbar recolor + light background on scroll",
+          "category": "scroll-scrub",
+          "webflow": {
+            "events": ["e-408 (desktop)", "e-409 (tablet/mobile)"],
+            "actionLists": ["a-23", "a-25"],
+            "raw": "PAGE_SCROLL continuous, smoothing 60. Keyframes 0%→3% of page scroll: .nav-light-bg opacity 0→1; link/search text color white→#1c0701; logo + dropdown icons filter invert 0%→100%; burger lines white→black."
+          },
+          "gsap": {
+            "note": "3% of page height ≈ first ~150px. Scrubbed in Webflow; a state toggle at ~50px is a faithful simplification.",
+            "example": "ScrollTrigger.create({ start: 50, onUpdate: none, toggleClass: { targets: header, className: 'is-scrolled' } }) — colors via CSS transition"
+          },
+          "status": "implemented",
+          "implementation": "React scroll listener toggles text-white→text-foreground, logo brightness(0), glass bg fade (500ms CSS transitions)."
+        },
+        {
+          "id": "nav-link-arrow-roll",
+          "name": "Nav link icon roll on hover",
+          "category": "hover",
+          "webflow": {
+            "events": ["e-406", "e-407"],
+            "actionLists": ["a-27", "a-28"],
+            "raw": "MOUSE_OVER: child .clip-icon-wrapper y 0→-100% (400ms inOutQuint). MOUSE_OUT: back to 0."
+          },
+          "gsap": { "to": { "yPercent": -100, "duration": 0.4, "ease": "power4.inOut" } },
+          "status": "implemented",
+          "implementation": "CSS group-hover translate on duplicated icon (hero category links) / letter roll on nav links."
+        }
+      ]
+    },
+    {
+      "section": "hero",
+      "component": "src/features/landing/ui/hero-section.tsx + hero-client.tsx",
+      "animations": [
+        {
+          "id": "hero-load-description",
+          "name": "Hero heading/description rise-in (loading)",
+          "category": "loading",
+          "webflow": {
+            "events": ["e-530"],
+            "actionLists": ["a-48"],
+            "raw": "SCROLL_INTO_VIEW at top of page (fires on load): rise 20px + blur 3px + fade, 1000ms, delay 300ms, inOutQuart."
+          },
+          "gsap": {
+            "set": { "y": 20, "opacity": 0, "filter": "blur(3px)" },
+            "to": { "y": 0, "opacity": 1, "filter": "blur(0px)", "duration": 1, "delay": 0.3, "ease": "power3.inOut" }
+          },
+          "status": "implemented",
+          "implementation": "hero-client.tsx load timeline with blur channel (y20+blur3→0, 1s power3.inOut at 0.3s)."
+        },
+        {
+          "id": "hero-load-categories",
+          "name": "Hero category links slide from left (loading, desktop)",
+          "category": "loading",
+          "webflow": {
+            "events": ["e-526 (desktop)", "e-528 (mobile → riseBlurFade a-33)"],
+            "actionLists": ["a-49"],
+            "raw": "x -20px + blur 3 + fade → 0, 700ms, delay 150ms, inOutQuad."
+          },
+          "gsap": {
+            "set": { "x": -20, "opacity": 0, "filter": "blur(3px)" },
+            "to": { "x": 0, "opacity": 1, "filter": "blur(0px)", "duration": 0.7, "delay": 0.15, "ease": "power1.inOut" }
+          },
+          "status": "implemented",
+          "implementation": "hero-client.tsx: x−20+blur→0, 0.7s power1.inOut at 0.15s, stagger 0.1."
+        },
+        {
+          "id": "hero-cta-load",
+          "name": "Hero CTA button rise-in (loading)",
+          "category": "loading",
+          "webflow": { "events": ["e-569"], "actionLists": ["a-33"], "raw": "riseBlurFade, 1000ms, delay 550ms, inOutQuart." },
+          "gsap": { "recipe": "riseBlurFade", "variant": "a-33" },
+          "status": "implemented",
+          "implementation": "Part of the .hero-reveal-text stagger in the load timeline."
+        },
+        {
+          "id": "hero-scroll-parallax",
+          "name": "Hero image zoom + drift on scroll out (scrub)",
+          "category": "scroll-scrub",
+          "webflow": {
+            "events": ["e-554"],
+            "actionLists": ["a-50"],
+            "raw": "SCROLLING_IN_VIEW continuous, smoothing ~60. Progress 50%→90% of hero's scroll journey: .hero-image-absolute scale 1→1.1, y 0→-5%."
+          },
+          "gsap": {
+            "example": "gsap.timeline({ scrollTrigger: { trigger: heroEl, start: 'top top', end: 'bottom top', scrub: 0.6 } }).to(img, { scale: 1.1, yPercent: -5, ease: 'none' }, 0.5)",
+            "note": "Keyframes at 50% and 90% — hold flat for first half, then ramp. Use position parameter 0.5 on a 1s-long ease:none timeline."
+          },
+          "status": "implemented",
+          "implementation": "hero-client.tsx scrubbed timeline (scrub 0.6) on .hero-bg-image: hold to 50%, scale 1.1 / y −5% by 90%."
+        }
+      ]
+    },
+    {
+      "section": "collection (Crafted coffee collection)",
+      "component": "src/features/landing/ui/collection-section.tsx + collection-tabs-client.tsx",
+      "animations": [
+        {
+          "id": "collection-subtitle-reveal",
+          "name": "Subtitle rise-in on scroll",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-410"], "actionLists": ["a-10"], "raw": "riseBlurFade 700ms delay 150 inOutQuad, once, offset 0%." },
+          "gsap": { "recipe": "riseBlurFade", "variant": "a-10", "scrollTrigger": { "start": "top bottom", "once": true } },
+          "status": "implemented",
+          "implementation": "Reveal island ([data-reveal] stagger)."
+        },
+        {
+          "id": "collection-tabs-cascade",
+          "name": "Tab words cascade in (one word at a time)",
+          "category": "scroll-reveal",
+          "webflow": {
+            "events": ["e-1738"],
+            "actionLists": ["a-171"],
+            "raw": "Each .coffee-text-1…7: from y20/opacity0/blur5 → in over 300ms each, delays 300/500/600/700/800/900/1000ms — sequential word cascade."
+          },
+          "gsap": {
+            "set": { "y": 20, "opacity": 0, "filter": "blur(5px)" },
+            "to": { "y": 0, "opacity": 1, "filter": "blur(0px)", "duration": 0.3, "stagger": 0.1, "delay": 0.3, "ease": "power1.out" },
+            "scrollTrigger": { "trigger": "tabsMenu", "start": "top bottom", "once": true }
+          },
+          "status": "implemented",
+          "implementation": "collection-tabs-client.tsx: [data-tab-word] fromTo y20/blur5 → in, 0.3s each, stagger 0.1, delay 0.3, ScrollTrigger once."
+        },
+        {
+          "id": "collection-content-reveal",
+          "name": "Tab content late rise-in",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-414"], "actionLists": ["a-172"], "raw": "riseBlurFade 1000ms delay 1000ms inOutQuart — waits for the tab-word cascade." },
+          "gsap": { "recipe": "riseBlurFade", "variant": "a-172" },
+          "status": "implemented",
+          "implementation": "collection-tabs-client.tsx builds a first-scroll timeline: tab words cascade, then [data-card] content rises late at the 1s mark; tab changes still re-stagger cards."
+        },
+        {
+          "id": "product-card-hover",
+          "name": "Product photo zoom + name dim on hover",
+          "category": "hover",
+          "webflow": {
+            "events": ["e-500/501 …e-585/586"],
+            "actionLists": ["a-43", "a-44"],
+            "raw": "MOUSE_OVER: .product-photo scale 1→1.08 (600ms inOutQuad); .product-name opacity 1→0.7. MOUSE_OUT: reverse (500/600ms)."
+          },
+          "gsap": { "note": "Pure-CSS equivalent is fine: transition transform 600ms / opacity 600ms on group-hover." },
+          "status": "implemented",
+          "implementation": "CSS group-hover: photo scale 1.08 (500ms) + name opacity 0.7 (500ms)."
+        },
+        {
+          "id": "cta-letter-roll",
+          "name": "Button label letter-by-letter roll (all pill CTAs)",
+          "category": "hover",
+          "webflow": {
+            "events": ["custom GSAP module (not IX2)"],
+            "actionLists": [],
+            "raw": "Custom code splits .button-text into .gsap_split_word/.gsap_split_letter via SplitText; on hover the top copy's letters translate up and the bottom copy's letters roll in, staggered per letter."
+          },
+          "gsap": {
+            "example": "const split = new SplitText(topText, { type: 'chars' }); gsap.to(split.chars, { yPercent: -150, stagger: 0.02, duration: 0.4, ease: 'power4.inOut' }) + mirrored tween on bottom copy",
+            "note": "SplitText is a Club GSAP plugin; a manual span-per-char split achieves the same."
+          },
+          "status": "implemented",
+          "implementation": "RollLink manually splits labels into character spans and runs a CSS dual-copy yPercent-style roll with 20ms per-letter delays."
+        }
+      ]
+    },
+    {
+      "section": "feature-blocks (How we make / Worth exploring)",
+      "component": "src/features/landing/ui/feature-blocks-section.tsx",
+      "animations": [
+        {
+          "id": "feature-image-zoom-settle",
+          "name": "Background image zoom-settle 1.3→1",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-418", "e-422"], "actionLists": ["a-31"], "raw": ".absolute-image scale 1.3→1 over 1500ms on enter." },
+          "gsap": {
+            "set": { "scale": 1.3 },
+            "to": { "scale": 1, "duration": 1.5, "ease": "power1.out" },
+            "scrollTrigger": { "start": "top bottom", "once": true }
+          },
+          "status": "implemented",
+          "implementation": "Reveal island [data-reveal-zoom]: scale 1.3→1, 1.5s power1.out."
+        },
+        {
+          "id": "feature-curtain-wipe",
+          "name": "White curtain wipes off the image",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-420", "e-424"], "actionLists": ["a-32"], "raw": ".image-overly-bg height 100%→0 over 1200ms inOutQuad." },
+          "gsap": { "recipe": "curtainWipe" },
+          "status": "implemented",
+          "implementation": "Reveal island [data-reveal-curtain]: bg-background overlay height 100%→0, 1.2s power1.inOut."
+        },
+        {
+          "id": "feature-content-reveal",
+          "name": "Center content rise-in",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-426", "e-428"], "actionLists": ["a-33"], "raw": "riseBlurFade 1000ms delay 550 inOutQuart." },
+          "gsap": { "recipe": "riseBlurFade", "variant": "a-33" },
+          "status": "implemented",
+          "implementation": "Reveal island."
+        }
+      ]
+    },
+    {
+      "section": "story (Our story)",
+      "component": "src/features/landing/ui/story-section.tsx",
+      "animations": [
+        {
+          "id": "story-text-reveals",
+          "name": "Subtitle / heading / paragraphs / button rise-in",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-430", "e-432", "e-442", "e-444", "e-446"], "actionLists": ["a-10"], "raw": "riseBlurFade per element, each with own trigger." },
+          "gsap": { "recipe": "riseBlurFade", "variant": "a-10" },
+          "status": "implemented",
+          "implementation": "Reveal island."
+        },
+        {
+          "id": "story-video-fade",
+          "name": "Video block fade-in",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-434"], "actionLists": ["a-34"], "raw": "opacity 0→1, 800ms easeInOut." },
+          "gsap": { "set": { "opacity": 0 }, "to": { "opacity": 1, "duration": 0.8, "ease": "power1.inOut" } },
+          "status": "implemented",
+          "implementation": "Reveal island (adds y/blur too — close enough)."
+        },
+        {
+          "id": "story-divider-draw",
+          "name": "Divider line draws left→right",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-448"], "actionLists": ["a-35"], "raw": ".gray-divider.static translateX -100%→0 over 1300ms ease (inside overflow-hidden wrap)." },
+          "gsap": {
+            "set": { "xPercent": -100 },
+            "to": { "xPercent": 0, "duration": 1.3, "ease": "power1.out" },
+            "note": "Wrap divider in overflow-hidden. scaleX with origin-left is the cheaper equivalent."
+          },
+          "status": "implemented",
+          "implementation": "Reveal island [data-reveal-line]: scaleX 0→1 origin-left, 1.3s power1.out."
+        },
+        {
+          "id": "story-advantages-slide",
+          "name": "Advantages list slides up (desktop) / items rise (mobile)",
+          "category": "scroll-reveal",
+          "webflow": {
+            "events": ["e-450 (main,medium)", "e-559…e-565 (small,tiny)"],
+            "actionLists": ["a-36", "a-48"],
+            "raw": "Desktop: whole list translateY 0→-100% (own height) over 800ms inOutQuint — list sits below its slot and slides up. Mobile: each .advantage-item does riseBlurFade (a-48)."
+          },
+          "gsap": {
+            "example": "gsap.from(list, { yPercent: 100, duration: 0.8, ease: 'power4.inOut', scrollTrigger: {...} }) — or stagger items: gsap.from(items, { y: 20, opacity: 0, filter: 'blur(3px)', stagger: 0.1 })",
+            "note": "Desktop uses the Webflow-style slot slide; mobile keeps the item stagger."
+          },
+          "status": "implemented",
+          "implementation": "Reveal island handles [data-reveal-slide-list] as yPercent 100→0 on desktop and [data-reveal-slide-item] rise-blur-fade stagger on mobile."
+        }
+      ]
+    },
+    {
+      "section": "process (Our process)",
+      "component": "src/features/landing/ui/process-section.tsx",
+      "animations": [
+        {
+          "id": "process-bg-drift",
+          "name": "Background image slow vertical drift (ken burns)",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-555"], "actionLists": ["a-51"], "raw": "On enter: .absolute-image starts scale 1.2 / y -5%, then y -5%→+5% over 10000ms inOutQuad (one-shot)." },
+          "gsap": {
+            "set": { "scale": 1.2, "yPercent": -5 },
+            "to": { "yPercent": 5, "duration": 10, "ease": "power1.inOut" },
+            "scrollTrigger": { "start": "top bottom", "once": true },
+            "note": "Scrub variant (yPercent tied to section progress) is the modern take and avoids a 10s timer."
+          },
+          "status": "implemented",
+          "implementation": "Reveal island [data-reveal-kenburns]: scale 1.2 fixed, y −5%→5% over 10s, once."
+        },
+        {
+          "id": "process-text-reveals",
+          "name": "Label / heading / paragraph / step texts rise-in",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-458…e-478"], "actionLists": ["a-10"], "raw": "riseBlurFade each." },
+          "gsap": { "recipe": "riseBlurFade", "variant": "a-10" },
+          "status": "implemented",
+          "implementation": "Reveal island."
+        },
+        {
+          "id": "process-circle-draw",
+          "name": "Step circle draws in two halves + number fades",
+          "category": "scroll-reveal",
+          "webflow": {
+            "events": ["e-452", "e-454", "e-456"],
+            "actionLists": ["a-37"],
+            "raw": "Per .work-item: .circle-outline-wrap.top width 0→100% (600ms delay 400 inOutQuad); .step-number opacity 0→1 (500ms delay 650); .circle-outline-wrap.bottom width 0→100% (600ms delay 1010 outQuad)."
+          },
+          "gsap": {
+            "example": "tl.to(top, { width: '100%', duration: 0.6, ease: 'power1.inOut' }, 0.4).to(num, { opacity: 1, duration: 0.5 }, 0.65).to(bottom, { width: '100%', duration: 0.6, ease: 'power1.out' }, 1.01)",
+            "note": "Simpler modern equivalent: SVG circle stroke-dashoffset draw, or clip-path reveal on a single border circle."
+          },
+          "status": "implemented",
+          "implementation": "SVG circle stroke draw via [data-reveal-draw] (pathLength=1, dashoffset 1→0, 1.2s, delay 0.4) + number rise via [data-reveal]."
+        }
+      ]
+    },
+    {
+      "section": "quote (Founder quote)",
+      "component": "src/features/landing/ui/quote-section.tsx",
+      "animations": [
+        {
+          "id": "quote-curtain-wipe",
+          "name": "Primary-colored curtain wipes off portrait",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-502"], "actionLists": ["a-32"], "raw": "curtainWipe with .image-overly-bg.primary-bg (café-colored overlay)." },
+          "gsap": { "recipe": "curtainWipe" },
+          "status": "implemented",
+          "implementation": "Reveal island [data-reveal-curtain] with bg-primary overlay."
+        },
+        {
+          "id": "quote-text-reveals",
+          "name": "Label / quote / author rise-in",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-478", "e-480", "e-482"], "actionLists": ["a-10"], "raw": "riseBlurFade each." },
+          "gsap": { "recipe": "riseBlurFade", "variant": "a-10" },
+          "status": "implemented",
+          "implementation": "Reveal island."
+        }
+      ]
+    },
+    {
+      "section": "brew (Our brew coffee)",
+      "component": "src/features/landing/ui/brew-section.tsx",
+      "animations": [
+        {
+          "id": "brew-text-reveals",
+          "name": "Label / heading / paragraph rise-in",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-504…e-510"], "actionLists": ["a-10"], "raw": "riseBlurFade each." },
+          "gsap": { "recipe": "riseBlurFade", "variant": "a-10" },
+          "status": "implemented",
+          "implementation": "Reveal island."
+        },
+        {
+          "id": "brew-features-fade",
+          "name": "Features grid + right image column fade-in",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-534", "e-520"], "actionLists": ["a-46"], "raw": "opacity 0→1, 1200ms, easeInOut." },
+          "gsap": { "set": { "opacity": 0 }, "to": { "opacity": 1, "duration": 1.2, "ease": "power1.inOut" } },
+          "status": "implemented",
+          "implementation": "Reveal island."
+        },
+        {
+          "id": "brew-cups-slide-right",
+          "name": "Cup images slide in from the right",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-1732", "e-1734"], "actionLists": ["slideInRight"], "raw": "opacity 0, x +100px → x 0 + fade, 1000ms outQuart." },
+          "gsap": {
+            "set": { "x": 100, "opacity": 0 },
+            "to": { "x": 0, "opacity": 1, "duration": 1, "ease": "power3.out", "stagger": 0.12 }
+          },
+          "status": "implemented",
+          "implementation": "Reveal island [data-reveal-right]: x100+fade→0, 1s power3.out, stagger 0.12."
+        }
+      ]
+    },
+    {
+      "section": "reviews (What our clients say)",
+      "component": "src/features/landing/ui/reviews-section.tsx + reviews-client.tsx",
+      "animations": [
+        {
+          "id": "reviews-content-reveal",
+          "name": "Slider row rise-in + decorative squares fade",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-518", "e-516"], "actionLists": ["a-10", "a-34"], "raw": "Row: riseBlurFade. Squares wrap: fade 800ms." },
+          "gsap": { "recipe": "riseBlurFade", "variant": "a-10" },
+          "status": "implemented",
+          "implementation": "Reveal island."
+        },
+        {
+          "id": "reviews-image-flip",
+          "name": "Square image flips (rotateY) on hover",
+          "category": "hover",
+          "webflow": { "events": ["e-1730"], "actionLists": ["a-170"], "raw": "MOUSE_OVER: .image-cover rotateY→180deg (500ms), then back to 0 (500ms) — full flip." },
+          "gsap": { "example": "gsap.fromTo(img, { rotationY: 0 }, { rotationY: 180, duration: 0.5, yoyo: true, repeat: 1 })" },
+          "status": "implemented",
+          "implementation": "reviews-image-flip.tsx wraps the image in a client island and uses contextSafe GSAP pointer-enter tween with repeat/yoyo."
+        },
+        {
+          "id": "reviews-arrow-roll",
+          "name": "Arrow icon rolls through the button on hover",
+          "category": "hover",
+          "webflow": {
+            "events": ["e-494…e-497"],
+            "actionLists": ["a-38…a-41"],
+            "raw": "MOUSE_OVER: child .slider-icon-wrapper x 0→±100% (400ms inOutQuint) — icon exits one side while absolute duplicate enters from the other. MOUSE_OUT: back."
+          },
+          "gsap": { "note": "CSS equivalent: duplicated icon + group-hover translate, like RollLink's text roll." },
+          "status": "implemented",
+          "implementation": "CSS duplicated-icon roll-through on group-hover (400ms) in reviews-client.tsx."
+        },
+        {
+          "id": "reviews-slide-transition",
+          "name": "Slide change (arrows)",
+          "category": "interactive",
+          "webflow": { "events": ["w-slider component"], "actionLists": [], "raw": "Webflow slider, slide 60x ease, autoplay off." },
+          "gsap": { "note": "Implemented as translateX track with CSS transition 500ms — equivalent." },
+          "status": "implemented",
+          "implementation": "reviews-client.tsx index state + transform transition."
+        }
+      ]
+    },
+    {
+      "section": "location (Ready to enjoy Beano)",
+      "component": "src/features/landing/ui/location-section.tsx",
+      "animations": [
+        {
+          "id": "location-text-reveals",
+          "name": "Label / heading / address rise-in",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-484", "e-486", "e-867", "e-869"], "actionLists": ["a-10", "a-33"], "raw": "riseBlurFade each; CTAs via a-33 (delay 550)." },
+          "gsap": { "recipe": "riseBlurFade", "variant": "a-10" },
+          "status": "implemented",
+          "implementation": "Reveal island (whole card reveals as one block)."
+        }
+      ]
+    }
+  ]
+}

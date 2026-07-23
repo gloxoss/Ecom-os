@@ -17,17 +17,17 @@
 }
 
 :root {
-  --brand-primary: #000000;
-  --brand-secondary: #666666;
-  --brand-accent: #3b82f6;
+  --brand-primary: #aa631a;
+  --brand-secondary: #c69951;
+  --brand-accent: #ffcebf;
   --brand-background: #ffffff;
-  --brand-foreground: #111111;
-  --brand-muted: #f3f4f6;
+  --brand-foreground: #3f100a;
+  --brand-muted: #d9a594;
 
-  --brand-font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --brand-font-sans: Inter Tight Variable, ui-sans-serif, system-ui, sans-serif;
   --brand-font-mono: monospace, ui-monospace, monospace;
 
-  --brand-radius-sm: 4px;
-  --brand-radius-md: 8px;
-  --brand-radius-lg: 12px;
+  --brand-radius-sm: 12px;
+  --brand-radius-md: 16px;
+  --brand-radius-lg: 20px;
 }

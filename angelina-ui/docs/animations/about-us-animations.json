@@ -1,0 +1,145 @@
+{
+  "$doc": "About-us page animation spec — Webflow IX2 → GSAP conversion. Companion doc: about-us-animations.md. Raw decoded IX2 source: webflow-ix2-about-us.raw.json (34 events, filtered from the same site-wide registry as home/menu/contact-us).",
+  "meta": {
+    "sourcePage": "localized-html/about-us.html (Webflow page 69700209399c1d34b8f11623)",
+    "engine": "Webflow IX2, shared registry with home/menu/contact-us",
+    "sharedRecipes": "riseBlurFade (a-10/a-33/a-48), fade (a-32/a-46), zoom-settle (a-34), Ken Burns (a-51-equivalent) — all defined in home-animations.json. Not redefined here.",
+    "newRecipes": {
+      "parallaxZoomContinuous": {
+        "description": "actionList a-56 — unlike home's one-shot Ken Burns (settle once, stop), this scales an element continuously across its ENTIRE time in the viewport: scale 1 at the moment it enters, scale 1.2 by the moment it leaves. A true scroll-scrubbed parallax, not a settle animation.",
+        "gsap": {
+          "fromTo": { "scale": 1 },
+          "to": { "scale": 1.2, "ease": "none" },
+          "scrollTrigger": { "start": "top bottom", "end": "bottom top", "scrub": true }
+        },
+        "addedTo": "reveal.tsx as data-reveal-parallax-zoom"
+      },
+      "tabPanelFade": {
+        "description": "actionList a-58 — a plain 500ms opacity fade (delay 100ms, easeIn) used both for the tabs-wrap's scroll entrance and, repurposed, for the swap between tab panels on click in the vertical collection showcase.",
+        "gsap": { "fromTo": { "opacity": 0 }, "to": { "opacity": 1, "duration": 0.5, "ease": "easeIn" } }
+      },
+      "teamPhotoHover": {
+        "description": "actionLists a-77/a-78 — team card photo scale 1 -> 1.08 on hover (600ms inOutQuad), back to 1 on mouse-out (500ms). Identical shape to the product-card hover already built for home/menu (a-43/a-44) — same CSS group-hover technique reused, not re-implemented as GSAP."
+      },
+      "slideInBottom": {
+        "description": "New direction on the site's slideIn family (siblings: slideInRight on home/contact, slideInLeft on menu). Used here for FAQ accordion rows: y+100px, opacity 0 -> in place, opacity 1, 1000ms outQuart.",
+        "gsap": {
+          "set": { "y": 100, "opacity": 0 },
+          "to": { "y": 0, "opacity": 1, "duration": 1, "ease": "power3.out", "stagger": 0.1 }
+        },
+        "addedTo": "reveal.tsx as data-reveal-bottom"
+      }
+    }
+  },
+  "sections": [
+    {
+      "section": "navbar",
+      "component": "src/components/shared/site-header-client.tsx",
+      "animations": [
+        { "id": "about-nav-scroll-recolor", "name": "Navbar recolor on scroll", "category": "scroll-scrub",
+          "webflow": { "events": ["e-792", "e-793"], "actionLists": ["a-23", "a-25"], "raw": "Same PAGE_SCROLL pattern as every other page." },
+          "status": "implemented", "implementation": "Shared across all routes via site-header-client.tsx." }
+      ]
+    },
+    {
+      "section": "hero",
+      "component": "src/features/about/ui/about-hero.tsx",
+      "animations": [
+        { "id": "about-hero-reveals", "name": "Heading / location label / description / CTA rise-in", "category": "loading",
+          "webflow": { "events": ["e-627", "e-629"], "actionLists": ["a-48"], "raw": "riseBlurFade — fires immediately since the hero sits at the very top of the page." },
+          "gsap": { "recipe": "riseBlurFade (home-animations.json)" }, "status": "implemented",
+          "implementation": "Reveal island wraps the hero; [data-reveal] on heading, location label, description, and CTA." }
+      ]
+    },
+    {
+      "section": "story",
+      "component": "src/features/about/ui/about-story.tsx",
+      "animations": [
+        { "id": "about-story-text-reveals", "name": "Label / heading / paragraphs / button rise-in", "category": "scroll-reveal",
+          "webflow": { "events": ["e-587", "e-589", "e-599", "e-607", "e-625"], "actionLists": ["a-10"], "raw": "riseBlurFade per element." },
+          "gsap": { "recipe": "riseBlurFade (home-animations.json)" }, "status": "implemented", "implementation": "Reveal island [data-reveal]." },
+        { "id": "about-story-images-parallax", "name": "Both story images continuously zoom while in view", "category": "scroll-scrub",
+          "webflow": { "events": ["e-613", "e-614"], "actionLists": ["a-56"], "raw": "See newRecipes.parallaxZoomContinuous above." },
+          "gsap": { "recipe": "parallaxZoomContinuous" }, "status": "implemented",
+          "implementation": "Reveal island [data-reveal-parallax-zoom] on both images." },
+        { "id": "about-story-image-fade", "name": "Story image blocks fade in", "category": "scroll-reveal",
+          "webflow": { "events": ["e-631", "e-633"], "actionLists": ["a-34"], "raw": "Zoom-settle recipe (see home-animations.json a-31/a-34)." },
+          "status": "implemented", "implementation": "Covered by the parallax-zoom entrance — a redundant separate fade was not added." }
+      ]
+    },
+    {
+      "section": "journey",
+      "component": "src/features/about/ui/about-journey.tsx",
+      "animations": [
+        { "id": "about-journey-curtain", "name": "Curtain wipe on the journey image", "category": "scroll-reveal",
+          "webflow": { "events": ["e-643"], "actionLists": ["a-32"], "raw": "curtainWipe recipe (see home-animations.json)." },
+          "status": "todo", "implementation": "Not yet added — image currently appears via the shared Reveal fade only; a dedicated curtain overlay would need a markup change (see home's feature-blocks-section.tsx for the pattern to port)." },
+        { "id": "about-journey-text-reveals", "name": "Label / heading / paragraph rise-in", "category": "scroll-reveal",
+          "webflow": { "events": ["e-645", "e-647"], "actionLists": ["a-10"], "raw": "riseBlurFade." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal]." },
+        { "id": "about-journey-features-fade", "name": "Feature caption strip fades in", "category": "scroll-reveal",
+          "webflow": { "events": ["e-653"], "actionLists": ["a-46"], "raw": "Plain fade wrap." },
+          "status": "implemented", "implementation": "Covered by the section's [data-reveal] on the whole image block." },
+        { "id": "about-journey-image-parallax", "name": "Journey image continuous zoom", "category": "scroll-scrub",
+          "webflow": { "events": [], "actionLists": ["a-56-equivalent"], "raw": "Same continuous-scale pattern as the story images." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal-parallax-zoom]." }
+      ]
+    },
+    {
+      "section": "collection (vertical showcase)",
+      "component": "src/features/about/ui/about-collection.tsx + about-collection-client.tsx",
+      "animations": [
+        { "id": "about-collection-text-reveals", "name": "Label / heading / description / button rise-in", "category": "scroll-reveal",
+          "webflow": { "events": ["e-673", "e-675", "e-677"], "actionLists": ["a-48"], "raw": "riseBlurFade." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal]." },
+        { "id": "about-collection-tabs-fade", "name": "Tab list and image panel fade in on scroll", "category": "scroll-reveal",
+          "webflow": { "events": ["e-664", "e-679", "e-671"], "actionLists": ["a-58", "a-33", "a-32"], "raw": "tabPanelFade for the tabs-wrap; riseBlurFade for the tab menu; curtain for the image." },
+          "status": "partial", "implementation": "Tab list uses [data-reveal]; image panel curtain not implemented (same as journey — todo)." },
+        { "id": "about-collection-panel-swap", "name": "Info card cross-fades when a different category is selected", "category": "interactive",
+          "webflow": { "events": [], "actionLists": [], "raw": "New interaction — the original's tab click likely just swaps content instantly (Webflow's native tab behavior); the fade is our own polish, reusing tabPanelFade's timing." },
+          "gsap": { "recipe": "tabPanelFade" }, "status": "implemented",
+          "implementation": "about-collection-client.tsx: useGSAP with dependencies:[activeId], fromTo opacity 0->1 on tab change." }
+      ]
+    },
+    {
+      "section": "team",
+      "component": "src/features/about/ui/about-team.tsx",
+      "animations": [
+        { "id": "about-team-text-reveals", "name": "Label / heading rise-in", "category": "scroll-reveal",
+          "webflow": { "events": ["e-714", "e-716"], "actionLists": ["a-10"], "raw": "riseBlurFade." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal]." },
+        { "id": "about-team-card-reveal", "name": "Team member info rise-in", "category": "scroll-reveal",
+          "webflow": { "events": ["e-738"], "actionLists": ["a-33"], "raw": "riseBlurFade, delay-550 variant." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal] on each card." },
+        { "id": "about-team-photo-hover", "name": "Team photo zoom on hover", "category": "hover",
+          "webflow": { "events": ["e-740", "e-741"], "actionLists": ["a-77", "a-78"], "raw": "See newRecipes.teamPhotoHover above." },
+          "status": "implemented", "implementation": "CSS group-hover scale-[1.08] + overlay darken, same technique as product-card hover." }
+      ]
+    },
+    {
+      "section": "faq",
+      "component": "src/features/about/ui/about-faq.tsx + about-faq-client.tsx",
+      "animations": [
+        { "id": "about-faq-image-reveal", "name": "Image block + description + link rise-in", "category": "scroll-reveal",
+          "webflow": { "events": ["e-760", "e-794"], "actionLists": ["a-34", "a-48"], "raw": "zoom-settle for the image, riseBlurFade for the description/link." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal]." },
+        { "id": "about-faq-rows-slide-up", "name": "Accordion rows slide up from below", "category": "scroll-reveal",
+          "webflow": { "events": ["e-748"], "actionLists": ["slideInBottom"], "raw": "See newRecipes.slideInBottom above." },
+          "gsap": { "recipe": "slideInBottom" }, "status": "implemented", "implementation": "Reveal island [data-reveal-bottom], stagger 0.1, on each accordion row." },
+        { "id": "about-faq-accordion-expand", "name": "Accordion row expand/collapse", "category": "interactive",
+          "webflow": { "events": [], "actionLists": [], "raw": "Webflow's native dropdown open/close (accordion-toggle w-dropdown)." },
+          "gsap": { "note": "Not GSAP — pure CSS grid-template-rows 0fr/1fr transition, the standard CSS-only accordion technique. No JS animation needed." },
+          "status": "implemented", "implementation": "about-faq-client.tsx useState(openIndex) + CSS grid-template-rows transition." }
+      ]
+    },
+    {
+      "section": "location",
+      "component": "src/components/shared/location-section.tsx",
+      "animations": [
+        { "id": "about-location-reveal", "name": "Video/image block rise-in with label, heading, CTA, address", "category": "scroll-reveal",
+          "webflow": { "events": [], "actionLists": ["a-10", "a-33"], "raw": "Identical to home's location section — same component, same recipe." },
+          "status": "implemented", "implementation": "Shared LocationSection component (extracted from home's landing feature to components/shared/ during this migration — now used by both pages)." }
+      ]
+    }
+  ]
+}

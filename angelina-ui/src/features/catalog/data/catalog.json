@@ -1,0 +1,98 @@
+{
+  "hero": {
+    "title": "Where the journey to fine pastry starts",
+    "description": "From delicate macarons to rich hot chocolate, every category is composed with the same quiet attention to craft.",
+    "cta": { "label": "Shop the collection", "href": "#collections" },
+    "image": {
+      "url": "/assets/angelina/video-hot-chocolate-pour-first-frame.webp",
+      "alt": "Hot chocolate being poured into a porcelain cup"
+    }
+  },
+  "collections": [
+    {
+      "id": "patisseries",
+      "name": "Pâtisseries",
+      "overview": "Buttery, delicate, and finished by hand, our pastry case changes with the season while a few signatures — like the Mont-Blanc — never leave.",
+      "tags": ["Baked fresh daily", "Best enjoyed same-day", "Contains dairy & gluten", "Seasonal rotation"],
+      "image": { "url": "/assets/angelina/product-mont-blanc-lifestyle.webp", "alt": "Mont-Blanc pastry plated in the salon" }
+    },
+    {
+      "id": "epicerie-fine",
+      "name": "Épicerie Fine",
+      "overview": "Jars and tins made for the everyday ritual at home — chestnut spread, hot chocolate mix, and other Maison staples.",
+      "tags": ["Shelf-stable", "Great for gifting", "Vegetarian", "Keeps up to 3 months"],
+      "image": { "url": "/assets/angelina/product-chestnut-toast-lifestyle.webp", "alt": "Chestnut spread on toasted brioche" }
+    },
+    {
+      "id": "macarons",
+      "name": "Macarons",
+      "overview": "Crisp shells and soft centers, in flavors that range from timeless classics to seasonal limited editions.",
+      "tags": ["Gluten-free", "8 flavors available", "Boxed for gifting", "Best within 5 days"],
+      "image": { "url": "/assets/angelina/product-macaron-roses-lifestyle.webp", "alt": "Macarons arranged with roses" }
+    },
+    {
+      "id": "thes",
+      "name": "Thés",
+      "overview": "A curated list of loose-leaf teas, selected to pair with any signature and served in the traditional way.",
+      "tags": ["Loose-leaf", "Caffeine & herbal options", "Ethically sourced", "Pairs with pastry"],
+      "image": { "url": "/assets/angelina/product-tea-service-lifestyle.webp", "alt": "Tea service set on a salon table" }
+    },
+    {
+      "id": "chocolats",
+      "name": "Chocolats",
+      "overview": "Pralines and ganaches finished in-house, boxed for gifting or savoring slowly on your own.",
+      "tags": ["Hand-finished", "Nut-free options", "Keeps up to 2 weeks", "Boxed for gifting"],
+      "image": { "url": "/assets/angelina/product-chocolate-box-lifestyle.webp", "alt": "Open box of assorted chocolates" }
+    },
+    {
+      "id": "cadeaux",
+      "name": "Cadeaux",
+      "overview": "A considered gift for any occasion, composed from the collection and wrapped in the Maison's signature ribbon.",
+      "tags": ["Ready to gift", "Ribbon included", "Customizable note", "Ships nationwide"],
+      "image": { "url": "/assets/angelina/product-caramels-gift-lifestyle.webp", "alt": "Gift box of caramels tied with ribbon" }
+    }
+  ],
+  "journal": {
+    "label": "Our journal",
+    "title": "Notes from the Maison:",
+    "titleAccent": "stories from the salon and kitchen",
+    "cta": { "label": "Explore all", "href": "/contact-us" },
+    "articles": [
+      {
+        "date": "March 13, 2026",
+        "title": "Pairing pastry with tea: a simple guide",
+        "excerpt": "A short primer on matching our loose-leaf teas to the collection, from bright florals to deep, malty blends.",
+        "image": { "url": "/assets/angelina/product-tea-service-lifestyle.webp", "alt": "Tea service set on a salon table" }
+      },
+      {
+        "date": "February 21, 2026",
+        "title": "The craft behind our Mont-Blanc",
+        "excerpt": "Inside the kitchen for the piping, the layering, and the small details that make the signature what it is.",
+        "image": { "url": "/assets/angelina/signature-mont-blanc-closeup.webp", "alt": "Close-up of a Mont-Blanc pastry" }
+      },
+      {
+        "date": "January 9, 2026",
+        "title": "Gifting season: how to choose the right box",
+        "excerpt": "A short guide to building a gift box that fits the occasion, from a quiet thank-you to a full celebration.",
+        "image": { "url": "/assets/angelina/product-chocolate-box-lifestyle.webp", "alt": "Open box of assorted chocolates" }
+      }
+    ]
+  },
+  "location": {
+    "label": "Visit the Maison",
+    "title": "Step into the salon for hot chocolate, pastry, and a Paris moment made to linger.",
+    "cta": { "label": "Explore the menu", "href": "/menu" },
+    "video": {
+      "mp4": "",
+      "webm": "",
+      "poster": "/assets/angelina/location-tea-room-pan-poster.webp",
+      "alt": "Wide view of an elegant Paris patisserie tea room"
+    },
+    "address": {
+      "label": "Our flagship salon",
+      "value": "226 Rue de Rivoli, 75001 Paris, France",
+      "mapUrl": "https://www.google.com/maps/search/Angelina+Paris+226+Rue+de+Rivoli+75001+Paris",
+      "mapCta": "View in map"
+    }
+  }
+}

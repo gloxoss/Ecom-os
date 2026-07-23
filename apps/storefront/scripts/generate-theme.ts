@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { getTheme } from '@ecom-os/themes';
 
-const themeName = process.env.THEME_NAME || 'default';
+const themeName = process.env.THEME_NAME || 'angelina';
 const theme = getTheme(themeName);
 
 if (!theme) {

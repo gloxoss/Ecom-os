@@ -1,15 +1,19 @@
-import { getTranslations } from 'next-intl/server';
-import { CartPageClient } from '@/features/cart/ui/cart-page-client';
-import { getCapabilities } from '@/lib/capabilities';
+import { getEngine } from "@/lib/engine";
+import { CartClient } from "@/features/cart/ui/cart-client";
+
+export const metadata = {
+  title: "Your Cart | Angelina",
+  description: "Review your cart items.",
+};
 
 export default async function CartPage() {
-  const t = await getTranslations('cart');
-  const capabilities = await getCapabilities();
-  
+  const engine = await getEngine();
+  // Fetch a reasonable limit to cover all cart items
+  const { items: products } = await engine.listProducts({ limit: 100 });
+
   return (
-    <main className="max-w-3xl mx-auto px-4 py-16">
-      <h1 className="text-3xl font-bold mb-10">{t('pageTitle')}</h1>
-      <CartPageClient capabilities={capabilities} />
-    </main>
+    <div className="min-h-screen bg-background pt-[140px] md:pt-[160px]">
+      <CartClient products={products} />
+    </div>
   );
 }

@@ -1,0 +1,185 @@
+{
+  "hero": {
+    "title": "Bienvenue chez Angelina",
+    "description": "Retrouvez l'univers raffiné de la célèbre Maison parisienne : pâtisseries emblématiques, chocolat chaud L'Africain et épicerie fine.",
+    "image": {
+      "src": "/assets/angelina/hero-hot-chocolate-macro-texture.webp",
+      "alt": "Texture macro abstraite de chocolat chaud"
+    },
+    "categories": [
+      { "id": "patisseries", "label": "Pâtisseries", "href": "/menu" },
+      { "id": "epicerie-fine", "label": "Épicerie Fine", "href": "/catalog" },
+      { "id": "macarons", "label": "Macarons", "href": "/catalog" },
+      { "id": "chocolats", "label": "Chocolats", "href": "/catalog" },
+      { "id": "cadeaux", "label": "Cadeaux", "href": "/catalog" }
+    ],
+    "cta": {
+      "label": "Découvrir",
+      "href": "/catalog"
+    }
+  },
+  "collection": {
+    "label": "Nos Produits",
+    "title": "Découvrez notre collection de pâtisseries, produits d'épicerie fine et autres plaisirs...",
+    "tabs": [
+      { "id": "all", "label": "Tout" },
+      { "id": "patisseries", "label": "Pâtisseries" },
+      { "id": "epicerie-fine", "label": "Épicerie Fine" },
+      { "id": "chocolats", "label": "Chocolats" },
+      { "id": "macarons", "label": "Macarons" },
+      { "id": "thes", "label": "Thés" }
+    ],
+    "cta": { "label": "Tous nos produits", "href": "/catalog" }
+  },
+  "featureBlocks": [
+    {
+      "label": "L'Épicerie Fine",
+      "title": "Prolongez l'expérience Angelina chez vous avec nos produits d'épicerie fine : crème de marrons, thés, et confiseries.",
+      "cta": { "label": "Découvrir la collection", "href": "/catalog" },
+      "image": {
+        "src": "/assets/angelina/feature-boutique-shelf.webp",
+        "alt": "Étagères de la boutique Angelina avec crèmes de marrons et thés"
+      }
+    },
+    {
+      "label": "L'Africain",
+      "title": "L'incontournable chocolat chaud à l'ancienne, dense et onctueux, véritable signature de la Maison.",
+      "cta": { "label": "Commander", "href": "/catalog" },
+      "image": {
+        "src": "/assets/angelina/feature-macaron-gift.webp",
+        "alt": "Tasse de chocolat chaud L'Africain"
+      }
+    }
+  ],
+  "story": {
+    "label": "Notre Histoire",
+    "title": "En 1903, le confiseur autrichien Anton Rumpelmayer fonde Angelina, qui devient très vite le lieu de rendez-vous de l'aristocratie parisienne.",
+    "video": {
+      "mp4": "",
+      "webm": "",
+      "poster": "/assets/angelina/story-salon-interior-pan-poster.webp",
+      "alt": "Intérieur élégant du salon de thé Belle Époque"
+    },
+    "paragraphs": [
+      "Dans ses salons ont défilé Proust, Coco Chanel et les plus grands couturiers. Aujourd'hui encore, les parisiens et les touristes du monde entier s'y pressent pour déguster le célèbre Mont-Blanc et l'incomparable chocolat chaud L'Africain.",
+      "L'atmosphère Belle Époque imaginée par l'architecte de la Belle Époque, Edouard-Jean Niermans, offre un cadre romantique et raffiné."
+    ],
+    "cta": { "label": "Découvrir l'histoire", "href": "/about-us" },
+    "values": [
+      { "number": "01", "title": "Savoir-Faire" },
+      { "number": "02", "title": "Élégance" },
+      { "number": "03", "title": "Gourmandise" },
+      { "number": "04", "title": "Tradition" }
+    ]
+  },
+  "process": {
+    "label": "Savoir-Faire",
+    "title": "L'artisanat pâtissier français, alliant rigueur et gourmandise.",
+    "description": "Le chef pâtissier d'Angelina revisite les grands classiques de la pâtisserie française, tout en conservant l'héritage d'Anton Rumpelmayer.",
+    "image": {
+      "src": "/assets/angelina/process-piping-mont-blanc.webp",
+      "alt": "Le chef pâtissier préparant un Mont-Blanc"
+    },
+    "steps": [
+      {
+        "number": "01",
+        "title": "Création",
+        "text": "Conception des recettes dans le respect de la grande tradition pâtissière."
+      },
+      {
+        "number": "02",
+        "title": "Sélection",
+        "text": "Choix méticuleux des meilleurs ingrédients : chocolat, marrons, beurre AOP."
+      },
+      {
+        "number": "03",
+        "title": "Finition",
+        "text": "Un dressage précis pour une élégance visuelle incomparable."
+      }
+    ]
+  },
+  "quote": {
+    "label": "La Maison",
+    "text": "\"La pâtisserie et le salon de thé Angelina symbolisent l'art de vivre à la française, une escale gourmande et raffinée hors du temps.\"",
+    "author": {
+      "name": "Maison Angelina",
+      "role": "Paris",
+      "image": {
+        "src": "/assets/angelina/quote-author-maison-detail.webp",
+        "alt": "Détail du salon de thé"
+      }
+    },
+    "image": {
+      "src": "/assets/angelina/quote-maison-still-life.webp",
+      "alt": "Tasse de chocolat chaud et pâtisserie sur une table en marbre"
+    }
+  },
+  "brew": {
+    "label": "Le Salon de Thé",
+    "title": "L'expérience incontournable du 226 rue de Rivoli.",
+    "description": "Prendre le temps d'une pause gourmande sous les dorures et les fresques de la Belle Époque.",
+    "cta": { "label": "Voir la carte", "href": "/menu" },
+    "features": [
+      {
+        "icon": "/assets/beano/aHR0cHM6_697881b1d479d8e7dc13db98_Frame (2).svg",
+        "title": "L'Africain",
+        "text": "Notre chocolat chaud à l'ancienne composé de trois cacaos d'origines africaines."
+      },
+      {
+        "icon": "/assets/beano/aHR0cHM6_69788224587f64b9bbb001a3_Frame (3).svg",
+        "title": "Le Mont-Blanc",
+        "text": "Le classique d'Angelina : meringue, chantilly légère, et vermicelles de crème de marron."
+      }
+    ],
+    "images": [
+      { "src": "/assets/angelina/brew-hot-chocolate-cup-cutout-transparent.webp", "alt": "Tasse en porcelaine" },
+      { "src": "/assets/angelina/brew-mont-blanc-cutout-transparent.webp", "alt": "Pâtisserie Mont-Blanc isolée" }
+    ]
+  },
+  "reviews": {
+    "label": "Ce qu'ils en disent",
+    "image": {
+      "src": "/assets/angelina/reviews-salon-table.webp",
+      "alt": "Table du salon de thé Angelina"
+    },
+    "items": [
+      {
+        "quote": "\"Un chocolat chaud exceptionnel, dense et réconfortant. Le cadre est magnifique !\"",
+        "author": "Marie L.",
+        "rating": 5
+      },
+      {
+        "quote": "\"Le Mont-Blanc est une œuvre d'art, à la fois croquant et fondant. À ne pas rater.\"",
+        "author": "Jean-Pierre D.",
+        "rating": 5
+      },
+      {
+        "quote": "\"L'élégance parisienne à son apogée. Un service impeccable et un décor de rêve.\"",
+        "author": "Sophie T.",
+        "rating": 5
+      },
+      {
+        "quote": "\"Les macarons sont délicieux, parfait pour un cadeau. L'emballage est très chic.\"",
+        "author": "Lucie B.",
+        "rating": 5
+      }
+    ]
+  },
+  "location": {
+    "label": "Venir chez Angelina",
+    "title": "Découvrez nos adresses et nos salons de thé pour un moment hors du temps.",
+    "cta": { "label": "Toutes nos adresses", "href": "/menu" },
+    "video": {
+      "mp4": "",
+      "webm": "",
+      "poster": "/assets/angelina/location-tea-room-pan-poster.webp",
+      "alt": "Vue du salon de thé Angelina"
+    },
+    "address": {
+      "label": "Adresse Historique",
+      "value": "226 Rue de Rivoli, 75001 Paris, France",
+      "mapUrl": "https://www.google.com/maps/search/Angelina+Paris+226+Rue+de+Rivoli+75001+Paris",
+      "mapCta": "Voir sur la carte"
+    }
+  }
+}

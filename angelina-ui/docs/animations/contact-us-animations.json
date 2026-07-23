@@ -1,0 +1,99 @@
+{
+  "$doc": "Contact-us page animation spec — Webflow IX2 → GSAP conversion. Companion doc: contact-us-animations.md. Raw decoded IX2 source: webflow-ix2-contact-us.raw.json (22 events / distilled from the same site-wide registry as home/menu).",
+  "meta": {
+    "sourcePage": "localized-html/contact-us.html (Webflow page 69700209399c1d34b8f1162c)",
+    "engine": "Webflow IX2, shared registry with home/menu",
+    "sharedRecipes": "riseBlurFade (a-10/a-33/a-48), fade (a-46), slideInRight, ctaExplosionSettle (a-112) — all defined in home-animations.json / menu-animations.json, not redefined here.",
+    "differencesFromMenuCta": "This page's CTA has NO ambient orbit loop (no a-113/PAGE_START event found for this page in the registry) — the original genuinely only animates this closing section on some pages, not all. The GSAP conversion honors that: CtaCollage is called without withOrbit here, with it on /menu."
+  },
+  "sections": [
+    {
+      "section": "navbar",
+      "component": "src/components/shared/site-header-client.tsx",
+      "animations": [
+        {
+          "id": "contact-nav-scroll-recolor",
+          "name": "Navbar recolor on scroll",
+          "category": "scroll-scrub",
+          "webflow": { "events": ["e-1602"], "actionLists": ["a-114"], "raw": "Same PAGE_SCROLL continuous pattern as home/menu." },
+          "status": "implemented",
+          "implementation": "Shared across all routes via site-header-client.tsx."
+        }
+      ]
+    },
+    {
+      "section": "hero (contact form)",
+      "component": "src/features/contact/ui/contact-hero.tsx + contact-form-client.tsx",
+      "animations": [
+        {
+          "id": "contact-hero-reveals",
+          "name": "Heading / quick-contact / image / form rise-in",
+          "category": "scroll-reveal",
+          "webflow": {
+            "events": ["e-1605", "e-1615", "e-1617", "e-1619", "e-1621", "e-1642", "e-1644", "e-1646", "e-1648"],
+            "actionLists": ["a-48", "a-10", "a-33"],
+            "raw": "riseBlurFade on each block — heading, quick-contact links, the image+locations card, and the form panel each get their own trigger. Note: unlike home/menu, several of this page's triggers fire immediately since the hero sits at the very top of the page (SCROLL_INTO_VIEW at offset 0% is satisfied on load)."
+          },
+          "gsap": { "recipe": "riseBlurFade (home-animations.json)" },
+          "status": "implemented",
+          "implementation": "Reveal island wraps the whole hero; [data-reveal] on the heading block, the quick-contact column, the image+locations card, and the form panel — one shared stagger timeline."
+        },
+        {
+          "id": "contact-form-submit-states",
+          "name": "Form submit / loading / success feedback",
+          "category": "interactive",
+          "webflow": { "events": [], "actionLists": [], "raw": "Webflow's native form success/error swap (w-form-done / w-form-fail)." },
+          "gsap": { "note": "Not an animation in the original beyond the instant DOM swap; reimplemented as React state (idle/submitting/success/error) with a disabled+ellipsis submit button during the mock request." },
+          "status": "implemented",
+          "implementation": "contact-form-client.tsx useState status machine, mock contactAction (700ms) in src/lib/mock-actions.ts."
+        }
+      ]
+    },
+    {
+      "section": "info (before you visit)",
+      "component": "src/features/contact/ui/contact-info-section.tsx",
+      "animations": [
+        {
+          "id": "contact-info-text-reveals",
+          "name": "Label / heading / description / button / features rise-in",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-1623", "e-1625"], "actionLists": ["a-46"], "raw": "Fade wrap on the features grid and image column (see home-animations.json a-46)." },
+          "gsap": { "recipe": "riseBlurFade (home-animations.json)" },
+          "status": "implemented",
+          "implementation": "Reveal island — same pattern as home's brew-section and menu's now-shared feature-block layout, freshly authored for this page's copy (not a shared component; see contact-us-animations.md for why)."
+        },
+        {
+          "id": "contact-info-images-slide",
+          "name": "Two product shots slide in from the right",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-1748", "e-1750"], "actionLists": ["slideInRight"], "raw": "Identical to home's brew-section — content left, images slide in from the right (not slideInLeft like menu's guide)." },
+          "gsap": { "recipe": "slideInRight (home-animations.json)" },
+          "status": "implemented",
+          "implementation": "Reveal island [data-reveal-right] on both images."
+        }
+      ]
+    },
+    {
+      "section": "cta (closing invitation)",
+      "component": "src/features/contact/ui/contact-cta.tsx -> src/components/shared/cta-collage.tsx",
+      "animations": [
+        {
+          "id": "contact-cta-explosion-settle",
+          "name": "Image collage explodes in, settles, then exits (desktop scrub)",
+          "category": "scroll-scrub",
+          "webflow": { "events": ["e-1627"], "actionLists": ["a-112"], "raw": "Same recipe as menu's CTA — see menu-animations.json newRecipes.ctaExplosionSettle." },
+          "status": "implemented",
+          "implementation": "Shared CtaCollage component (extracted from the menu page during this migration, now used by both routes) — withOrbit omitted here to match this page's source, which has no a-113/PAGE_START event."
+        },
+        {
+          "id": "contact-cta-mobile-fallback",
+          "name": "Simplified reveal on small viewports",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-1628", "e-1630", "e-1632", "e-1634", "e-1636", "e-1638", "e-1640"], "actionLists": ["a-48", "a-33"], "raw": "Same small/tiny-breakpoint simplification as menu's CTA." },
+          "status": "implemented",
+          "implementation": "Shared CtaCollageClient's !isDesktop branch."
+        }
+      ]
+    }
+  ]
+}

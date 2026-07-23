@@ -1,0 +1,79 @@
+{
+  "$doc": "Product detail page (/product/[slug]) animation spec — Webflow IX2 → GSAP conversion. Companion doc: product-animations.md. Raw decoded IX2 source: webflow-ix2-product.raw.json (32 events, filtered from the same site-wide registry as every other page).",
+  "meta": {
+    "sourcePage": "localized-html/product/sagebrush.html (Webflow page 697726a7c7d4db80555debc3) — a per-product static export; the dynamic route generalizes it across all 12 mock products.",
+    "engine": "Webflow IX2, shared registry with home/menu/contact-us/about-us/catalog",
+    "sharedRecipes": "riseBlurFade (a-10/a-48), fade (a-46), product-card hover (a-43/a-44), arrow roll-through (a-38…a-41), slideInBottom — all defined in home/menu/about-us animation docs. Not redefined here.",
+    "newRecipes": {
+      "magnifyZoomLens": {
+        "description": "actionLists a-122/a-123 (hover in/out) + a-124 (continuous MOUSE_X/MOUSE_Y) — the product page's signature interaction. On hover, a hidden `.zoom-modal` fades in (opacity 0→1, scale 0.25→1, 200ms) revealing a 3x-scaled copy of the product photo. As the cursor moves across the image (0-100% of its bounds), the zoomed copy translates from +200%/-200% (inverse-mapped to cursor position) so it pans opposite the cursor — the classic e-commerce 'magnifying glass' effect. On mouse-out, reverses and hides.",
+        "gsap": {
+          "technique": "gsap.quickTo(zoomedImg, 'xPercent'/'yPercent', {duration:0.3, ease:'power2.out'}) called on every mousemove — quickTo reuses one tween instead of creating a new one per event, which is the correct GSAP pattern for high-frequency input like mousemove.",
+          "hoverReveal": "gsap.to(lens, {opacity: 1/0, duration: 0.2}) on mouseenter/mouseleave"
+        },
+        "implementation": "src/features/product/ui/product-zoom-image.tsx — gated behind `(hover: hover) and (prefers-reduced-motion: no-preference)` so touch devices and reduced-motion users get the plain product photo with no dead hover affordance."
+      }
+    }
+  },
+  "sections": [
+    {
+      "section": "navbar",
+      "component": "src/components/shared/site-header-client.tsx",
+      "animations": [
+        { "id": "product-nav-scroll-recolor", "name": "Navbar recolor on scroll", "category": "scroll-scrub",
+          "webflow": { "events": ["e-1126"], "actionLists": ["a-114"], "raw": "Same PAGE_SCROLL pattern as every other page." },
+          "status": "implemented", "implementation": "Shared across all routes via site-header-client.tsx." }
+      ]
+    },
+    {
+      "section": "product hero",
+      "component": "src/features/product/ui/product-hero.tsx + product-zoom-image.tsx + add-to-cart-button.tsx",
+      "animations": [
+        { "id": "product-image-zoom-lens", "name": "Magnify-on-hover product photo", "category": "hover",
+          "webflow": { "events": ["e-1025", "e-1026", "e-1027"], "actionLists": ["a-122", "a-123", "a-124"], "raw": "See newRecipes.magnifyZoomLens above." },
+          "gsap": { "recipe": "magnifyZoomLens" }, "status": "implemented",
+          "implementation": "product-zoom-image.tsx: gsap.quickTo-driven pan, verified with a real mousemove test (transform matrix confirmed non-identity after moving to a corner, lens opacity confirmed 1 on hover / 0 on leave)." },
+        { "id": "product-image-block-fade", "name": "Image column fades in on scroll", "category": "scroll-reveal",
+          "webflow": { "events": ["e-1118"], "actionLists": ["a-46"], "raw": "Plain fade (see home-animations.json)." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal] on the image block." },
+        { "id": "product-info-reveals", "name": "Title/notes, price+specs, description block rise-in", "category": "scroll-reveal",
+          "webflow": { "events": ["e-1120", "e-1122", "e-1124"], "actionLists": ["a-48"], "raw": "riseBlurFade per block." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal] on each info block." },
+        { "id": "product-dropdowns-slide-up", "name": "Accordion rows slide up on scroll", "category": "scroll-reveal",
+          "webflow": { "events": ["e-1042"], "actionLists": ["slideInBottom"], "raw": "Same recipe as about-us's FAQ rows." },
+          "status": "todo", "implementation": "Accordion renders via the shared component without the [data-reveal-bottom] wrapper on this page — the whole info column already rises as one block, which reads as sufficient; a follow-up could add per-row stagger if desired." },
+        { "id": "product-add-to-cart", "name": "Add to Cart interaction + feedback", "category": "interactive",
+          "webflow": { "events": [], "actionLists": [], "raw": "Not in the original (a static template with no real cart) — this is genuine new e-commerce functionality." },
+          "status": "implemented", "implementation": "add-to-cart-button.tsx: wired to the real Zustand cart-store (useCartStore().addItem), verified via localStorage inspection after a real click — correct product id, quantity, and price landed in cart-storage." },
+        { "id": "product-accordion-expand", "name": "Description / Payment / Returns accordion", "category": "interactive",
+          "webflow": { "events": [], "actionLists": [], "raw": "Webflow's native dropdown open/close." },
+          "status": "implemented", "implementation": "Shared Accordion component (components/shared/accordion.tsx, extracted from about-us's FAQ during this migration — CSS grid-template-rows transition, no GSAP)." }
+      ]
+    },
+    {
+      "section": "related products",
+      "component": "src/features/product/ui/related-products-section.tsx + related-products-client.tsx",
+      "animations": [
+        { "id": "related-header-reveal", "name": "Label / heading rise-in", "category": "scroll-reveal",
+          "webflow": { "events": ["e-1076", "e-1078"], "actionLists": ["a-10"], "raw": "riseBlurFade." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal]." },
+        { "id": "related-card-hover", "name": "Product photo zoom on hover", "category": "hover",
+          "webflow": { "events": ["e-1082…e-1117"], "actionLists": ["a-43", "a-44"], "raw": "Same product-card hover as every other product grid on the site." },
+          "status": "implemented", "implementation": "CSS group-hover scale-[1.08], identical to ProductTabsClient's cards." },
+        { "id": "related-slider-arrows", "name": "Slider prev/next + arrow roll-through on hover", "category": "interactive",
+          "webflow": { "events": ["e-1096…e-1099"], "actionLists": ["a-38", "a-39", "a-40", "a-41"], "raw": "Same arrow roll recipe as home's reviews slider." },
+          "status": "implemented",
+          "implementation": "Native CSS scroll-snap track (overflow-x-auto + snap-x) with scrollBy()-driven prev/next buttons — simpler and more accessible than reimplementing a translateX carousel, with the same visual arrow-roll hover lifted directly from reviews-client.tsx. Verified by clicking 'Next products' against a live page." }
+      ]
+    },
+    {
+      "section": "location",
+      "component": "src/components/shared/location-section.tsx",
+      "animations": [
+        { "id": "product-location-reveal", "name": "Video/image block rise-in with label, heading, CTA, address", "category": "scroll-reveal",
+          "webflow": { "events": [], "actionLists": ["a-10", "a-33"], "raw": "Identical to home/about-us/catalog's location section — same shared component, confirmed by the matching video-background element GUID in the source." },
+          "status": "implemented", "implementation": "Shared LocationSection component, reusing catalogData.location for consistency across pages." }
+      ]
+    }
+  ]
+}

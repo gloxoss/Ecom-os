@@ -1,0 +1,174 @@
+{
+  "$doc": "Menu page animation spec — Webflow IX2 → GSAP conversion. Companion doc: menu-animations.md. Raw decoded IX2 source: webflow-ix2-menu.raw.json (38 events / 10 action lists, filtered from the same site-wide registry used for home-animations.json — see that doc's recipe dictionary for shared moves).",
+  "meta": {
+    "sourcePage": "localized-html/menu.html (Webflow page 697329f54c0e4f6b31874f98)",
+    "engine": "Webflow IX2 (events + actionLists), shared registry with the home page",
+    "sharedRecipes": "riseBlurFade (a-48/a-33), curtainWipe (a-32), tab cascade (a-171), product hover (a-43/a-44), navbar recolor (a-23/a-25 pattern, here a-114) — see home-animations.json for full definitions. Not redefined here.",
+    "newRecipes": {
+      "splitLetterReveal": {
+        "description": "Hero title reveal — unlike home's whole-word hero timeline, menu's H1 is split into individual letter masks (each letter in an overflow-hidden mask, starting translateY(100%)) and rises into view letter-by-letter. Matches the site's custom GSAP SplitText module used for button-label rolls, applied here to a heading instead.",
+        "gsap": {
+          "set": { "yPercent": 100 },
+          "to": { "yPercent": 0, "duration": 1.2, "stagger": 0.04, "ease": "power4.out" }
+        }
+      },
+      "slideInLeft": {
+        "description": "Mirror of home's slideInRight (see home-animations.json). Guide section images enter from the left instead of the right — the two sections face opposite directions in the original layout.",
+        "gsap": {
+          "set": { "x": -100, "opacity": 0 },
+          "to": { "x": 0, "opacity": 1, "duration": 1, "ease": "power3.out", "stagger": 0.12 }
+        }
+      },
+      "ctaExplosionSettle": {
+        "description": "actionList a-112 — the CTA section's signature move. A continuous SCROLL_PROGRESS interaction across the pinned section's full scroll range (0-100%): the center title holds at scale 1.2 through 15%, then eases to scale 1 by 25%; the 8-image collage is invisible and scattered until 20%, fades in by 26% already in a wide 'burst' spread, then drifts inward to a tight 'settled' arrangement by 70%, then the whole collage exits upward (yPercent -100) by 80%.",
+        "gsap": {
+          "note": "Implemented as one scrubbed timeline (scrub:1) spanning the pinned wrapper's top-top to bottom-bottom. Per-image burst/settled xPercent/yPercent pairs are decoded 1:1 from the source (values are already percentage-of-self, directly portable to GSAP xPercent/yPercent).",
+          "timelinePositions": { "titleScaleDown": 0.15, "imagesFadeIn": 0.2, "imagesSettle": 0.26, "collageExit": 0.7 }
+        }
+      },
+      "ambientOrbit": {
+        "description": "actionList a-113 — fires on PAGE_START (not scroll), loops forever. The image collage wrapper rotates a full 360deg over 25s while each image counter-rotates -360deg over the same duration, so individual images stay upright while their positions slowly orbit the collage center. A pure ambient/idle touch, independent of scroll.",
+        "gsap": {
+          "wrapper": { "rotation": 360, "duration": 25, "ease": "none", "repeat": -1 },
+          "images": { "rotation": -360, "duration": 25, "ease": "none", "repeat": -1 }
+        }
+      }
+    },
+    "responsiveNote": "On small/tiny breakpoints the original swaps a-112's scrub choreography for plain discrete a-48 rise-blur-fade reveals on the title and 3 of the 8 images (not all 8) — the elaborate percentage-based collage math is intentionally dropped on narrow viewports. The GSAP conversion mirrors this with an isDesktop matchMedia branch."
+  },
+  "sections": [
+    {
+      "section": "navbar",
+      "component": "src/components/shared/site-header-client.tsx",
+      "animations": [
+        {
+          "id": "menu-nav-scroll-recolor",
+          "name": "Navbar recolor on scroll",
+          "category": "scroll-scrub",
+          "webflow": { "events": ["e-984"], "actionLists": ["a-114"], "raw": "Same PAGE_SCROLL continuous pattern as home's a-23/a-25, scoped to the menu page." },
+          "gsap": { "note": "Same implementation as home — one global scroll listener in site-header-client.tsx, not page-specific." },
+          "status": "implemented",
+          "implementation": "Shared across all routes via site-header-client.tsx."
+        }
+      ]
+    },
+    {
+      "section": "hero",
+      "component": "src/features/menu/ui/menu-hero.tsx + menu-hero-client.tsx",
+      "animations": [
+        {
+          "id": "menu-hero-title-letters",
+          "name": "Hero title letter-mask reveal (loading)",
+          "category": "loading",
+          "webflow": {
+            "events": ["custom GSAP SplitText module, not IX2"],
+            "actionLists": [],
+            "raw": "Title characters wrapped in overflow-hidden masks, each starting translateY(100%); on load they rise into view letter-by-letter."
+          },
+          "gsap": { "recipe": "splitLetterReveal" },
+          "status": "implemented",
+          "implementation": "menu-hero.tsx SplitText helper + menu-hero-client.tsx timeline: .gsap_split_letter yPercent 100→0, stagger 0.04, 1.2s power4.out."
+        },
+        {
+          "id": "menu-hero-description",
+          "name": "Hero description fade-up (loading)",
+          "category": "loading",
+          "webflow": { "events": ["e-985"], "actionLists": ["a-48"], "raw": "riseBlurFade — see home-animations.json for the recipe." },
+          "gsap": { "recipe": "riseBlurFade (home-animations.json)", "variant": "a-48" },
+          "status": "implemented",
+          "implementation": "menu-hero-client.tsx: [data-animate='hero-desc'] y→0, opacity→1, blur→0, 1s power3.out, overlapping the letter reveal by -0.8s."
+        }
+      ]
+    },
+    {
+      "section": "catalog",
+      "component": "src/features/menu/ui/menu-catalog.tsx + src/components/shared/product-tabs-client.tsx",
+      "animations": [
+        {
+          "id": "menu-tabs-cascade",
+          "name": "Category tab words cascade in",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-987", "e-1740"], "actionLists": ["a-48", "a-171"], "raw": "Same tab-word cascade as home's collection (a-171), reused verbatim for menu's 7 categories." },
+          "gsap": { "recipe": "riseBlurFade + word cascade (home-animations.json, a-171)" },
+          "status": "implemented",
+          "implementation": "Shared ProductTabsClient (size='md') — identical GSAP timeline to home's collection tabs, just smaller type scale."
+        },
+        {
+          "id": "menu-product-hover",
+          "name": "Product photo zoom on hover",
+          "category": "hover",
+          "webflow": { "events": ["e-849…e-862"], "actionLists": ["a-43", "a-44"], "raw": "Same product-card hover as home (photo scale 1.08, name dim to 0.7)." },
+          "gsap": { "recipe": "CSS group-hover (home-animations.json)" },
+          "status": "implemented",
+          "implementation": "Shared ProductTabsClient — identical card markup/hover to home's collection."
+        }
+      ]
+    },
+    {
+      "section": "guide (tasting guide)",
+      "component": "src/features/menu/ui/menu-guide.tsx",
+      "animations": [
+        {
+          "id": "menu-guide-text-reveals",
+          "name": "Subtitle / title / features / button rise-in",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-943", "e-945", "e-947", "e-949", "e-951", "e-953", "e-965", "e-967"], "actionLists": ["a-48", "a-33"], "raw": "riseBlurFade per element (see home-animations.json)." },
+          "gsap": { "recipe": "riseBlurFade (home-animations.json)" },
+          "status": "implemented",
+          "implementation": "Reveal island [data-reveal], one shared timeline for subtitle/title/button/4 feature blocks."
+        },
+        {
+          "id": "menu-guide-images-slide",
+          "name": "Signature shots slide in from the left",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-1744", "e-1746"], "actionLists": ["slideInLeft"], "raw": "Mirror of home's slideInRight — see newRecipes.slideInLeft above." },
+          "gsap": { "recipe": "slideInLeft" },
+          "status": "implemented",
+          "implementation": "Reveal island [data-reveal-left] on the two overlapping product images."
+        },
+        {
+          "id": "menu-guide-column-fade",
+          "name": "Image column fade wrap",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-921"], "actionLists": ["a-46"], "raw": "Plain opacity fade wrapping the image column (see home-animations.json)." },
+          "gsap": { "note": "Superseded — the slideInLeft reveal on the images themselves already achieves the entrance; a redundant outer fade was not added to avoid double-animating the same pixels." },
+          "status": "implemented",
+          "implementation": "Covered by menu-guide-images-slide."
+        }
+      ]
+    },
+    {
+      "section": "cta (closing invitation)",
+      "component": "src/features/menu/ui/menu-cta.tsx + menu-cta-client.tsx",
+      "animations": [
+        {
+          "id": "menu-cta-explosion-settle",
+          "name": "Image collage explodes in, settles, then exits (desktop scrub)",
+          "category": "scroll-scrub",
+          "webflow": { "events": ["e-969"], "actionLists": ["a-112"], "raw": "See newRecipes.ctaExplosionSettle above." },
+          "gsap": { "recipe": "ctaExplosionSettle" },
+          "status": "implemented",
+          "implementation": "menu-cta-client.tsx: scrubbed timeline (scrub:1) on the 200vh wrapper; per-image burst→settled xPercent/yPercent at timeline positions 0.26→0.7, title scale 1.2→1 at 0.15, collage fade-in at 0.2, exit at 0.7-0.8. isDesktop only."
+        },
+        {
+          "id": "menu-cta-ambient-orbit",
+          "name": "Idle orbit loop",
+          "category": "loading",
+          "webflow": { "events": ["e-970 (PAGE_START)"], "actionLists": ["a-113"], "raw": "See newRecipes.ambientOrbit above." },
+          "gsap": { "recipe": "ambientOrbit" },
+          "status": "implemented",
+          "implementation": "menu-cta-client.tsx: two infinite gsap.to loops (wrapper +360°, images -360°, both 25s ease:none), isDesktop + no-reduced-motion only."
+        },
+        {
+          "id": "menu-cta-mobile-fallback",
+          "name": "Simplified reveal on small viewports",
+          "category": "scroll-reveal",
+          "webflow": { "events": ["e-972", "e-974", "e-976", "e-978", "e-980", "e-982"], "actionLists": ["a-33", "a-48"], "raw": "On small/tiny breakpoints only, 3 of 8 images and the text block get plain riseBlurFade reveals instead of the scrub choreography." },
+          "gsap": { "recipe": "riseBlurFade (home-animations.json), applied to all 8 images for simplicity" },
+          "status": "implemented",
+          "implementation": "menu-cta-client.tsx !isDesktop branch: title + all images rise-blur-fade together, stagger 0.1, once on scroll-into-view."
+        }
+      ]
+    }
+  ]
+}

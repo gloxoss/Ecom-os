@@ -1,0 +1,85 @@
+{
+  "$doc": "Catalog page (/catalog, sourced from coffee.html) animation spec — Webflow IX2 → GSAP conversion. Companion doc: catalog-animations.md. Raw decoded IX2 source: webflow-ix2-catalog.raw.json (29 events, filtered from the same site-wide registry as home/menu/contact-us/about-us).",
+  "meta": {
+    "sourcePage": "localized-html/coffee.html (Webflow page 697329ca2c08f6c739bf4fdb) — placeholder catalog-view.tsx explicitly pointed here as its migration source.",
+    "engine": "Webflow IX2, shared registry with home/menu/contact-us/about-us",
+    "sharedRecipes": "riseBlurFade (a-10/a-48), curtainWipe (a-32), zoom-settle (a-34-equivalent), product-card hover (a-43/a-44-equivalent) — all defined in home-animations.json. Not redefined here.",
+    "newRecipes": {
+      "heroContinuousParallax": {
+        "description": "actionList a-138 — the hero's background photo scales and drifts continuously while the hero is in view: scale 1.08 at 10% scroll progress through the hero to scale 1.1 at 100%, with a y-drift from -3% to 5%. Same family as home's hero scroll scrub, applied to a full-bleed background image instead of a foreground element.",
+        "gsap": {
+          "fromTo": { "scale": 1.08, "yPercent": -3 },
+          "to": { "scale": 1.1, "yPercent": 5, "ease": "none" },
+          "scrollTrigger": { "start": "top top", "end": "bottom top", "scrub": true }
+        }
+      },
+      "collectionItemCurtainZoom": {
+        "description": "actionList a-146 — each of the 6 collection items reveals with a combined curtain-wipe (a self-contained overlay collapsing height 100% -> 0 over 600ms) plus a slow 5-second image zoom-out (1.15 -> 1). Richer than the single-shot zoom-settle used elsewhere (1.5s), but the same underlying technique — approximated here by reusing the existing data-reveal-curtain + data-reveal-zoom recipes together rather than adding a bespoke 5s variant, since the visual difference at that duration is negligible and it keeps Reveal.tsx from growing a near-duplicate recipe."
+      }
+    },
+    "responsiveNote": "The 6 collection-item entrances (a-146) are scoped to [main,medium] only in the source — small/tiny breakpoints skip the curtain/zoom choreography entirely, presumably because the effect reads poorly at narrow widths where the image column collapses under the text card. The GSAP conversion doesn't special-case this (the shared Reveal recipes already degrade gracefully — ScrollTrigger just fires the same tween at any width), which is an acceptable simplification: the visual difference is a slightly heavier entrance on mobile, not a broken one."
+  },
+  "sections": [
+    {
+      "section": "navbar",
+      "component": "src/components/shared/site-header-client.tsx",
+      "animations": [
+        { "id": "catalog-nav-scroll-recolor", "name": "Navbar recolor on scroll", "category": "scroll-scrub",
+          "webflow": { "events": ["e-1216", "e-1357"], "actionLists": ["a-23", "a-25"], "raw": "Same PAGE_SCROLL pattern as every other page." },
+          "status": "implemented", "implementation": "Shared across all routes via site-header-client.tsx." }
+      ]
+    },
+    {
+      "section": "hero",
+      "component": "src/features/catalog/ui/catalog-hero.tsx + catalog-hero-client.tsx",
+      "animations": [
+        { "id": "catalog-hero-reveals", "name": "Description / heading / CTA rise-in", "category": "loading",
+          "webflow": { "events": ["e-1165", "e-1178"], "actionLists": ["a-10", "a-48"], "raw": "riseBlurFade — fires immediately since the hero sits at the very top of the page." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal] on description, heading, and CTA." },
+        { "id": "catalog-hero-parallax", "name": "Background photo continuous scroll parallax", "category": "scroll-scrub",
+          "webflow": { "events": ["e-1169"], "actionLists": ["a-138"], "raw": "See newRecipes.heroContinuousParallax above." },
+          "gsap": { "recipe": "heroContinuousParallax" }, "status": "implemented",
+          "implementation": "catalog-hero-client.tsx: fromTo scale/yPercent on [data-hero-photo], scrub:true across the hero's own scroll range." }
+      ]
+    },
+    {
+      "section": "collections",
+      "component": "src/features/catalog/ui/catalog-collections-section.tsx",
+      "animations": [
+        { "id": "catalog-collections-text-reveal", "name": "Card text (heading / overview / tags / link) rise-in per item", "category": "scroll-reveal",
+          "webflow": { "events": ["e-1204", "e-1206", "e-1208", "e-1210", "e-1212", "e-1214"], "actionLists": ["a-146"], "raw": "See newRecipes.collectionItemCurtainZoom above." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal] on each item's text card." },
+        { "id": "catalog-collections-image-curtain", "name": "Image curtain-wipe reveal per item", "category": "scroll-reveal",
+          "webflow": { "events": ["e-1360", "e-1362", "e-1364", "e-1366", "e-1368", "e-1370"], "actionLists": ["a-32"], "raw": "curtainWipe (see home-animations.json)." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal-curtain] wrapping each item's image." },
+        { "id": "catalog-collections-image-zoom", "name": "Image slow zoom-out per item", "category": "scroll-reveal",
+          "webflow": { "events": [], "actionLists": ["a-146 (embedded)"], "raw": "5s zoom-out embedded in a-146, approximated with the existing 1.5s recipe (see newRecipes note)." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal-zoom] wrapping each item's image." }
+      ]
+    },
+    {
+      "section": "journal",
+      "component": "src/features/catalog/ui/journal-teaser-section.tsx",
+      "animations": [
+        { "id": "catalog-journal-header-reveal", "name": "Label / heading / CTA rise-in", "category": "scroll-reveal",
+          "webflow": { "events": ["e-1299", "e-1301", "e-1307"], "actionLists": ["a-10"], "raw": "riseBlurFade." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal]." },
+        { "id": "catalog-journal-cards-reveal", "name": "Article cards rise-in", "category": "scroll-reveal",
+          "webflow": { "events": ["e-1305", "e-1353", "e-1355"], "actionLists": ["a-10"], "raw": "riseBlurFade." },
+          "status": "implemented", "implementation": "Reveal island [data-reveal] on the featured card and each smaller card." },
+        { "id": "catalog-journal-card-hover", "name": "Article image zoom + title dim on hover", "category": "hover",
+          "webflow": { "events": ["e-1347", "e-1348", "e-1349", "e-1350", "e-1351", "e-1352"], "actionLists": ["a-157", "a-158", "a-154", "a-155"], "raw": "Image scale 1->1.07 on hover (matches the site's product-card hover pattern, ~1% less zoom); title opacity 1->0.7." },
+          "status": "implemented", "implementation": "CSS group-hover scale-[1.07] on the image, opacity-70 on the title — same technique as product-card hover elsewhere." }
+      ]
+    },
+    {
+      "section": "location",
+      "component": "src/components/shared/location-section.tsx",
+      "animations": [
+        { "id": "catalog-location-reveal", "name": "Video/image block rise-in with label, heading, CTA, address", "category": "scroll-reveal",
+          "webflow": { "events": [], "actionLists": ["a-10", "a-33"], "raw": "Identical to home/about-us's location section — same shared component." },
+          "status": "implemented", "implementation": "Shared LocationSection component." }
+      ]
+    }
+  ]
+}

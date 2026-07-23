@@ -1,4 +1,4 @@
-# Dependencies
+﻿# Dependencies
 node_modules/
 .pnpm-store/
 
@@ -40,3 +40,26 @@ test-results/
 # Secrets scanner / misc local
 *.pem
 .cache/
+
+# Python Virtual Envs & Caches
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+env/
+
+# PHP Composer & Cache
+vendor/
+**/vendor/
+composer.lock
+
+# Large Binary Exclusions (Detected during onboarding)
+angelina-ui/.next/dev/cache/turbopack/v16.2.10/00004792.sst
+angelina-ui/.next/dev/cache/turbopack/v16.2.10/00004793.sst
+angelina-ui/node_modules/@next/swc-win32-x64-msvc/next-swc.win32-x64-msvc.node
+apps/storefront/.next/dev/cache/turbopack/f37fad94/00001494.sst
+apps/storefront/.next/dev/cache/turbopack/f37fad94/00001496.sst
+node_modules/.pnpm/@next+swc-win32-x64-msvc@16.2.10/node_modules/@next/swc-win32-x64-msvc/next-swc.win32-x64-msvc.node
+node_modules/.pnpm/@next+swc-win32-x64-msvc@16.2.9/node_modules/@next/swc-win32-x64-msvc/next-swc.win32-x64-msvc.node

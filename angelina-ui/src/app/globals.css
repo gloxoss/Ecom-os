@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  /* Angelina Paris Theme - HSL approximations for shadcn compat */
+  --background: 0 0% 100%; /* #ffffff */
+  --foreground: 7 73% 14%; /* #3f100a */
+  --card: 37 52% 55%; /* #c69951 */
+  --card-foreground: 0 0% 100%; /* #ffffff */
+  --popover: 0 0% 100%; /* #ffffff */
+  --popover-foreground: 7 73% 14%; /* #3f100a */
+  --primary: 30 73% 38%; /* #aa631a */
+  --primary-foreground: 0 0% 100%; /* #ffffff */
+  --secondary: 37 52% 55%; /* #c69951 */
+  --secondary-foreground: 0 0% 100%; /* #ffffff */
+  --muted: 15 45% 72%; /* #d9a594 */
+  --muted-foreground: 7 73% 14%; /* #3f100a */
+  --accent: 14 100% 87%; /* #ffcebf */
+  --accent-foreground: 20 35% 13%; /* #2e1e16 */
+  --destructive: 0 84.2% 60.2%; 
+  --destructive-foreground: 0 0% 98%;
+  --border: 14 100% 97%; /* #fff5f2 */
+  --input: 14 100% 97%; /* #fff5f2 */
+  --ring: 30 73% 38%; /* #aa631a */
+  --radius: 1rem; /* Base radius highly rounded */
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-pill: 100px;
+  
+  /* Angelina Custom Named Tokens */
+  --color-cafe: #aa631a;
+  --color-gold: #c69951;
+  --color-warm-brown: #3f100a;
+  --color-old-peach: #d9a594;
+  --color-dark-brown: #2e1e16;
+  --color-vieux-rose: #ffcebf;
+  --color-soft-peach: #fff5f2;
+
+  /* Typography — original app fonts, loaded via next/font/local in layout.tsx */
+  --font-heading: var(--font-sentient), "Palatino Linotype", serif;
+  --font-body: var(--font-inter-tight), Arial, sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: var(--font-heading);
+  }
+}

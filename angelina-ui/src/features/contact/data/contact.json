@@ -1,0 +1,72 @@
+{
+  "hero": {
+    "title": "Let's start a conversation",
+    "description": "Need help choosing a gift box, tracking an order, or planning a visit to the Maison? We're here to help.",
+    "email": "bonjour@angelina-paris.example",
+    "phone": "+33 1 42 60 82 00",
+    "image": {
+      "url": "/assets/angelina/video-piping-mont-blanc-first-frame.webp",
+      "alt": "Pastry chef piping chestnut cream in the Maison kitchen"
+    },
+    "locationsLabel": "Our salons",
+    "locations": [
+      "226 Rue de Rivoli, 75001 Paris",
+      "18 Avenue des Champs-Élysées, 75008 Paris",
+      "12 Rue Vieille du Temple, 75004 Paris"
+    ],
+    "form": {
+      "fields": {
+        "firstName": "First name",
+        "lastName": "Last name",
+        "email": "Email",
+        "phone": "Phone",
+        "message": "Your message"
+      },
+      "placeholders": {
+        "firstName": "Camille",
+        "lastName": "Laurent",
+        "email": "you@example.com",
+        "phone": "+33 6 12 34 56 78",
+        "message": "Tell us how we can help"
+      },
+      "submit": "Send message",
+      "success": "Thank you — we'll be in touch shortly.",
+      "error": "Something went wrong. Please try again."
+    }
+  },
+  "info": {
+    "label": "Before you visit",
+    "title": "A quiet ritual of hot chocolate, pastry, and considered gifting.",
+    "description": "Every signature is prepared fresh in-house — if you're choosing between the classics or planning a larger order, our team is glad to guide you.",
+    "cta": { "label": "Explore the menu", "href": "/menu" },
+    "features": [
+      {
+        "title": "Considered gifting",
+        "text": "From single macarons to full patisserie boxes, we help you choose a gift that feels complete."
+      },
+      {
+        "title": "Easy to reach",
+        "text": "Reply within one business day for questions on orders, allergens, or private events."
+      }
+    ],
+    "images": [
+      { "src": "/assets/angelina/product-hot-chocolate-mix.webp", "alt": "Tin of Maison hot chocolate mix" },
+      { "src": "/assets/angelina/product-mont-blanc.webp", "alt": "Signature Mont-Blanc pastry" }
+    ]
+  },
+  "cta": {
+    "subtitle": "Ready to visit Angelina",
+    "title": "Explore our full collection of pastries, hot chocolate, and giftable sweets.",
+    "button": { "text": "Find your favorite", "href": "/menu" },
+    "images": [
+      { "url": "/assets/angelina/product-oolong-tea-lifestyle.webp", "alt": "Oolong tea served in the salon" },
+      { "url": "/assets/angelina/product-mini-giandujas-lifestyle.webp", "alt": "Mini giandujas arranged on a plate" },
+      { "url": "/assets/angelina/product-crispy-crepes-lifestyle.webp", "alt": "Crispy crepes plated for breakfast" },
+      { "url": "/assets/angelina/product-chestnut-toast-lifestyle.webp", "alt": "Chestnut spread on toasted brioche" },
+      { "url": "/assets/angelina/product-breakfast-salon-lifestyle.webp", "alt": "Breakfast pastries in the salon" },
+      { "url": "/assets/angelina/product-macaron-box.webp", "alt": "Box of assorted macarons" },
+      { "url": "/assets/angelina/quote-maison-still-life.webp", "alt": "Porcelain cup and rose on a marble table" },
+      { "url": "/assets/angelina/signature-hot-chocolate-pour.webp", "alt": "Hot chocolate being poured into a cup" }
+    ]
+  }
+}

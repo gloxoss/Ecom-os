@@ -1,0 +1,153 @@
+{
+  "hero": {
+    "title": "Where fine pastry becomes a Parisian ritual",
+    "locationLabel": "Based in Paris, France",
+    "description": "Great pastry begins with exceptional, carefully sourced ingredients. We select, craft, and finish each signature to carry authentic flavor and distinctive character in every bite.",
+    "cta": { "label": "Explore the menu", "href": "/menu" },
+    "image": {
+      "url": "/assets/angelina/story-salon-interior-pan-poster.webp",
+      "alt": "Elegant Belle Epoque salon interior with marble tables and warm light"
+    }
+  },
+  "story": {
+    "label": "Our story",
+    "title": "Our story begins with a small salon and a simple belief in doing few things beautifully",
+    "images": [
+      { "url": "/assets/beano/aHR0cHM6_69b08135b86c7483c2d9d103_93516 1.webp", "alt": "Two Maison staff members in aprons preparing pastries" },
+      { "url": "/assets/beano/aHR0cHM6_69b0828298050c480bdd1d8e_139506 1.webp", "alt": "Pâtissier standing in front of shelves of ingredients" }
+    ],
+    "paragraphs": {
+      "intro": "From the beginning, we believed a pastry should be more than a treat. It should be a moment to pause, connect, and appreciate something made with intention.",
+      "outro": "Today, that same care still guides everything we do. Every batch carries the spirit of curiosity, craftsmanship, and quiet respect for the journey each pastry takes before it reaches your table."
+    },
+    "cta": { "label": "Explore the menu", "href": "/menu" }
+  },
+  "journey": {
+    "label": "Our journey",
+    "title": "From ingredient to plate:",
+    "titleAccent": "the journey of every signature",
+    "description": "From the moment our chestnuts and cocoa arrive, we focus on preserving freshness, quality, and the rich story behind every origin.",
+    "image": {
+      "url": "/assets/angelina/video-piping-mont-blanc-first-frame.webp",
+      "alt": "Pastry chef piping chestnut cream onto a Mont-Blanc"
+    },
+    "features": [
+      { "title": "Trusted origins", "text": "Chestnuts and cocoa sourced from growers we know by name." },
+      { "title": "Careful selection", "text": "Only the finest harvests make it into our kitchen." },
+      { "title": "Skilled hands", "text": "Every signature is shaped by pastry chefs, never a machine." },
+      { "title": "Pure flavor", "text": "Handled gently to preserve the natural character of each ingredient." }
+    ]
+  },
+  "collection": {
+    "label": "Our patisserie collection",
+    "title": "Carefully crafted signatures designed to satisfy every taste.",
+    "description": "Whether you prefer a rich morning pastry or a delicate afternoon treat, our collection is crafted to deliver a consistently exquisite experience.",
+    "cta": { "label": "Best seller", "href": "/product" },
+    "tabs": [
+      {
+        "id": "patisseries",
+        "label": "Pâtisseries",
+        "title": "Signature Pâtisseries",
+        "description": "Buttery, delicate, and finished by hand — our pastry case changes with the season.",
+        "image": { "url": "/assets/angelina/product-mont-blanc-lifestyle.webp", "alt": "Mont-Blanc pastry plated in the salon" }
+      },
+      {
+        "id": "epicerie-fine",
+        "label": "Épicerie Fine",
+        "title": "Épicerie Fine Essentials",
+        "description": "Jars and tins made for the everyday ritual — chestnut spread, hot chocolate mix, and more.",
+        "image": { "url": "/assets/angelina/product-chestnut-toast-lifestyle.webp", "alt": "Chestnut spread on toasted brioche" }
+      },
+      {
+        "id": "macarons",
+        "label": "Macarons",
+        "title": "Classic Macarons",
+        "description": "Crisp shells, soft centers, and flavors that range from timeless to seasonal.",
+        "image": { "url": "/assets/angelina/product-macaron-roses-lifestyle.webp", "alt": "Macarons arranged with roses" }
+      },
+      {
+        "id": "thes",
+        "label": "Thés",
+        "title": "Fine Loose-Leaf Teas",
+        "description": "A curated tea list to pair with any signature, served the traditional way.",
+        "image": { "url": "/assets/angelina/product-tea-service-lifestyle.webp", "alt": "Tea service set on a salon table" }
+      },
+      {
+        "id": "chocolats",
+        "label": "Chocolats",
+        "title": "Maison Chocolats",
+        "description": "Pralines and ganaches finished in-house, boxed for gifting or savoring slowly.",
+        "image": { "url": "/assets/angelina/product-chocolate-box-lifestyle.webp", "alt": "Open box of assorted chocolates" }
+      },
+      {
+        "id": "cadeaux",
+        "label": "Cadeaux",
+        "title": "Gift Boxes",
+        "description": "A considered gift for any occasion, wrapped in the Maison's signature ribbon.",
+        "image": { "url": "/assets/angelina/product-caramels-gift-lifestyle.webp", "alt": "Gift box of caramels tied with ribbon" }
+      }
+    ]
+  },
+  "team": {
+    "label": "Maison experts",
+    "title": "Passionate, skilled, and dedicated pastry professionals crafting every signature, every day.",
+    "members": [
+      { "name": "Élise Fontaine", "role": "Head Pâtissier", "image": { "url": "/assets/beano/aHR0cHM6_69b155f4a3578469543023a7_Team Photo.jpg", "alt": "Élise Fontaine, Head Pâtissier" } },
+      { "name": "Julien Moreau", "role": "Chocolatier", "image": { "url": "/assets/beano/aHR0cHM6_69b159788f8979e8666b7863_Team Photo.jpg", "alt": "Julien Moreau, Chocolatier" } },
+      { "name": "Camille Rousseau", "role": "Maison Host", "image": { "url": "/assets/beano/aHR0cHM6_69b159cabff731fadf04da88_Team Photo.jpg", "alt": "Camille Rousseau, Maison Host" } },
+      { "name": "Thomas Girard", "role": "Tea Sommelier", "image": { "url": "/assets/beano/aHR0cHM6_69b159f4edca68564e4242a0_Team Photo..jpg", "alt": "Thomas Girard, Tea Sommelier" } }
+    ]
+  },
+  "faq": {
+    "description": "Clear answers to help you plan your visit or your next order.",
+    "viewAll": { "label": "View all questions", "href": "/contact-us" },
+    "image": {
+      "url": "/assets/angelina/process-piping-mont-blanc.webp",
+      "alt": "Pastry chef piping chestnut cream in the Maison kitchen"
+    },
+    "title": "Everything you need to know about the Maison",
+    "items": [
+      {
+        "question": "Do you offer gluten-free or nut-free options?",
+        "answer": "Several signatures are prepared without gluten or nuts. Ask our team in salon or mention it in your order notes and we'll guide you."
+      },
+      {
+        "question": "How should I store my pastries at home?",
+        "answer": "Most pastries are best enjoyed the day of purchase, kept cool and away from direct sunlight. Chocolates and gift boxes keep for up to two weeks in a cool, dry place."
+      },
+      {
+        "question": "Can I order a gift box for delivery?",
+        "answer": "Yes — gift boxes can be ordered online or in salon and shipped for special occasions. Delivery windows vary by region."
+      },
+      {
+        "question": "Do you cater private events?",
+        "answer": "We do. From small gatherings to full patisserie tables, our team can build a menu around your event — reach out through the contact page."
+      },
+      {
+        "question": "What's the best way to enjoy the hot chocolate?",
+        "answer": "Slowly, and ideally paired with a Mont-Blanc. It's served rich and thick, in the traditional Parisian style."
+      },
+      {
+        "question": "What's the difference between the classic and seasonal collections?",
+        "answer": "Classics are always on the menu; seasonal signatures rotate a few times a year around fresh, in-season ingredients."
+      }
+    ]
+  },
+  "location": {
+    "label": "Visit the Maison",
+    "title": "Step into the salon for hot chocolate, pastry, and a Paris moment made to linger.",
+    "cta": { "label": "Explore the menu", "href": "/menu" },
+    "video": {
+      "mp4": "",
+      "webm": "",
+      "poster": "/assets/angelina/location-tea-room-pan-poster.webp",
+      "alt": "Wide view of an elegant Paris patisserie tea room"
+    },
+    "address": {
+      "label": "Our flagship salon",
+      "value": "226 Rue de Rivoli, 75001 Paris, France",
+      "mapUrl": "https://www.google.com/maps/search/Angelina+Paris+226+Rue+de+Rivoli+75001+Paris",
+      "mapCta": "View in map"
+    }
+  }
+}

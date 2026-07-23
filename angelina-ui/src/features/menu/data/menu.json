@@ -1,0 +1,64 @@
+{
+  "hero": {
+    "title": "Explore our full Maison menu",
+    "description": "From signature hot chocolate and delicate Mont-Blanc to fine teas, chocolates, and giftable sweets. Discover the pairing and pace that suits your visit.",
+    "backgroundImage": {
+      "url": "/assets/angelina/hero-mont-blanc-hot-chocolate.webp",
+      "alt": "Mont-Blanc pastry served beside a cup of hot chocolate"
+    }
+  },
+  "guide": {
+    "subtitle": "Our tasting guide",
+    "title": "Explore signatures that fit your taste and moment",
+    "images": [
+      {
+        "url": "/assets/angelina/signature-hot-chocolate-pour.webp",
+        "alt": "Hot chocolate being poured into a porcelain cup"
+      },
+      {
+        "url": "/assets/angelina/signature-mont-blanc-closeup.webp",
+        "alt": "Close-up of a Mont-Blanc pastry with piped chestnut cream"
+      }
+    ],
+    "features": [
+      {
+        "title": "Texture & Craft",
+        "description": "From velvety hot chocolate to fine chestnut strands, each signature is shaped to feel generous and precise."
+      },
+      {
+        "title": "Tasting Method",
+        "description": "Some signatures are sipped slowly, others savored in a single bite — pace shapes the pleasure as much as flavor."
+      },
+      {
+        "title": "Flavor Profile",
+        "description": "Cocoa, chestnut, praline, and citrus each bring a distinct character across the collection."
+      },
+      {
+        "title": "Freshness & Gifting",
+        "description": "Everything is prepared fresh daily; gift boxes are best enjoyed within a few days of opening."
+      }
+    ],
+    "button": {
+      "text": "Choose your favorite",
+      "href": "/contact-us"
+    }
+  },
+  "cta": {
+    "subtitle": "Your Angelina moment awaits",
+    "title": "Discover the full range of pastries, hot chocolate, and giftable sweets waiting at the Maison.",
+    "button": {
+      "text": "Shop the collection",
+      "href": "/catalog"
+    },
+    "images": [
+      { "url": "/assets/angelina/product-hot-chocolate-cup-lifestyle.webp", "alt": "Cup of hot chocolate on a marble salon table" },
+      { "url": "/assets/angelina/product-mont-blanc-lifestyle.webp", "alt": "Mont-Blanc pastry plated in the salon" },
+      { "url": "/assets/angelina/product-macaron-roses-lifestyle.webp", "alt": "Macarons arranged with roses" },
+      { "url": "/assets/angelina/product-chocolate-box-lifestyle.webp", "alt": "Open box of assorted chocolates" },
+      { "url": "/assets/angelina/product-caramels-gift-lifestyle.webp", "alt": "Gift box of caramels tied with ribbon" },
+      { "url": "/assets/angelina/product-tea-service-lifestyle.webp", "alt": "Tea service set on a salon table" },
+      { "url": "/assets/angelina/product-crispy-crepes-lifestyle.webp", "alt": "Crispy crepes plated for breakfast" },
+      { "url": "/assets/angelina/product-praline-box-lifestyle.webp", "alt": "Box of pralines with gold detailing" }
+    ]
+  }
+}

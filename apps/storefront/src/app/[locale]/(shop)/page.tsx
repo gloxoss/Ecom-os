@@ -1,23 +1,30 @@
-import { HeroSection } from '@/features/landing/ui/hero-section';
-import { ProductGrid } from '@/features/catalog/ui/product-grid';
 import { getEngine } from '@/lib/engine';
-import { getTranslations } from 'next-intl/server';
-
-export const revalidate = 60;
+import { HeroSection } from '@/features/landing/ui/hero-section';
+import { CollectionSection } from '@/features/landing/ui/collection-section';
+import { FeatureBlocksSection } from '@/features/landing/ui/feature-blocks-section';
+import { StorySection } from '@/features/landing/ui/story-section';
+import { ProcessSection } from '@/features/landing/ui/process-section';
+import { QuoteSection } from '@/features/landing/ui/quote-section';
+import { BrewSection } from '@/features/landing/ui/brew-section';
+import { ReviewsSection } from '@/features/landing/ui/reviews-section';
+import { LocationSection } from '@/components/shared/location-section';
+import homeData from '@/features/landing/data/home.json';
 
 export default async function HomePage() {
   const engine = await getEngine();
-  const result = await engine.listProducts({ limit: 20 });
-  const products = result.items;
-  const t = await getTranslations('home');
+  const { items: products } = await engine.listProducts({ limit: 12 });
 
   return (
-    <main>
-      <HeroSection />
-      <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold tracking-tight mb-8">{t('featured')}</h2>
-        <ProductGrid products={products} />
-      </section>
-    </main>
+    <>
+      <HeroSection data={homeData.hero} />
+      <CollectionSection data={homeData.collection} products={products} />
+      <FeatureBlocksSection data={homeData.featureBlocks} />
+      <StorySection data={homeData.story} />
+      <ProcessSection data={homeData.process} />
+      <QuoteSection data={homeData.quote} />
+      <BrewSection data={homeData.brew} />
+      <ReviewsSection data={homeData.reviews} />
+      <LocationSection data={homeData.location} />
+    </>
   );
 }

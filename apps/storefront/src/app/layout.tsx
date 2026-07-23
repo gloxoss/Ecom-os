@@ -1,16 +1,17 @@
 import './globals.css';
 import '@/styles/theme-vars.css';
-import { Inter } from 'next/font/google';
+import localFont from 'next/font/local';
 import { initAddons } from '@/lib/addons';
 import { TailwindIndicator } from '@/components/tailwind-indicator';
 
-const inter = Inter({ subsets: ['latin', 'latin-ext'], variable: '--font-inter', display: 'swap' });
+const sentient = localFont({ src: '../fonts/Sentient-Variable.ttf', variable: '--font-sentient', display: 'swap' });
+const interTight = localFont({ src: '../fonts/InterTight-Variable.ttf', variable: '--font-inter-tight', display: 'swap' });
 
 initAddons({ engineType: process.env.ECOM_ENGINE ?? 'fake' });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${sentient.variable} ${interTight.variable}`}>
       <body className="bg-background text-foreground font-sans antialiased">
         {children}
         <TailwindIndicator />
