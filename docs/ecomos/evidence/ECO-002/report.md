@@ -35,7 +35,7 @@ Commands executed there:
 
 Production build used only synthetic ECOM_ENGINE=woocommerce, HTTPS woocommerce.example.test REST/GraphQL URLs, placeholder REST values, all-zero synthetic base64 32-byte encryption key, and long synthetic revalidation/session secrets. It did not read a local staging secret or prove live backend retrieval.
 
-Raw logs: install.txt, verify.txt, build.txt and guard.txt. Guard fixtures test real CLI exit behavior for alternate import forms, nested engine-factory naming, ordinary contract/comment references, runtime/type-only addon exports and missing paths. Temporary fixture deletion checks the exact temp parent and generated prefix before removing it.
+Command logs: install.txt, verify.txt, build.txt and guard.txt. Trailing whitespace and line endings are normalized for Git; outputs/results are unchanged. Guard fixtures test real CLI exit behavior for alternate import forms, nested engine-factory naming, ordinary contract/comment references, runtime/type-only addon exports and missing paths. Temporary fixture deletion checks the exact temp parent and generated prefix before removing it.
 
 The full checks and build overlapped in the isolated reproduction directory after lint began; all exited successfully. No shared application .next directory was modified. The production build and proof reflect the assignment base plus tooling edits, not later concurrent CSP/application changes; those changes need their own current checks.
 
