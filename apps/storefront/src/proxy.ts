@@ -78,7 +78,7 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const pathnameWithoutLocale = pathname.replace(LOCALE_PREFIX_RE, '') || '/';
-  if (/(^|\/)account(\/|$)/.test(pathnameWithoutLocale)) {
+  if (/(^|\/)account(\/|\.|$)/.test(pathnameWithoutLocale)) {
     return applySecurityHeaders(new NextResponse('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } }), csp, requestId);
   }
 
@@ -98,5 +98,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next|api|favicon.ico|wp-admin|wp-login\\.php|wp-content|wp-includes|.*\\..*).*)'],
+  matcher: ['/((?!_next|api|favicon\\.ico|wp-admin|wp-login\\.php|wp-content|wp-includes|.*\\.(?:css|js|png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot)$).*)'],
 };

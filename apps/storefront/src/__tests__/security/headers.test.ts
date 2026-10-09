@@ -28,7 +28,15 @@ describe('security proxy', () => {
     expect(first.headers.get('x-content-type-options')).toBe('nosniff');
   });
 
-  it.each(['/account', '/en/account/login', '/fr/account/orders', '/ar/account/password-reset'])('rejects account route %s even with a cookie', async path => {
+  it.each([
+    '/account',
+    '/en/account/login',
+    '/fr/account/orders',
+    '/ar/account/password-reset',
+    '/account.html',
+    '/fr/account.html',
+    '/account.json',
+  ])('rejects account route %s even with a cookie', async path => {
     const { proxy } = await import('../../proxy');
     const response = proxy(new NextRequest('https://store.example.test' + path, { headers: { cookie: 'ecom_auth=forged' } }));
     expect(response.status).toBe(404);
