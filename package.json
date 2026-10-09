@@ -15,9 +15,10 @@
   "scripts": {
     "hub": "node .agent-hub/hub.mjs",
     "hub:test": "node --test .agent-hub/test/*.test.mjs",
-    "create": "npx tsx scripts/create-ecom-os.ts",
-    "predev": "npx tsx scripts/generate-tokens.ts && npx tsx scripts/generate-addons.ts",
-    "prebuild": "npx tsx scripts/generate-tokens.ts && npx tsx scripts/generate-addons.ts",
+    "guard": "tsx scripts/check-engine-imports.ts && node --test scripts/check-engine-imports.test.mjs",
+    "create": "tsx scripts/create-ecom-os.ts",
+    "predev": "tsx scripts/generate-tokens.ts && tsx scripts/generate-addons.ts",
+    "prebuild": "tsx scripts/generate-tokens.ts && tsx scripts/generate-addons.ts",
     "build": "pnpm -r --if-present build",
     "dev": "pnpm --filter storefront dev",
     "lint": "pnpm -r --if-present lint",
@@ -26,7 +27,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
-    "verify": "tsx scripts/check-engine-imports.ts && pnpm lint && pnpm typecheck && pnpm test && pnpm hub:test"
+    "verify": "pnpm guard && pnpm lint && pnpm typecheck && pnpm test && pnpm hub:test"
   },
   "engines": {
     "node": ">=22",
@@ -38,6 +39,7 @@
     "@types/node": "^26.6.4",
     "@vitest/coverage-v8": "4.1.11",
     "tsx": "^4.23.15",
+    "typescript": "5.9.3",
     "vite": "8.3.4",
     "vitest": "4.1.11"
   }

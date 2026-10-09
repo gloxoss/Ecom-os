@@ -1,0 +1,23 @@
+$ tsx scripts/check-engine-imports.ts && node --test scripts/check-engine-imports.test.mjs
+Engine imports and addon runtime exports clean.
+✔ rejects doubleQuote adapter reference (254.163ms)
+✔ rejects multiline adapter reference (252.0995ms)
+✔ rejects reexport adapter reference (238.2482ms)
+✔ rejects dynamic adapter reference (248.8471ms)
+✔ rejects require adapter reference (249.9063ms)
+✔ rejects importEquals adapter reference (252.7148ms)
+✔ only canonical lib/engine is exempt (500.5098ms)
+✔ allows engine contracts, comments and ordinary modules (262.3154ms)
+✔ allows named runtime reexports (255.4443ms)
+✔ type-only exports do not satisfy runtime contract (240.2982ms)
+✔ missing required export fails (248.2667ms)
+✔ missing source tree fails closed (253.5093ms)
+✔ missing addon entrypoint fails closed (258.9138ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3623.5205

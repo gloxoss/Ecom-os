@@ -1,0 +1,113 @@
+$ pnpm guard && pnpm lint && pnpm typecheck && pnpm test && pnpm hub:test
+$ tsx scripts/check-engine-imports.ts && node --test scripts/check-engine-imports.test.mjs
+Engine imports and addon runtime exports clean.
+✔ rejects doubleQuote adapter reference (287.6241ms)
+✔ rejects multiline adapter reference (261.2343ms)
+✔ rejects reexport adapter reference (268.0016ms)
+✔ rejects dynamic adapter reference (252.2904ms)
+✔ rejects require adapter reference (254.175ms)
+✔ rejects importEquals adapter reference (279.3094ms)
+✔ only canonical lib/engine is exempt (554.4926ms)
+✔ allows engine contracts, comments and ordinary modules (272.2338ms)
+✔ allows named runtime reexports (260.5228ms)
+✔ type-only exports do not satisfy runtime contract (267.5108ms)
+✔ missing required export fails (259.0384ms)
+✔ missing source tree fails closed (260.1042ms)
+✔ missing addon entrypoint fails closed (247.2302ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3810.2344
+$ pnpm -r --if-present lint
+Scope: 11 of 12 workspace projects
+apps/storefront lint$ eslint
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\app\[locale]\(account)\account\loyalty-widget.tsx
+apps/storefront lint:   18:9  warning  't' is assigned a value but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\app\api\webhooks\cmi\route.ts
+apps/storefront lint:   1:28  warning  '_request' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\app\api\webhooks\stripe\route.ts
+apps/storefront lint:   1:28  warning  '_request' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\components\shared\brand-footer.tsx
+apps/storefront lint:   4:10  warning  'ArrowUpRight' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\features\account\server\auth-actions.ts
+apps/storefront lint:    8:29  warning  '_formData' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint:    9:32  warning  '_formData' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint:   10:50  warning  '_formData' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint:   11:43  warning  '_formData' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\features\account\server\profile-actions.ts
+apps/storefront lint:   6:37  warning  '_formData' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\features\account\ui\account-dashboard-client.tsx
+apps/storefront lint:   4:8  warning  'Link' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\features\auth\server\auth-actions.ts
+apps/storefront lint:   6:36  warning  '_token' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\features\cart\ui\coupon-input.tsx
+apps/storefront lint:   38:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\features\catalog\ui\quick-view-modal.tsx
+apps/storefront lint:   23:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\features\catalog\ui\sort-select.tsx
+apps/storefront lint:   22:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\features\checkout\ui\checkout-form.tsx
+apps/storefront lint:   7:32  warning  'listShippingMethodsAction' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\dev\ecomos-eco002-20261009\apps\storefront\src\lib\mock-actions.ts
+apps/storefront lint:    3:38  warning  'formData' is defined but never used   @typescript-eslint/no-unused-vars
+apps/storefront lint:    7:35  warning  '_formData' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint:   10:37  warning  '_formData' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: ✖ 18 problems (0 errors, 18 warnings)
+apps/storefront lint: Done
+$ pnpm -r --if-present typecheck
+Scope: 11 of 12 workspace projects
+packages/brand-config typecheck$ tsc --noEmit
+packages/ecom-engine typecheck$ tsc --noEmit
+packages/themes typecheck$ tsc --noEmit
+packages/ecom-engine typecheck: Done
+packages/brand-config typecheck: Done
+packages/themes typecheck: Done
+packages/addons-i18n typecheck$ tsc --noEmit
+packages/addons-multi-payment typecheck$ tsc --noEmit
+packages/engine-woocommerce typecheck$ tsc --noEmit
+packages/addons-multi-payment typecheck: Done
+packages/engine-woocommerce typecheck: Done
+packages/addons-i18n typecheck: Done
+apps/storefront typecheck$ tsc --noEmit
+apps/storefront typecheck: Done
+$ vitest run
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.11 C:/dev/ecomos-eco002-20261009
+
+
+ Test Files  14 passed (14)
+      Tests  74 passed (74)
+   Start at  00:01:20
+   Duration  1.18s (transform 1.02s, setup 0ms, import 3.43s, tests 313ms, environment 2ms)
+
+$ node --test .agent-hub/test/*.test.mjs
+✔ assignment and phase prerequisites are mandatory (1512.2861ms)
+✔ case-folded folder/file conflicts retain the first owner (1622.7148ms)
+✔ claims and evidence reject traversal, absolute, protected and secret paths (2085.9338ms)
+✔ junction aliases cannot escape root or bypass a claim (1995.8486ms)
+✔ lock recovery requires a provably terminated local process (1393.9016ms)
+✔ exclusive resources conflict and can be acquired and released during a task (1714.0764ms)
+✔ stale claims remain owned until explicit orchestrator recovery (1961.8717ms)
+✔ partial work can resume without surrendering its files (1762.9141ms)
+✔ completion needs claimed committed report, clean checks and a clean claimed tree (3292.6105ms)
+✔ broad folder claims cannot submit a secret or protected child (3945.9985ms)
+✔ interleaved registered commits pass while unauthorized own tip edits fail (3702.3613ms)
+✔ independent verification and acceptance enforce identity, SHA and separate evidence (6091.6523ms)
+✔ new tasks and regressions invalidate dependent phase gates (7752.3247ms)
+✔ concurrent claim race has one winner and a valid contiguous journal (1882.0706ms)
+✔ journal corruption refuses a write rather than dropping history (1564.018ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 42393.5909

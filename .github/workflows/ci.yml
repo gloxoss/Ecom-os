@@ -22,17 +22,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Engine-import guard: UI files must NOT import engine adapters directly
       - name: engine-import guard
-        run: |
-          if grep -rn "engine-woocommerce\|engine-vendure" apps/storefront/src/features apps/storefront/src/components apps/storefront/src/app --include="*.ts" --include="*.tsx" | grep -v "lib/engine.ts"; then
-            echo "VIOLATION: Engine adapter imported outside lib/engine.ts"
-            exit 1
-          fi
+        run: pnpm guard
 
       - run: pnpm -r lint
       - run: pnpm -r typecheck
       - run: pnpm test:coverage
+      - run: pnpm hub:test
 
       # Secret scanning
       - uses: gitleaks/gitleaks-action@v2
@@ -54,7 +50,7 @@ jobs:
           WC_REST_URL: https://woocommerce.example.test/wp-json/wc/v3
           WC_REST_KEY: ci-placeholder
           WC_REST_SECRET: ci-placeholder
-          ECOM_OS_ENCRYPTION_KEY: ${{ secrets.ECOM_OS_ENCRYPTION_KEY_TEST }}
+          ECOM_OS_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
           REVALIDATE_SECRET: test-revalidate-secret-32byteslong!
           SESSION_COOKIE_SECRET: test-session-secret-32byteslong!!
           DEFAULT_LOCALE: en

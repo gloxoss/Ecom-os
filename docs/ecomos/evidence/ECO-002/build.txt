@@ -1,0 +1,70 @@
+$ tsx scripts/generate-tokens.ts && tsx scripts/generate-addons.ts
+Generating brand tokens...
+✅ Tokens successfully written to C:\dev\ecomos-eco002-20261009\apps\storefront\src\styles\brand.tokens.css
+Generated addons.generated.ts with 0 addons: 
+$ pnpm -r --if-present build
+Scope: 11 of 12 workspace projects
+packages/cli build$ tsup src/index.ts --format cjs --clean
+packages/cli build: CLI Building entry: src/index.ts
+packages/cli build: CLI tsup v8.5.1
+packages/cli build: CLI Target: node16
+packages/cli build: CLI Cleaning output folder
+packages/cli build: CJS Build start
+packages/cli build: CJS dist\index.js 7.77 KB
+packages/cli build: CJS ⚡️ Build success in 96ms
+packages/cli build: Done
+apps/storefront build$ npm run generate-theme && npm run generate-addons && next build
+apps/storefront build: > storefront@0.1.0 generate-theme
+apps/storefront build: > npx tsx scripts/generate-theme.ts
+apps/storefront build: ✅ Generated theme-vars.css for theme: angelina
+apps/storefront build: > storefront@0.1.0 generate-addons
+apps/storefront build: > npx tsx ../../scripts/generate-addons.ts
+apps/storefront build: Generated addons.generated.ts with 0 addons: 
+apps/storefront build: ▲ Next.js 16.3.8 (Turbopack)
+apps/storefront build: ✓ Running next.config.ts took 157ms
+apps/storefront build:   Creating an optimized production build ...
+apps/storefront build: ✓ Compiled successfully in 18.1s
+apps/storefront build:   Running TypeScript ...
+apps/storefront build:   Finished TypeScript in 3.9s ...
+apps/storefront build:   Collecting page data using 15 workers ...
+apps/storefront build:   Generating static pages using 15 workers (0/28) ...
+apps/storefront build:   Generating static pages using 15 workers (7/28) 
+apps/storefront build:   Generating static pages using 15 workers (14/28) 
+apps/storefront build:   Generating static pages using 15 workers (21/28) 
+apps/storefront build: ✓ Generating static pages using 15 workers (28/28) in 231ms
+apps/storefront build:   Finalizing page optimization ...
+apps/storefront build: Route (app)
+apps/storefront build: ┌ ƒ /_not-found
+apps/storefront build: ├ ƒ /[locale]
+apps/storefront build: ├ ƒ /[locale]/about-us
+apps/storefront build: ├ ƒ /[locale]/account
+apps/storefront build: ├ ƒ /[locale]/account/addresses
+apps/storefront build: ├ ƒ /[locale]/account/forgot-password
+apps/storefront build: ├ ƒ /[locale]/account/login
+apps/storefront build: ├ ƒ /[locale]/account/orders
+apps/storefront build: ├ ƒ /[locale]/account/orders/[orderId]
+apps/storefront build: ├ ƒ /[locale]/account/password-reset
+apps/storefront build: ├ ƒ /[locale]/account/profile
+apps/storefront build: ├ ƒ /[locale]/account/register
+apps/storefront build: ├ ƒ /[locale]/blog
+apps/storefront build: ├ ƒ /[locale]/blog/[slug]
+apps/storefront build: ├ ƒ /[locale]/cart
+apps/storefront build: ├ ƒ /[locale]/catalog
+apps/storefront build: ├ ƒ /[locale]/catalog/[categorySlug]
+apps/storefront build: ├ ƒ /[locale]/checkout
+apps/storefront build: ├ ƒ /[locale]/checkout/stripe
+apps/storefront build: ├ ƒ /[locale]/checkout/success
+apps/storefront build: ├ ƒ /[locale]/contact-us
+apps/storefront build: ├ ƒ /[locale]/legal/privacy
+apps/storefront build: ├ ƒ /[locale]/legal/returns
+apps/storefront build: ├ ƒ /[locale]/legal/terms
+apps/storefront build: ├ ƒ /[locale]/menu
+apps/storefront build: ├ ƒ /[locale]/product/[slug]
+apps/storefront build: ├ ƒ /[locale]/search
+apps/storefront build: ├ ƒ /[locale]/stores
+apps/storefront build: ├ ƒ /api/revalidate
+apps/storefront build: ├ ƒ /api/webhooks/cmi
+apps/storefront build: └ ƒ /api/webhooks/stripe
+apps/storefront build: ƒ Proxy (Middleware)
+apps/storefront build: ƒ  (Dynamic)  server-rendered on demand
+apps/storefront build: Done

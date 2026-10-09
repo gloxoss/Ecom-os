@@ -1,0 +1,32 @@
+Scope: all 12 workspace projects
+✓ Lockfile passes supply-chain policies (verified 1m ago)
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +479
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 479, reused 472, downloaded 0, added 7
+Progress: resolved 479, reused 474, downloaded 0, added 127
+Progress: resolved 479, reused 475, downloaded 0, added 402
+Progress: resolved 479, reused 475, downloaded 0, added 470
+Progress: resolved 479, reused 475, downloaded 0, added 476
+Progress: resolved 479, reused 476, downloaded 0, added 476
+Progress: resolved 479, reused 476, downloaded 0, added 477
+Progress: resolved 479, reused 476, downloaded 0, added 478
+Progress: resolved 479, reused 476, downloaded 0, added 479, done
+.../node_modules/@swc/core postinstall$ node postinstall.js
+.../node_modules/@parcel/watcher install$ node scripts/build-from-source.js
+.../esbuild@0.28.2/node_modules/esbuild postinstall$ node install.js
+.../node_modules/@parcel/watcher install: Done
+.../node_modules/@swc/core postinstall: Done
+.../esbuild@0.28.2/node_modules/esbuild postinstall: Done
+
+devDependencies:
++ @playwright/test 1.64.0
++ @types/node 26.6.4
++ @vitest/coverage-v8 4.1.11
++ tsx 4.23.15
++ typescript 5.9.3
++ vite 8.3.4
++ vitest 4.1.11
+
+Done in 15.4s using pnpm v11.7.0
