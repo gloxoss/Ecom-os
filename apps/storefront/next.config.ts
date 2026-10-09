@@ -25,6 +25,7 @@ const baseConfig: NextConfig = {
     ],
   },
   async rewrites() {
+    if (!isDev) return [];
     return [
       {
         source: '/wp-admin/:path*',

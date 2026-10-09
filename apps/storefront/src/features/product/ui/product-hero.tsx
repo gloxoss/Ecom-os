@@ -1,10 +1,11 @@
+import { formatMoney } from '@/lib/format-money';
 import { Accordion } from '@/components/shared/accordion';
 import { Reveal } from '@/features/landing/ui/reveal';
 import { AddToCartButton } from './add-to-cart-button';
 import { ProductZoomImage } from './product-zoom-image';
 import type { Product, Money } from '@ecom-os/engine';
 
-const fmt = (m: Money) => `${(m.amount_minor / 100).toFixed(2).replace(/\.00$/, '')}$`;
+const fmt = (m: Money) => formatMoney(m);
 
 interface ProductHeroProps {
   product: Product;

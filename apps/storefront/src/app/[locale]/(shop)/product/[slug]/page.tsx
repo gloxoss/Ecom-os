@@ -10,12 +10,6 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateStaticParams() {
-  const engine = await getEngine();
-  const { items } = await engine.listProducts({ limit: 50 });
-  return items.map((p) => ({ slug: p.slug }));
-}
-
 export async function generateMetadata({ params }: ProductPageProps) {
   const { slug } = await params;
   const engine = await getEngine();

@@ -16,15 +16,15 @@ export async function fetchProducts(options?: { category?: string; minPrice?: nu
             altText
           }
           ... on SimpleProduct {
-            price
-            regularPrice
+            price(format: RAW)
+            regularPrice(format: RAW)
           }
           ... on VariableProduct {
-            price
+            price(format: RAW)
           }
           ... on ExternalProduct {
-            price
-            regularPrice
+            price(format: RAW)
+            regularPrice(format: RAW)
           }
         }
       }
@@ -78,15 +78,15 @@ export async function fetchProductBySlug(slug: string) {
           altText
         }
         ... on SimpleProduct {
-          price
-          regularPrice
+          price(format: RAW)
+          regularPrice(format: RAW)
         }
         ... on VariableProduct {
-          price
+          price(format: RAW)
         }
         ... on ExternalProduct {
-          price
-          regularPrice
+          price(format: RAW)
+          regularPrice(format: RAW)
         }
         related(first: 4) {
           nodes {
@@ -97,10 +97,10 @@ export async function fetchProductBySlug(slug: string) {
               sourceUrl
             }
             ... on SimpleProduct {
-              price
+              price(format: RAW)
             }
             ... on VariableProduct {
-              price
+              price(format: RAW)
             }
           }
         }

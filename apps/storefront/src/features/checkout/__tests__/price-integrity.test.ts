@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { FakeEngine } from '@ecom-os/engine';
 
-describe('checkout price integrity', () => {
+describe('FakeEngine checkout scaffolding (not live commerce evidence)', () => {
   it('session._items carries slugs+ids for server price lookup, not prices', async () => {
     const engine = new FakeEngine();
     const clientItems = [{ productId: 'prod-1', slug: 'test-product', quantity: 2 }];
@@ -15,10 +15,10 @@ describe('checkout price integrity', () => {
     expect(session._items).toEqual(clientItems);
     expect(session._input?.email).toBe('buyer@test.com');
     // Crucially: no price field in clientItems — server must look it up
-    expect((clientItems[0] as any).price).toBeUndefined();
+    expect(clientItems[0]).not.toHaveProperty('price');
   });
 
-  it('placeOrder returns an order with server-computed total', async () => {
+  it('placeOrder returns only a synthetic fixture', async () => {
     const engine = new FakeEngine();
     const session = await engine.initCheckout(
       'cart-x',

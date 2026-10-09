@@ -87,7 +87,6 @@ export function SiteHeaderClient() {
         {/* Desktop right actions */}
         <div className="hidden lg:flex items-center gap-0">
           <AnimatedNavLink href="/search" label="Search" />
-          <AnimatedNavLink href="/account" label="Account" />
           <AnimatedNavLink href="/cart" label={`Cart (${cartCount})`} />
         </div>
 
@@ -114,7 +113,6 @@ export function SiteHeaderClient() {
           {[
             ...NAV_LINKS,
             { label: 'Search', href: '/search' },
-            { label: 'Account', href: '/account' },
             { label: `Cart (${cartCount})`, href: '/cart' }
           ].map((link) => (
             <Link

@@ -15,7 +15,6 @@ import {
   RegisterInput,
   AuthSession,
   Customer,
-  CartItem,
   Address,
   OrderListQuery,
   OrderListResult,
@@ -27,27 +26,28 @@ import {
   LoyaltyRedemption,
 } from '@ecom-os/engine';
 import { fetchProducts, fetchCategories, fetchProductBySlug } from './products';
-import { createOrderRest } from './orders';
-import { loginGql, registerRest, getCustomerByToken, getCustomerOrdersRest, requestPasswordResetGql, resetPasswordGql } from './auth';
+import { loginGql, registerRest, getCustomerByToken, getCustomerOrdersRest, requestPasswordResetGql, resetPasswordGql, requireCustomerAccounts } from './auth';
 import { restFetch } from './rest';
 import { mapProduct, mapCategory } from './mappers';
+import { fetchCurrency } from './currency';
 
 export class WooCommerceEngine implements EcomEngine {
   async listProducts(query: ProductListQuery): Promise<ProductListResult> {
     const rawProducts = await fetchProducts({
-      category: query.category,
-      minPrice: query.minPrice,
-      maxPrice: query.maxPrice,
+      ...(query.category !== undefined ? { category: query.category } : {}),
+      ...(query.minPrice !== undefined ? { minPrice: query.minPrice } : {}),
+      ...(query.maxPrice !== undefined ? { maxPrice: query.maxPrice } : {}),
     });
+    const currency = await fetchCurrency();
     return {
-      items: rawProducts.map(mapProduct),
+      items: rawProducts.map((raw: Parameters<typeof mapProduct>[0]) => mapProduct(raw, currency)),
       total: rawProducts.length,
     };
   }
 
   async getProduct(slug: string, locale?: Locale): Promise<Product | null> {
     const rawProduct = await fetchProductBySlug(slug);
-    return rawProduct ? mapProduct(rawProduct) : null;
+    return rawProduct ? mapProduct(rawProduct, await fetchCurrency()) : null;
   }
 
   async listCategories(locale?: Locale): Promise<Category[]> {
@@ -55,102 +55,34 @@ export class WooCommerceEngine implements EcomEngine {
     return rawCategories.map(mapCategory);
   }
 
-  async getCart(cartId: string): Promise<Cart> {
-    // Cart state is owned by Zustand + localStorage client-side. Engine returns shell.
-    return {
-      id: cartId,
-      items: [],
-      subtotal: { amount_minor: 0, currency: 'USD' },
-      total: { amount_minor: 0, currency: 'USD' },
-    };
+  async getCart(_cartId: string): Promise<Cart> {
+    throw new Error('Backend cart integration is unavailable pending Store API verification.');
   }
 
-  async addToCart(cartId: string, input: AddToCartInput): Promise<Cart> {
-    // Validate product exists before client adds it to Zustand
-    const raw = await fetchProductBySlug(input.productId);
-    if (!raw) throw new Error(`Product not found: ${input.productId}`);
-    const product = mapProduct(raw);
-    const item: CartItem = {
-      id: `${cartId}-${input.productId}`,
-      productId: input.productId,
-      quantity: input.quantity,
-      price: product.price,
-    };
-    return {
-      id: cartId,
-      items: [item],
-      subtotal: { amount_minor: product.price.amount_minor * input.quantity, currency: product.price.currency },
-      total: { amount_minor: product.price.amount_minor * input.quantity, currency: product.price.currency },
-    };
+  async addToCart(_cartId: string, _input: AddToCartInput): Promise<Cart> {
+    throw new Error('Backend cart integration is unavailable pending Store API verification.');
   }
 
   async listPaymentGateways(): Promise<Array<{ id: string; name: string; description?: string }>> {
-    try {
-      const gateways = await restFetch('/payment_gateways');
-      const active = gateways
-        .filter((g: any) => g.enabled === true)
-        .map((g: any) => ({
-          id: g.id,
-          name: g.title || g.method_title,
-          description: g.description || g.method_description,
-        }));
-      if (active.length === 0) {
-        return [{ id: 'cod', name: 'Cash on delivery', description: 'Pay with cash upon delivery.' }];
-      }
-      return active;
-    } catch (err) {
-      console.error('[WooCommerceEngine] Failed to fetch payment gateways:', err);
-      // Fallback to COD if API fails or is unavailable
-      return [{ id: 'cod', name: 'Cash on delivery', description: 'Pay with cash upon delivery.' }];
-    }
+    const gateways = await restFetch('/payment_gateways');
+    return gateways.filter((g: any) => g.id === 'cod' && g.enabled === true)
+      .map((g: any) => ({ id: g.id, name: g.title || g.method_title, description: g.description || g.method_description }));
   }
 
-  async initCheckout(
-    cartId: string,
-    input: CheckoutInput,
-    items?: Array<{ productId: string; slug: string; quantity: number }>,
-  ): Promise<CheckoutSession> {
-    if (!input.email || !input.firstName || !input.lastName || !input.address) {
-      throw new Error('Missing required checkout fields');
-    }
-    return { cartId, status: 'PENDING', _input: input, _items: items };
+  async initCheckout(_cartId: string, _input: CheckoutInput, _items?: Array<{ productId: string; slug: string; quantity: number }>): Promise<CheckoutSession> {
+    throw new Error('Checkout is unavailable pending authoritative cart, shipping and tax integration.');
   }
 
-  async placeOrder(session: CheckoutSession): Promise<Order> {
-    if (!session._input) throw new Error('placeOrder called without checkout input');
-    if (!session._items?.length) throw new Error('placeOrder called with empty cart');
-
-    // PRICE INTEGRITY: re-fetch authoritative prices from WC. Client prices never used.
-    const cartItems: CartItem[] = [];
-    for (const item of session._items) {
-      const raw = await fetchProductBySlug(item.slug);
-      if (!raw) throw new Error(`Product unavailable at checkout: ${item.slug}`);
-      const product = mapProduct(raw);
-      cartItems.push({
-        id: `${session.cartId}-${item.productId}`,
-        productId: item.productId,
-        quantity: item.quantity,
-        price: product.price,
-      });
-    }
-
-    return createOrderRest(session._input, cartItems);
+  async placeOrder(_session: CheckoutSession): Promise<Order> {
+    throw new Error('Checkout is unavailable pending authoritative cart, shipping and tax integration.');
   }
 
-  async markOrderPaid(orderId: string, paymentRef: PaymentRef): Promise<void> {
-    // PATCH the WC order to 'processing' and record the gateway transaction ID
-    await restFetch(`/orders/${orderId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        status: 'processing',
-        transaction_id: paymentRef.transactionId,
-      }),
-    });
+  async markOrderPaid(_orderId: string, _paymentRef: PaymentRef): Promise<void> {
+    throw new Error('Payment reconciliation is unavailable pending verified integration.');
   }
 
-  async getOrder(orderId: string, customerId: string): Promise<Order | null> {
-    const { getOrderRest } = await import('./orders');
-    return getOrderRest(orderId, customerId);
+  async getOrder(_orderId: string, _customerId: string): Promise<Order | null> {
+    return null;
   }
 
   async listCustomerOrders(customerId: string, query?: OrderListQuery): Promise<OrderListResult> {
@@ -212,7 +144,7 @@ export class WooCommerceEngine implements EcomEngine {
 
   async validateCoupon(code: string): Promise<Coupon | null> {
     try {
-      const coupons = await restFetch(`/coupons?code=${code}`);
+      const coupons = await restFetch(`/coupons?code=${encodeURIComponent(code)}`);
       if (coupons && coupons.length > 0) {
         const c = coupons[0];
         return {
@@ -228,28 +160,10 @@ export class WooCommerceEngine implements EcomEngine {
     }
   }
 
-  async listShippingMethods(countryCode?: string): Promise<ShippingMethod[]> {
-    try {
-      // For headless shipping, we ideally query shipping zones. 
-      // For simplicity in this implementation, we query the first shipping zone (ID 0 is usually "Rest of the World")
-      // and fetch its methods.
-      const methods = await restFetch('/shipping/zones/0/methods');
-      return methods
-        .filter((m: any) => m.enabled === true)
-        .map((m: any) => ({
-          id: m.instance_id ? `${m.method_id}:${m.instance_id}` : m.method_id,
-          title: m.title,
-          cost: {
-            amount_minor: Math.round(parseFloat(m.settings?.cost?.value || '0') * 100),
-            currency: 'USD', // Fallback, would ideally be fetched from settings
-          },
-          description: m.method_description,
-        }));
-    } catch (err) {
-      console.error('[WooCommerceEngine] Failed to fetch shipping methods:', err);
-      return [];
-    }
+  async listShippingMethods(_countryCode?: string): Promise<ShippingMethod[]> {
+    throw new Error('Shipping is unavailable pending destination-based Store API rates.');
   }
+
   async getCapabilities(): Promise<StoreCapabilities> {
     try {
       const wpUrl = process.env.WC_REST_URL || '';
@@ -286,50 +200,12 @@ export class WooCommerceEngine implements EcomEngine {
     }
   }
 
-  async getLoyaltyBalance(customerId: string): Promise<LoyaltyBalance> {
-    try {
-      const wpUrl = process.env.WC_REST_URL || '';
-      const baseUrl = wpUrl.replace(/\/wp-json\/wc\/v3\/?$/, '');
-      const res = await fetch(`${baseUrl}/wp-json/epioso/v1/loyalty/balance`);
-      if (!res.ok) {
-        console.warn('[WooCommerceEngine] Loyalty balance endpoint not found, returning 0.');
-        return { points: 0, value_minor: 0 };
-      }
-      const data = await res.json();
-      return {
-        points: data.points || 0,
-        value_minor: data.value_minor || 0,
-      };
-    } catch (err) {
-      console.error('[WooCommerceEngine] Failed to get loyalty balance:', err);
-      return { points: 0, value_minor: 0 };
-    }
+  async getLoyaltyBalance(_customerId: string): Promise<LoyaltyBalance> {
+    return requireCustomerAccounts();
   }
 
-  async redeemLoyaltyPoints(customerId: string, points: number): Promise<LoyaltyRedemption> {
-    try {
-      const wpUrl = process.env.WC_REST_URL || '';
-      const baseUrl = wpUrl.replace(/\/wp-json\/wc\/v3\/?$/, '');
-      const res = await fetch(`${baseUrl}/wp-json/epioso/v1/loyalty/redeem`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ points }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        return {
-          success: true,
-          couponCode: data.coupon_code,
-          discountAmount: data.discount_amount,
-          remainingPoints: data.remaining_points,
-        };
-      }
-      return { success: false, error: data.message || 'Failed to redeem points' };
-    } catch (err: any) {
-      console.error('[WooCommerceEngine] Failed to redeem loyalty points:', err);
-      return { success: false, error: err.message || 'Network error' };
-    }
+  async redeemLoyaltyPoints(_customerId: string, _points: number): Promise<LoyaltyRedemption> {
+    return requireCustomerAccounts();
   }
+
 }

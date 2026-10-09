@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
+import { formatMoney } from '@/lib/format-money';
 import Link from 'next/link';
 import type { Product } from '@ecom-os/engine';
 
@@ -25,7 +26,7 @@ export function QuickViewModal({ product, onClose }: Props) {
   if (!product) return null;
 
   const image = product.images[0];
-  const price = (product.price.amount_minor / 100).toFixed(2);
+  const price = formatMoney(product.price);
 
   return (
     // Native dialog — blocks background interaction, Escape closes it
@@ -52,7 +53,7 @@ export function QuickViewModal({ product, onClose }: Props) {
             ✕
           </button>
           <h2 className="text-xl font-bold">{product.name}</h2>
-          <p className="text-lg font-medium">${price}</p>
+          <p className="text-lg font-medium">{price}</p>
           <Link
             href={`/product/${product.slug}`}
             className="mt-auto w-full text-center bg-foreground text-background py-3 rounded-lg font-medium hover:opacity-90 transition"

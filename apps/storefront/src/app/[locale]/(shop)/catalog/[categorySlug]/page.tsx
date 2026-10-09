@@ -5,14 +5,6 @@ import { ProductGrid } from '@/features/catalog/ui/product-grid';
 import { Pagination } from '@/components/shared/pagination';
 import Link from 'next/link';
 
-export async function generateStaticParams() {
-  const engine = await getEngine();
-  const categories = await engine.listCategories();
-  return categories.map(c => ({ categorySlug: c.slug }));
-}
-
-export const revalidate = 60;
-
 export default async function CategoryPage({
   params,
   searchParams,

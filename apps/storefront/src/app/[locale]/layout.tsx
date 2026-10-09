@@ -7,6 +7,7 @@ import type { Locale } from '@ecom-os/addons-i18n/src/config';
 import { routing } from '@/i18n/routing';
 import { SiteHeader } from '@/components/shared/site-header';
 import { BrandFooter } from '@/components/shared/brand-footer';
+import { headers } from 'next/headers';
 
 export function generateStaticParams() {
   return (routing.locales as string[]).map(locale => ({ locale }));
@@ -26,6 +27,7 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
 
   return (
     <NextIntlClientProvider messages={messages}>
@@ -33,8 +35,9 @@ export default async function LocaleLayout({
         {/* Google Analytics — only injected when NEXT_PUBLIC_GA_ID is set */}
         {gaId && (
           <>
-            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+            <script nonce={nonce} async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
             <script
+              nonce={nonce}
               dangerouslySetInnerHTML={{
                 __html: `
                   window.dataLayer = window.dataLayer || [];

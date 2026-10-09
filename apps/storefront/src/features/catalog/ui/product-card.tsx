@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { formatMoney } from '@/lib/format-money';
 import Link from 'next/link';
 import { Product } from '@ecom-os/engine';
 import { WishlistButton } from '@/features/product/ui/wishlist-button';
@@ -10,8 +11,7 @@ import { QuickViewModal } from './quick-view-modal';
 export function ProductCard({ product }: { product: Product }) {
   const image = product.images[0];
 
-  // amount_minor is in cents — divide by 100 to get dollars
-  const price = (product.price.amount_minor / 100).toFixed(2);
+  const price = formatMoney(product.price);
 
   const [showQuickView, setShowQuickView] = useState(false);
 
@@ -41,7 +41,7 @@ export function ProductCard({ product }: { product: Product }) {
           </button>
         </div>
         <h3 className="font-medium text-foreground">{product.name}</h3>
-        <p className="text-secondary">${price}</p>
+        <p className="text-secondary">{price}</p>
       </Link>
 
       {showQuickView && (

@@ -3,14 +3,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { routing } from '@/i18n/routing';
 
-const AUTH_COOKIE = 'ecom_auth';
-const PUBLIC_ACCOUNT_PATHS = ['/account/login', '/account/register'];
-const intlMiddleware = createMiddleware(routing);
+const intlMiddleware = createMiddleware<readonly string[], 'as-needed' | 'never'>(routing);
 
 // Build locale-strip regex dynamically from active routing config
-const nonDefaultLocales = (routing.locales as string[]).filter(
-  l => l !== routing.defaultLocale
-);
+const nonDefaultLocales = routing.locales as string[];
 const LOCALE_PREFIX_RE = nonDefaultLocales.length > 0
   ? new RegExp(`^/(${nonDefaultLocales.join('|')})(?=/|$)`)
   : /(?!)/; // never matches
@@ -23,8 +19,7 @@ const isDev = process.env.NODE_ENV === 'development';
  * We use a permissive policy in dev so HMR + React DevTools work without noise.
  *
  * In production we use a per-request nonce so 'strict-dynamic' can work correctly:
- * - Next.js reads <meta property="csp-nonce"> in the root layout and stamps that
- *   nonce on every script chunk it injects, so they pass the CSP check.
+ * - Next.js reads the forwarded request CSP and stamps its nonce on scripts.
  */
 function buildCsp(nonce: string): string {
   if (isDev) {
@@ -53,6 +48,7 @@ function buildCsp(nonce: string): string {
     "frame-src https://js.stripe.com",
     "font-src 'self'",
     "object-src 'none'",
+    "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
   ].join('; ');
@@ -80,19 +76,10 @@ export function proxy(request: NextRequest) {
   const csp = buildCsp(nonce);
 
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get(AUTH_COOKIE)?.value;
 
   const pathnameWithoutLocale = pathname.replace(LOCALE_PREFIX_RE, '') || '/';
-  const isProtectedAccount =
-    pathnameWithoutLocale.startsWith('/account') &&
-    !PUBLIC_ACCOUNT_PATHS.some(p => pathnameWithoutLocale.startsWith(p));
-
-  if (isProtectedAccount && !token) {
-    const loginUrl = request.nextUrl.clone();
-    const localePrefix = LOCALE_PREFIX_RE.exec(pathname)?.[0] ?? '';
-    loginUrl.pathname = `${localePrefix}/account/login`;
-    loginUrl.searchParams.set('from', pathname);
-    return applySecurityHeaders(NextResponse.redirect(loginUrl), csp, requestId);
+  if (/(^|\/)account(\/|$)/.test(pathnameWithoutLocale)) {
+    return applySecurityHeaders(new NextResponse('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } }), csp, requestId);
   }
 
   // Run next-intl middleware (handles locale redirects + cookies).
@@ -100,6 +87,13 @@ export function proxy(request: NextRequest) {
   // it injects (e.g. x-nextjs-rewrite). Replacing it with a fresh
   // NextResponse.next() causes [locale] routes to 404.
   const intlResponse = intlMiddleware(request);
+  // Preserve locale rewrite overrides while forwarding the rendering CSP.
+  const overrides = new Set((intlResponse.headers.get('x-middleware-override-headers') ?? '').split(',').filter(Boolean));
+  for (const [name, value] of [['content-security-policy', csp], ['x-nonce', nonce]]) {
+    intlResponse.headers.set(`x-middleware-request-${name}`, value!);
+    overrides.add(name!);
+  }
+  intlResponse.headers.set('x-middleware-override-headers', [...overrides].join(','));
   return applySecurityHeaders(intlResponse, csp, requestId);
 }
 

@@ -1,3 +1,4 @@
+import { formatMoney } from '@/lib/format-money';
 import { Reveal } from '@/features/landing/ui/reveal';
 import { RelatedProductsClient } from './related-products-client';
 import type { Product } from '@ecom-os/engine';
@@ -13,7 +14,7 @@ export function RelatedProductsSection({ products }: RelatedProductsSectionProps
     slug: p.slug,
     name: p.name,
     notes: p.description,
-    priceLabel: `${(p.price.amount_minor / 100).toFixed(2).replace(/\.00$/, '')}$ /per ${p.variants?.[0]?.name ?? 'bag'}`,
+    priceLabel: `${formatMoney(p.price)} /per ${p.variants?.[0]?.name ?? 'bag'}`,
     image: p.images[0],
     hoverImage: p.images[1] ?? p.images[0],
   }));

@@ -1,3 +1,4 @@
+import { formatMoney } from '@/lib/format-money';
 import { getEngine } from '@/lib/engine';
 import { Reveal } from '@/features/landing/ui/reveal';
 import { CategoryTabsClient } from './category-tabs-client';
@@ -19,7 +20,7 @@ export async function ShopByCategorySection({ activeSlug }: ShopByCategorySectio
     slug: p.slug,
     name: p.name,
     notes: p.description,
-    priceLabel: `${(p.price.amount_minor / 100).toFixed(2).replace(/\.00$/, '')}$ /per ${p.variants?.[0]?.name ?? 'bag'}`,
+    priceLabel: `${formatMoney(p.price)} /per ${p.variants?.[0]?.name ?? 'bag'}`,
     image: p.images[0],
     hoverImage: p.images[1] ?? p.images[0],
   });

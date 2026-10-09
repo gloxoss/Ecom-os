@@ -1,7 +1,12 @@
 import { getEngine as getBaseEngine, setEngine, EcomEngine, FakeEngine } from '@ecom-os/engine';
+import { validateRuntimeConfig } from './runtime-config';
 
 export async function getEngine(): Promise<EcomEngine> {
+  validateRuntimeConfig();
   let engine = getBaseEngine();
+  if (process.env.NODE_ENV === 'production' && engine instanceof FakeEngine) {
+    throw new Error('FakeEngine is unavailable in production.');
+  }
   if (engine) return engine;
 
   const type = process.env.ECOM_ENGINE || 'fake';

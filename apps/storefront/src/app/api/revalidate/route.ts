@@ -5,9 +5,13 @@ import { logger } from '@/lib/logger';
 import { timingSafeEquals } from '@/lib/crypto';
 
 export async function POST(req: NextRequest) {
+  const configuredSecret = process.env.REVALIDATE_SECRET?.trim();
+  if (!configuredSecret || configuredSecret.length < 32) {
+    return NextResponse.json({ error: 'unavailable' }, { status: 503 });
+  }
   const secret = req.nextUrl.searchParams.get('secret') ?? '';
 
-  if (!timingSafeEquals(secret, process.env.REVALIDATE_SECRET ?? '')) {
+  if (!timingSafeEquals(secret, configuredSecret)) {
     logger.warn('revalidate_rejected', { reason: 'invalid_secret' });
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
