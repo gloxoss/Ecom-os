@@ -19,7 +19,7 @@ Backup is outside the repository at `C:/Users/OMEN/Local Sites/paraloca/ecomos-b
 - `site-config-content.zip`: 13,385,713 bytes, wp-config and wp-content snapshot.
 - These backups contain private configuration/data and must not be committed or shared. Restore has not been rehearsed.
 
-Proposed free plugins, approval pending:
+Owner approved installation of these three free plugins. All are now installed and active:
 
 1. WooCommerce 11.2.1 from WordPress.org. Registry declares WordPress >=7.0, PHP >=7.4, tested through 7.1.3.
 2. WPGraphQL 2.23.1 from WordPress.org. Registry declares WordPress >=6.0, PHP >=7.4, tested through 7.0.7. Compatibility with this WordPress version must be tested.
@@ -29,10 +29,46 @@ These are existing GPL open-source integrations with no paid addon or subscripti
 
 Rollback: deactivate added plugins, then restore the database and wp-config/wp-content snapshot if activation changes must be removed. Restore is a separate consequential operation and must target this same isolated site. Removing plugins alone does not undo WooCommerce database changes.
 
+If rolling back this fixture/connector setup, also remove its added local `ECOM_ENGINE`, `WC_*`, `REVALIDATE_SECRET` and `SESSION_COOKIE_SECRET` entries from the ignored storefront environment file. Preserve the original theme/encryption entries. The pre-plugin database backup predates the connector and fixture data, so restored WordPress will no longer recognize that connector key.
+
 ## Repeatable public preflight
 
 Run `pnpm exec tsx scripts/probe-woocommerce.ts http://paraloca.local`. The script prints only public capability/status summaries and token presence, never token values. A nonzero exit means prerequisites are missing. A successful preflight does not prove cart updates or checkout.
 
-After approved installation: verify schemas/versions, configure local-only adapter URLs and appropriate API credentials, create clearly marked synthetic fixtures, and test a backend guest cart plus COD order with authoritative shipping/tax totals. No real payments or production actions.
+## Verified backend commerce checkpoint
+
+Store API products/cart and commerce GraphQL now respond successfully. The existing adapter fetches a real WooCommerce fixture at 39.95 MAD and reads the fixture category. Two published synthetic products, including one exact variation, were created through WooCommerce CRUD:
+
+- Simple product 12, SKU `ECOMOS-TEST-SIMPLE`, 39.95 MAD.
+- Variable parent 13 and variation 14, SKU `ECOMOS-TEST-VARIATION-STANDARD`, 79.50 MAD.
+- Morocco fixture shipping zone 1, flat rate `flat_rate:1`, 25.00 MAD. Fixture tax class uses a deliberately synthetic 10% rate on fixture items/shipping. This is not merchant tax or delivery policy.
+
+`scripts/seed-local-woocommerce.php` only runs through WP-CLI on this exact Local environment/domain. It refuses initial seeding on a non-empty store. A repeat invocation returned the same manifest without resetting stock or creating more products. It configures this isolated fixture store as MAD/Morocco with guest checkout.
+
+A dedicated connector user has only `read` and `manage_woocommerce`, without administrator capabilities. Its API key is read-only. Catalog currency reads pass; customer-order reads return 403 and settings writes are denied. Secrets are saved only in the ignored storefront `.env.local`; the supplied WordPress login password is not saved. Optional customer accounts and Stripe/CMI remain disabled.
+
+REST Basic authentication over HTTP returned 401. Using HTTPS with Local's exact site certificate trusted through `NODE_EXTRA_CA_CERTS` returned 200. Certificate checks remain enabled. Set the variable before starting Node, not after loading `.env.local`. To launch development from PowerShell, use `./scripts/dev-local.ps1` with Local running.
+
+`scripts/smoke-local-woocommerce.ts 12 14 maagd` passed on HTTPS:
+
+- Two independent guest carts do not share lines. Missing/forged cart tokens are rejected.
+- Quantity 999 exceeds stock and is rejected. Browser-supplied `price: 0.01` is ignored; WooCommerce prices remain authoritative.
+- Cart contains 2 simple items plus exact variation 14. Backend totals: 159.40 MAD items + 25.00 shipping + 18.44 synthetic tax = 202.84 MAD.
+- COD checkout creates order **15**, status `processing`, guest customer ID **0**. Sequential retry returns **409**; independent WooCommerce CRUD confirms exactly one order for this run and the correct parent/variation IDs, quantities and totals.
+- Local's SMTP targets `localhost:10001`. Mailpit captured one notification referencing order #15. No live payment or external customer email was used.
+
+The first smoke attempt stopped at a cart POST because this WooCommerce version returned 201 rather than 200. The script now accepts both success statuses; the completed run is recorded in `store-api-smoke.json`. Independent order verification initially compared unpadded decimal strings; it now normalizes them to two decimal places. These were harness corrections, not altered commerce totals.
+
+For repeat checks, set `$env:NODE_EXTRA_CA_CERTS` to Local's `paraloca.local.crt`, then run the public preflight or smoke through `pnpm exec tsx`. The smoke creates another clearly marked local test order on each successful run. Verify it through WP-CLI `eval-file scripts/verify-local-order.php <order-id>`. Do not run these fixture scripts against another environment.
+
+## Remaining acceptance gates
+
+This proves the backend Store API strategy, not storefront checkout. The engine's cart/checkout methods and checkout UI stay unavailable until secure HTTP-only session integration, destination validation, concurrent duplicate protection, ownership-safe confirmation and failure/recovery tests pass. Sequential retry proof does not cover concurrent submissions or every gateway.
+
+Browser/CSP/hydration and image processing are unverified; Local's Imagick warning remains. The previous dependency audit still has one unresolved high development advisory. No optional project PHP plugin was activated. No production action occurred.
+
+The optional WP-CLI registry checksum check for WooCommerce/WPGraphQL ran without completing and was stopped; no checksum pass is claimed for those two plugins. Their downloads came from WordPress.org. The bridge ZIP checksum matched the upstream release digest. One public GraphQL preflight exceeded its 15-second timeout while other checks were running; the repeat completed successfully. Local performance under load remains unverified.
+
+After this slice, `pnpm run verify` passed: engine/addon guard, lint (18 warnings, zero errors), workspace type checks and 74 unit tests in 14 files. The smoke script passed standalone TypeScript checking, both PHP helpers passed syntax checks, and the PowerShell launcher parsed successfully. The launcher was not started; no new browser/build claim is made.
 
 Sources: [WooCommerce installation](https://woocommerce.com/document/installing-uninstalling-woocommerce/), [WPGraphQL installation](https://github.com/wp-graphql/wp-graphql), [commerce bridge release](https://github.com/wp-graphql/wp-graphql-woocommerce/releases/tag/v1.0.3). Versions and declared requirements were also checked through WordPress.org's plugin-information API.

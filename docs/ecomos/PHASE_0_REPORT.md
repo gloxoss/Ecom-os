@@ -1,12 +1,16 @@
 # Phase 0 checkpoint, 2026-10-09
 
-**Status: PARTIAL. Local execution and security containment pass. Real WooCommerce commerce remains BLOCKED. Not production-ready.**
+**Status: PARTIAL. Local security checks and backend guest COD proof pass. Storefront cart/checkout remain incomplete. Not production-ready.**
+
+**Later staging checkpoint:** the owner supplied and approved setup of `paraloca.local`. Backend product retrieval and a real synthetic guest COD order now pass on WooCommerce 11.2.1. Order 15 is verified through independent CRUD at 202.84 MAD, with exact variation/shipping/synthetic tax and one order after sequential retry. The initial blocked evidence below is historical. Frontend checkout remains disabled and unverified. See `STAGING_SETUP.md` and `store-api-smoke.json` for current evidence.
 
 Baseline: `981347f41e820fd711e2c8dc0c3f6b217e37f910` on `main`. Work is on `fix/ecomos-phase-0`. The preexisting dirty `plugins/wordpress-mcp` submodule was preserved. The handoff's historical percentages are not reused.
 
 Local repair commits: `78d5a29` restores tooling/dependencies; `e13e0a9` contains unsafe commerce and adds canonical-money fixtures. Verification below applies to their combined final source tree. Nothing was pushed.
 
 ## Changes and evidence
+
+The following sections record the initial repair checkpoint before staging was supplied. Current backend evidence is in the later staging checkpoint above and `STAGING_SETUP.md`.
 
 ### ECO-001 / ECO-002, baseline and reproducibility
 

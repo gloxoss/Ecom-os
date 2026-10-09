@@ -1,0 +1,25 @@
+{
+  "origin": "https://paraloca.local",
+  "wordpressVersion": "7.1.3",
+  "phpVersion": "8.2.29",
+  "plugins": {
+    "woocommerce": "11.2.1",
+    "wp-graphql": "2.23.1",
+    "wp-graphql-woocommerce": "1.0.3"
+  },
+  "wordpressRestStatus": 200,
+  "storeApiProductsStatus": 200,
+  "publishedFixtureProducts": 2,
+  "storeApiCartStatus": 200,
+  "hasCartToken": true,
+  "currency": "MAD",
+  "graphqlStatus": 200,
+  "commerceSchemaValid": true,
+  "anonymousPrivilegedOrderReadStatus": 401,
+  "connectorCustomerOrdersReadStatus": 403,
+  "connectorSettingsWriteDenied": true,
+  "tlsValidationEnabled": true,
+  "bridgeArchiveSha256Verified": true,
+  "registryPluginChecksumCheck": "NOT_COMPLETED",
+  "browserVerified": false
+}
