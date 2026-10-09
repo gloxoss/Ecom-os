@@ -64,3 +64,9 @@ Owner approved the three proposed free plugins. WooCommerce 11.2.1, WPGraphQL 2.
 The owner's 13 listed paths exist and contain nine distinct documents. Numbered integration/admin copies are identical to their canonical files; the canonical product vision, modular architecture, integration catalog and admin strategy match the references already read. The master prompt and phased plan govern execution, with current source/tests governing implementation claims.
 
 Sequence clarification: finish or explicitly record remaining Phase 0 gates, then Phase 1 catalog contracts/mapping, pagination, filtering and variation identity (ECO-101 through ECO-105). Full storefront cart/checkout integration belongs to Phase 2. The backend COD smoke is Phase 0 integration evidence, not a completed Phase 2 feature. Preserve existing engine/theme/addon seams; ParaLoca remains a client profile and RFQ remains optional.
+
+## Multi-agent hub, 2026-10-09
+
+Owner requested a project-specific hub patterned after the local IMC and SchoolOS examples. `.agent-hub` now provides executable task/claim/resource coordination, committed evidence, a separate verifier and orchestrator acceptance, four implementation lanes, domain rules/contracts and all 58 phased ECO tasks plus HUB-001. Root AGENTS/CLAUDE and Codex/Claude skills route agents into the same hub. Existing source and WordPress business behavior are unchanged by hub creation.
+
+Baseline task definitions start OPEN; historical reports are evidence pointers, not automatic independent acceptance. Phase 0 remains PARTIAL and no phase gate is pre-approved. Hub implementation checks and limitations are recorded in `HUB_IMPLEMENTATION.md`; independent exact-commit evidence belongs in `verification/HUB-001/verification.md`.

@@ -13,6 +13,8 @@
     "create-ecom-os": "scripts/create-ecom-os.ts"
   },
   "scripts": {
+    "hub": "node .agent-hub/hub.mjs",
+    "hub:test": "node --test .agent-hub/test/*.test.mjs",
     "create": "npx tsx scripts/create-ecom-os.ts",
     "predev": "npx tsx scripts/generate-tokens.ts && npx tsx scripts/generate-addons.ts",
     "prebuild": "npx tsx scripts/generate-tokens.ts && npx tsx scripts/generate-addons.ts",
@@ -24,7 +26,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
-    "verify": "tsx scripts/check-engine-imports.ts && pnpm lint && pnpm typecheck && pnpm test"
+    "verify": "tsx scripts/check-engine-imports.ts && pnpm lint && pnpm typecheck && pnpm test && pnpm hub:test"
   },
   "engines": {
     "node": ">=22",

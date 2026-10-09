@@ -1,5 +1,6 @@
 ﻿# Dependencies
 node_modules/
+.agent-hub/.runtime/
 .pnpm-store/
 
 # Build outputs

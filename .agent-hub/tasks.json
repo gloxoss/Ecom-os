@@ -1,0 +1,472 @@
+[
+  {
+    "id": "HUB-001",
+    "phase": 0,
+    "title": "Create the EcomOS multi-agent operating hub",
+    "description": "User-approved agent hub, business-domain rules, orchestration CLI, independent verifier workflow and usable role kits. No runtime commerce expansion or production mutations."
+  },
+  {
+    "id": "ECO-001",
+    "phase": 0,
+    "title": "read `AGENTS.md` and inspect repository, current git status, env templates, installed Node/pnpm/Next, dependencies, scripts, plugin manifests, WordPress staging endpoints",
+    "description": "read `AGENTS.md` and inspect repository, current git status, env templates, installed Node/pnpm/Next, dependencies, scripts, plugin manifests, WordPress staging endpoints; establish actual versions and tests. Make a matrix for PASS/FAIL/BLOCKED, log only redacted evidence.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": "docs/ecomos/PHASE_0_REPORT.md"
+  },
+  {
+    "id": "ECO-002",
+    "phase": 0,
+    "title": "repair package manager/workspace dependency links, install deterministically, fix code generation paths and export guards, restore lint, typecheck, unit test and production build commands. Avoid global installs/mutations unless justified.",
+    "description": "repair package manager/workspace dependency links, install deterministically, fix code generation paths and export guards, restore lint, typecheck, unit test and production build commands. Avoid global installs/mutations unless justified.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": "docs/ecomos/PHASE_0_REPORT.md"
+  },
+  {
+    "id": "ECO-003",
+    "phase": 0,
+    "title": "disable or repair unsafe customer JWT code. Guest checkout is core",
+    "description": "disable or repair unsafe customer JWT code. Guest checkout is core; account-feature routes disabled by default. Verify forged, expired, unsigned and wrong-issuer tokens cannot read/update orders/addresses through any privileged REST path.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": "docs/ecomos/PHASE_0_REPORT.md"
+  },
+  {
+    "id": "ECO-004",
+    "phase": 0,
+    "title": "examine Stripe and CMI integrations, callbacks and webhook idempotency. Fix approval-state verification and durable processing or disable gateway with explicit capability. No false payment-success UI. COD staging can be first proven path.",
+    "description": "examine Stripe and CMI integrations, callbacks and webhook idempotency. Fix approval-state verification and durable processing or disable gateway with explicit capability. No false payment-success UI. COD staging can be first proven path.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": "docs/ecomos/PHASE_0_REPORT.md"
+  },
+  {
+    "id": "ECO-005",
+    "phase": 0,
+    "title": "centralize authoritative price parsing and money types",
+    "description": "centralize authoritative price parsing and money types; distinguish currency, decimal values and minor units. Eliminate `parseFloat(formattedPrice)` and default USD; add large/decimal/French-locale tests.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": "docs/ecomos/PHASE_0_REPORT.md"
+  },
+  {
+    "id": "ECO-006",
+    "phase": 0,
+    "title": "audit shipping/tax/cart session and correct immediate high-risk paths",
+    "description": "audit shipping/tax/cart session and correct immediate high-risk paths; fail closed for missing engine configuration, API URLs, webhook secrets and revalidation secrets in production. Stop production fake-engine fallback.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": "docs/ecomos/PHASE_0_REPORT.md"
+  },
+  {
+    "id": "ECO-007",
+    "phase": 0,
+    "title": "repair CSP / rendering headers, secret leakage and private caching. Patch supported dependencies with advisory-based priorities",
+    "description": "repair CSP / rendering headers, secret leakage and private caching. Patch supported dependencies with advisory-based priorities; test actual production mode.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": "docs/ecomos/PHASE_0_REPORT.md"
+  },
+  {
+    "id": "ECO-008",
+    "phase": 0,
+    "title": "verify WordPress WooCommerce/GraphQL/REST/Store API staging operations and run a minimal real product and Store API cart/checkout sandbox proof. If blocked, document exactly which permission/configuration/API capability is missing and stop any unprovable claims.",
+    "description": "verify WordPress WooCommerce/GraphQL/REST/Store API staging operations and run a minimal real product and Store API cart/checkout sandbox proof. If blocked, document exactly which permission/configuration/API capability is missing and stop any unprovable claims.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": "docs/ecomos/PHASE_0_REPORT.md"
+  },
+  {
+    "id": "ECO-101",
+    "phase": 1,
+    "title": "specify typed `Product`, `Variation`, `Category`, `Brand`, `InventoryAvailability`, `Money`, `Media`, `TaxVisibility`, `TechnicalAttribute`, `Document` (optional extension) without ParaLoca vocabulary in core.",
+    "description": "specify typed `Product`, `Variation`, `Category`, `Brand`, `InventoryAvailability`, `Money`, `Media`, `TaxVisibility`, `TechnicalAttribute`, `Document` (optional extension) without ParaLoca vocabulary in core.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-102",
+    "phase": 1,
+    "title": "fix WooCommerce adapter for real category tree, parent/variation resolution, SKU, images/gallery, pricing, stock, slugs, related items and pagination. Explicit errors rather than silently empty data.",
+    "description": "fix WooCommerce adapter for real category tree, parent/variation resolution, SKU, images/gallery, pricing, stock, slugs, related items and pagination. Explicit errors rather than silently empty data.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-103",
+    "phase": 1,
+    "title": "product-query contract supports search/category/brand, sorting, cursors or page numbers, per-page limits, locale-aware fields and visible stock status. Avoid N+1 calls",
+    "description": "product-query contract supports search/category/brand, sorting, cursors or page numbers, per-page limits, locale-aware fields and visible stock status. Avoid N+1 calls; distinguish cacheable public catalog from private operations.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-104",
+    "phase": 1,
+    "title": "create reusable data-driven PLP/PDP/category components",
+    "description": "create reusable data-driven PLP/PDP/category components; exact variations with accessible selection; optimistic UI only with rollback; accurate unavailable state.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-105",
+    "phase": 1,
+    "title": "use WooCommerce native `product_brand` if supported by verified installed version",
+    "description": "use WooCommerce native `product_brand` if supported by verified installed version; vendor-independent EcomOS `Brand` projection with owned/third-party metadata OPTIONAL and not hardwired to platform branding.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-201",
+    "phase": 2,
+    "title": "evaluate Store API Cart-Token/headless session behavior with real gateway compatibility",
+    "description": "evaluate Store API Cart-Token/headless session behavior with real gateway compatibility; implement server-side BFF/adapter and secure session handling. No separate authoritative browser-only cart.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-202",
+    "phase": 2,
+    "title": "add/update/remove variation-specific lines",
+    "description": "add/update/remove variation-specific lines; persist guest session appropriately; revalidate price, stock, limits and coupon rules at WooCommerce.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-203",
+    "phase": 2,
+    "title": "collect validated customer details and addresses",
+    "description": "collect validated customer details and addresses; model country-specific fields through client config; quote shipping using configured WooCommerce destination rules; compute taxes/totals from WooCommerce.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-204",
+    "phase": 2,
+    "title": "end-to-end COD test checkout, order creation, true server-confirmed success, transactional mail test sink, recoverable payment failures, duplicate-submit protection.",
+    "description": "end-to-end COD test checkout, order creation, true server-confirmed success, transactional mail test sink, recoverable payment failures, duplicate-submit protection.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-205",
+    "phase": 2,
+    "title": "provider adapter contract, verified callbacks/webhooks, idempotency, event ledger/status synchronization. Add Stripe or Moroccan CMI only after a verified compatible staging flow",
+    "description": "provider adapter contract, verified callbacks/webhooks, idempotency, event ledger/status synchronization. Add Stripe or Moroccan CMI only after a verified compatible staging flow; do not say integrated based only on available PHP plugin.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-206",
+    "phase": 2,
+    "title": "guest order-status link must prove ownership, with opaque short-lived signed token/email challenge or native safe mechanism",
+    "description": "guest order-status link must prove ownership, with opaque short-lived signed token/email challenge or native safe mechanism; avoid public enumeration and insecure query-parameter success checks.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-301",
+    "phase": 3,
+    "title": "create `SearchProvider` abstraction with search, suggestions, filters/facets, index health, sync and fallback. Compare Meilisearch vs Typesense vs repaired native Woo search using real sample catalog",
+    "description": "create `SearchProvider` abstraction with search, suggestions, filters/facets, index health, sync and fallback. Compare Meilisearch vs Typesense vs repaired native Woo search using real sample catalog; log maintenance/pricing and license decisions.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-302",
+    "phase": 3,
+    "title": "normalized product/variation search projection: SKU exact-match priority (typo correction disabled for technical references), localized names, categories, brands, public prices, availability, safe attributes, slug and thumbnail. Never index private quote/customer data.",
+    "description": "normalized product/variation search projection: SKU exact-match priority (typo correction disabled for technical references), localized names, categories, brands, public prices, availability, safe attributes, slug and thumbnail. Never index private quote/customer data.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-303",
+    "phase": 3,
+    "title": "index on product/variation/brand/stock changes, retry failed events, remove deleted docs, support full rebuild and periodic reconciliation. Avoid relying on slow fragile on-request indexing.",
+    "description": "index on product/variation/brand/stock changes, retry failed events, remove deleted docs, support full rebuild and periodic reconciliation. Avoid relying on slow fragile on-request indexing.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-304",
+    "phase": 3,
+    "title": "header autocomplete, category/brand suggestions, keyboard listbox and mobile overlay",
+    "description": "header autocomplete, category/brand suggestions, keyboard listbox and mobile overlay; debounce and AbortController; robust empty/loading/error states; protect rate limits.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-305",
+    "phase": 3,
+    "title": "multi-facet catalog filters, URL-sync, clear-all, pagination reset, sorting and accessibility. Share service with `/devis` when enabled.",
+    "description": "multi-facet catalog filters, URL-sync, clear-all, pagination reset, sorting and accessibility. Share service with `/devis` when enabled.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-401",
+    "phase": 4,
+    "title": "consolidate `packages/themes` + `packages/brand-config` precedence, CSS tokens, layout slots, variant selection, locale, currency, contact info and content templates. Detect missing critical config at build/deploy.",
+    "description": "consolidate `packages/themes` + `packages/brand-config` precedence, CSS tokens, layout slots, variant selection, locale, currency, contact info and content templates. Detect missing critical config at build/deploy.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-402",
+    "phase": 4,
+    "title": "create `ClientProfile` manifest and schema validation",
+    "description": "create `ClientProfile` manifest and schema validation; capability flags, shipping/payment methods, industry metadata, environment URLs separated from code.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-403",
+    "phase": 4,
+    "title": "WordPress-managed hero, banners, navigation, page sections, brand stories, product documents (if addon), articles, SEO metadata. No giant hardcoded marketing JSON in production.",
+    "description": "WordPress-managed hero, banners, navigation, page sections, brand stories, product documents (if addon), articles, SEO metadata. No giant hardcoded marketing JSON in production.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-404",
+    "phase": 4,
+    "title": "reusable product/category/PDP/cart/checkout semantic UI templates, accessible images, loading/empty/error states, mobile navigation and reduced motion.",
+    "description": "reusable product/category/PDP/cart/checkout semantic UI templates, accessible images, loading/empty/error states, mobile navigation and reduced motion.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-405",
+    "phase": 4,
+    "title": "canonical URLs, sitemap, robots, product/category structured data, correct indexing policy for facets/search, language/RTL framework if enabled.",
+    "description": "canonical URLs, sitemap, robots, product/category structured data, correct indexing policy for facets/search, language/RTL framework if enabled.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-406",
+    "phase": 4,
+    "title": "create a SECOND neutral example client with significantly different styling/catalog fixture to prove EcomOS is not ParaLoca-bound.",
+    "description": "create a SECOND neutral example client with significantly different styling/catalog fixture to prove EcomOS is not ParaLoca-bound.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-501",
+    "phase": 5,
+    "title": "map client operator roles and daily jobs (orders, products, inventory, promotions, content, quotes only if addon on). Enforce capabilities server-side.",
+    "description": "map client operator roles and daily jobs (orders, products, inventory, promotions, content, quotes only if addon on). Enforce capabilities server-side.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-502",
+    "phase": 5,
+    "title": "evaluate WordPress admin enhancement plugins on staging: e.g. White Label CMS or WP Adminify/uiXpress. Check licensing, Woo compatibility, HPOS, mobile, keyboard, updates and conflict footprint. Do NOT stack competing admin-shell plugins.",
+    "description": "evaluate WordPress admin enhancement plugins on staging: e.g. White Label CMS or WP Adminify/uiXpress. Check licensing, Woo compatibility, HPOS, mobile, keyboard, updates and conflict footprint. Do NOT stack competing admin-shell plugins.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-503",
+    "phase": 5,
+    "title": "implement simple EcomOS Operations WP admin landing (overview, order queue, low-stock alerts, nav shortcuts, addon slots), using WP authentication and Woo CRUD",
+    "description": "implement simple EcomOS Operations WP admin landing (overview, order queue, low-stock alerts, nav shortcuts, addon slots), using WP authentication and Woo CRUD; avoid second merchant backend and duplicate reporting databases.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-504",
+    "phase": 5,
+    "title": "publish merchant task runbook, QA sample workflows and permissions tests",
+    "description": "publish merchant task runbook, QA sample workflows and permissions tests; restrict technical plugins/settings to platform operators.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-601",
+    "phase": 6,
+    "title": "addon manifest (`id`, `version`, compatible API ranges, dependencies, capability requirements, config/schema, routes, UI slots, admin slots, PHP module, migrations, tests).",
+    "description": "addon manifest (`id`, `version`, compatible API ranges, dependencies, capability requirements, config/schema, routes, UI slots, admin slots, PHP module, migrations, tests).",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-602",
+    "phase": 6,
+    "title": "secure server-side feature registry and shared typed capability projection to Next.js. Disabled services return 404/403 as designed, not functioning because only UI was hidden.",
+    "description": "secure server-side feature registry and shared typed capability projection to Next.js. Disabled services return 404/403 as designed, not functioning because only UI was hidden.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-603",
+    "phase": 6,
+    "title": "addon installation/migration/deactivation lifecycle, idempotency and rollback, missing-addon handling. Separate billing/paid license from EcomOS capability toggles.",
+    "description": "addon installation/migration/deactivation lifecycle, idempotency and rollback, missing-addon handling. Separate billing/paid license from EcomOS capability toggles.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-604",
+    "phase": 6,
+    "title": "exemplar simple addon and contract tests verifying both disabled and enabled states, addon failure isolation and versioning.",
+    "description": "exemplar simple addon and contract tests verifying both disabled and enabled states, addon failure isolation and versioning.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-701",
+    "phase": 7,
+    "title": "define RFQ state machine and permission model",
+    "description": "define RFQ state machine and permission model; guest submit/contact verification vs staff roles; compliance/privacy and consent fields configurable per client.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-702",
+    "phase": 7,
+    "title": "separate `QuoteBasket` with exact product + variation IDs and quantities",
+    "description": "separate `QuoteBasket` with exact product + variation IDs and quantities; `add to quote` secondary action and dedicated `/devis` builder with shared catalog search, category list, filters, sticky selection summary/mobile sheet.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-703",
+    "phase": 7,
+    "title": "customer review step, quantity edit, optional notes, contact/company fields, validated submit and idempotency",
+    "description": "customer review step, quantity edit, optional notes, contact/company fields, validated submit and idempotency; never require B2C customer account.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-704",
+    "phase": 7,
+    "title": "custom WordPress plugin with versioned REST API and durable persistence, snapshots and immutable offer revisions",
+    "description": "custom WordPress plugin with versioned REST API and durable persistence, snapshots and immutable offer revisions; guard transitions. Evaluate reputable mature quotation plugin as shortcut but demand headless API test. Do not assume a shortcode plugin meets requirements.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-705",
+    "phase": 7,
+    "title": "staff offer creation, line pricing/taxes from server, PDF with private authenticated/verified download, transactional emails, accept/reject/revise and expiration.",
+    "description": "staff offer creation, line pricing/taxes from server, PDF with private authenticated/verified download, transactional emails, accept/reject/revise and expiration.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-706",
+    "phase": 7,
+    "title": "optional idempotent conversion accepted quote into WooCommerce order with audit references. Check price, payment, tax and shipping integrity",
+    "description": "optional idempotent conversion accepted quote into WooCommerce order with audit references. Check price, payment, tax and shipping integrity; quote acceptance is not automatic reservation unless configured.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-707",
+    "phase": 7,
+    "title": "add-on off-state removes route/menu/CTA and API privileges. Quote module never overwrites normal cart.",
+    "description": "add-on off-state removes route/menu/CTA and API privileges. Quote module never overwrites normal cart.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-801",
+    "phase": 8,
+    "title": "create `clients/paraloca/` (or configuration convention consistent with repo). Brand spelling: **ParaLoca**, domain `paraloca.ma`. French + MAD + Moroccan addresses/delivery + appropriate payment gateway pending merchant verification.",
+    "description": "create `clients/paraloca/` (or configuration convention consistent with repo). Brand spelling: **ParaLoca**, domain `paraloca.ma`. French + MAD + Moroccan addresses/delivery + appropriate payment gateway pending merchant verification.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-802",
+    "phase": 8,
+    "title": "implement the approved light, minimal medical-lifestyle visual direction from `references/PARALOCA_DESIGN_REFERENCE.md`. Existing ParaLoca mockups are inspiration, not proof of backend functionality.",
+    "description": "implement the approved light, minimal medical-lifestyle visual direction from `references/PARALOCA_DESIGN_REFERENCE.md`. Existing ParaLoca mockups are inspiration, not proof of backend functionality.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-803",
+    "phase": 8,
+    "title": "build homepage, catalog categories, product PDP, brands pages, cart, guest checkout, favorites, product guide/info pages. No obligatory customer-account interface.",
+    "description": "build homepage, catalog categories, product PDP, brands pages, cart, guest checkout, favorites, product guide/info pages. No obligatory customer-account interface.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-804",
+    "phase": 8,
+    "title": "owned-brand classification lives inside the *single WooCommerce B2C catalog*: brand taxonomy term metadata, special brand landing/story panels, optional warranty/docs",
+    "description": "owned-brand classification lives inside the *single WooCommerce B2C catalog*: brand taxonomy term metadata, special brand landing/story panels, optional warranty/docs; same cart/checkout/search for third-party and private-label products.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-805",
+    "phase": 8,
+    "title": "activate RFQ addon for ParaLoca",
+    "description": "activate RFQ addon for ParaLoca; professional link and `/devis` builder must be discreet in B2C, not intrusive.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-806",
+    "phase": 8,
+    "title": "verify real medical equipment content, claims, warranty, importer/legal disclosures with client. Do not invent certifications, compliance, device registration, distributor rights or stock levels.",
+    "description": "verify real medical equipment content, claims, warranty, importer/legal disclosures with client. Do not invent certifications, compliance, device registration, distributor rights or stock levels.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-807",
+    "phase": 8,
+    "title": "stage and UAT all French mobile and desktop experiences",
+    "description": "stage and UAT all French mobile and desktop experiences; keep the independent Coming Soon page until authorized cutover.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-901",
+    "phase": 9,
+    "title": "stable CI build/typecheck/test/lint, E2E buyer+merchant and RFQ addon, security regression suite, performance budgets and accessibility.",
+    "description": "stable CI build/typecheck/test/lint, E2E buyer+merchant and RFQ addon, security regression suite, performance budgets and accessibility.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-902",
+    "phase": 9,
+    "title": "WordPress/PHP unit/integration tests, backend version matrix, Store API changes, HPOS compatibility, plugin updater compatibility.",
+    "description": "WordPress/PHP unit/integration tests, backend version matrix, Store API changes, HPOS compatibility, plugin updater compatibility.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-903",
+    "phase": 9,
+    "title": "provisioning CLI/checklist, environment contract, migrations, version locking, backups and tested restore, monitoring, transaction error alerts, health probes and rollback.",
+    "description": "provisioning CLI/checklist, environment contract, migrations, version locking, backups and tested restore, monitoring, transaction error alerts, health probes and rollback.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-904",
+    "phase": 9,
+    "title": "initialize `Demo Client 2` with different theme and disabled RFQ/accounts. Same buying E2E must pass without source duplication.",
+    "description": "initialize `Demo Client 2` with different theme and disabled RFQ/accounts. Same buying E2E must pass without source duplication.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-905",
+    "phase": 9,
+    "title": "documentation for installing plugin integrations, changing providers and implementing additional addons",
+    "description": "documentation for installing plugin integrations, changing providers and implementing additional addons; complete change log and compatibility table.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  },
+  {
+    "id": "ECO-906",
+    "phase": 9,
+    "title": "verify user-approved production domain and payment certification. Never perform launch without explicit operator approval.",
+    "description": "verify user-approved production domain and payment certification. Never perform launch without explicit operator approval.",
+    "source": "../../02_PHASED_EXECUTION_PLAN.md",
+    "baselineEvidence": null
+  }
+]
