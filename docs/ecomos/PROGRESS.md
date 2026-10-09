@@ -52,3 +52,7 @@ Phase 0 security containment first, then reproducibility and pricing. No product
 Owner confirmed they will create the isolated staging site. Credentials should be configured locally, not sent through chat.
 
 Next: isolated staging configuration and a Store API guest cart/COD proof; keep accounts and online payments disabled.
+
+## Local staging supplied, 2026-10-09
+
+Owner supplied `paraloca.local`. WordPress REST is reachable and WP-CLI confirms WordPress 7.1.3 with no plugins. WooCommerce/GraphQL endpoints are absent. Local's PHP 8.2.29 runtime was found; all six project-owned PHP files pass syntax checks. Site database and configuration/content backups are complete outside the repository. Plugin setup approval is pending under the handoff's installation rule. Details and rollback proposal: `STAGING_SETUP.md`.
