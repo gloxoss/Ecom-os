@@ -1,0 +1,123 @@
+$ pnpm -r --if-present lint
+Scope: 11 of 12 workspace projects
+apps/storefront lint$ eslint
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\jest.config.js
+apps/storefront lint:   1:18  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\__tests__\security\revalidate.test.ts
+apps/storefront lint:   20:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+apps/storefront lint:   30:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+apps/storefront lint:   42:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+apps/storefront lint:   45:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\app\[locale]\(account)\account\loyalty-widget.tsx
+apps/storefront lint:   18:9  warning  't' is assigned a value but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\app\[locale]\(shop)\blog\page.tsx
+apps/storefront lint:   27:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\app\api\webhooks\cmi\route.ts
+apps/storefront lint:   1:28  warning  '_request' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\app\api\webhooks\stripe\route.ts
+apps/storefront lint:   1:28  warning  '_request' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\components\shared\brand-footer.tsx
+apps/storefront lint:   4:10  warning  'ArrowUpRight' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\components\shared\client-only.tsx
+apps/storefront lint:   6:19  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+apps/storefront lint: Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+apps/storefront lint: * Update external systems with the latest state from React.
+apps/storefront lint: * Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+apps/storefront lint: Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\components\shared\client-only.tsx:6:19
+apps/storefront lint:   4 | export function ClientOnly({ children }: { children: ReactNode }) {
+apps/storefront lint:   5 |   const [mounted, setMounted] = useState(false);
+apps/storefront lint: > 6 |   useEffect(() => setMounted(true), []);
+apps/storefront lint:     |                   ^^^^^^^^^^ Avoid calling setState() directly within an effect
+apps/storefront lint:   7 |   return mounted ? <>{children}</> : null;
+apps/storefront lint:   8 | }
+apps/storefront lint:   9 |  react-hooks/set-state-in-effect
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\account\server\profile-actions.ts
+apps/storefront lint:   6:37  warning  '_formData' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\account\ui\account-dashboard-client.tsx
+apps/storefront lint:     4:8   warning  'Link' is defined but never used          @typescript-eslint/no-unused-vars
+apps/storefront lint:   178:22  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\cart\ui\cart-button.tsx
+apps/storefront lint:   15:21  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+apps/storefront lint: Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+apps/storefront lint: * Update external systems with the latest state from React.
+apps/storefront lint: * Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+apps/storefront lint: Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\cart\ui\cart-button.tsx:15:21
+apps/storefront lint:   13 |   const t = useTranslations('cart');
+apps/storefront lint:   14 |
+apps/storefront lint: > 15 |   useEffect(() => { setMounted(true); }, []);
+apps/storefront lint:      |                     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+apps/storefront lint:   16 |
+apps/storefront lint:   17 |   const count = mounted ? getItemCount() : 0;
+apps/storefront lint:   18 |   const total = mounted ? getCartTotal() : 0;  react-hooks/set-state-in-effect
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\cart\ui\cart-page-client.tsx
+apps/storefront lint:   13:19  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+apps/storefront lint: Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+apps/storefront lint: * Update external systems with the latest state from React.
+apps/storefront lint: * Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+apps/storefront lint: Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\cart\ui\cart-page-client.tsx:13:19
+apps/storefront lint:   11 |   const t = useTranslations('cart');
+apps/storefront lint:   12 |   const [mounted, setMounted] = useState(false);
+apps/storefront lint: > 13 |   useEffect(() => setMounted(true), []);
+apps/storefront lint:      |                   ^^^^^^^^^^ Avoid calling setState() directly within an effect
+apps/storefront lint:   14 |
+apps/storefront lint:   15 |   if (!mounted) return <CartSkeleton />;
+apps/storefront lint:   16 |  react-hooks/set-state-in-effect
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\cart\ui\coupon-input.tsx
+apps/storefront lint:   38:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\catalog\ui\quick-view-modal.tsx
+apps/storefront lint:   22:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\catalog\ui\sort-select.tsx
+apps/storefront lint:   22:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\checkout\__tests__\price-integrity.test.ts
+apps/storefront lint:   18:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\checkout\ui\checkout-form.tsx
+apps/storefront lint:   7:32  warning  'listShippingMethodsAction' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\landing\ui\reviews-image-flip.tsx
+apps/storefront lint:   29:42  error  Error: Cannot access refs during render
+apps/storefront lint: React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\landing\ui\reviews-image-flip.tsx:29:42
+apps/storefront lint:   27 |   );
+apps/storefront lint:   28 |
+apps/storefront lint: > 29 |   const handlePointerEnter = contextSafe(() => {
+apps/storefront lint:      |                                          ^^^^^^^
+apps/storefront lint: > 30 |     const imageEl = rootRef.current?.querySelector("[data-review-image]");
+apps/storefront lint:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps/storefront lint: > 31 |     if (!imageEl) return;
+apps/storefront lint:      …
+apps/storefront lint:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps/storefront lint: > 44 |     );
+apps/storefront lint:      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps/storefront lint: > 45 |   });
+apps/storefront lint:      | ^^^^ Passing a ref to a function may read its value during render
+apps/storefront lint:   46 |
+apps/storefront lint:   47 |   return (
+apps/storefront lint:   48 |     <div  react-hooks/refs
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\product\ui\use-wishlist.ts
+apps/storefront lint:   10:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+apps/storefront lint: Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+apps/storefront lint: * Update external systems with the latest state from React.
+apps/storefront lint: * Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+apps/storefront lint: Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\features\product\ui\use-wishlist.ts:10:5
+apps/storefront lint:    8 |
+apps/storefront lint:    9 |   useEffect(() => {
+apps/storefront lint: > 10 |     setIsMounted(true);
+apps/storefront lint:      |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+apps/storefront lint:   11 |     try {
+apps/storefront lint:   12 |       const stored = localStorage.getItem(WISHLIST_KEY);
+apps/storefront lint:   13 |       if (stored) {  react-hooks/set-state-in-effect
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\lib\addons.ts
+apps/storefront lint:   6:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+apps/storefront lint: C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront\src\lib\mock-actions.ts
+apps/storefront lint:    3:38  warning  'formData' is defined but never used   @typescript-eslint/no-unused-vars
+apps/storefront lint:    7:35  warning  '_formData' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint:   10:37  warning  '_formData' is defined but never used  @typescript-eslint/no-unused-vars
+apps/storefront lint: ✖ 27 problems (14 errors, 13 warnings)
+apps/storefront lint: Failed
+C:\Users\OMEN\OneDrive\Documents\projects\ParaLoca\Ecom-os\apps\storefront:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] storefront@0.1.0 lint: `eslint`
+Exit status 1
+[ELIFECYCLE] Command failed with exit code 1.
