@@ -2,7 +2,12 @@ packages:
   - "apps/*"
   - "packages/*"
   - "plugins/*"
+verifyDepsBeforeRun: false
+overrides:
+  'esbuild@0.27.7': 0.28.2
 allowBuilds:
-  esbuild: set this to true or false
+  '@parcel/watcher': true
+  '@swc/core': true
+  esbuild: true
   sharp: true
   unrs-resolver: true

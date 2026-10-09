@@ -26,7 +26,7 @@ export function ReviewsImageFlip({ image }: ReviewsImageFlipProps) {
     { scope: rootRef }
   );
 
-  const handlePointerEnter = contextSafe(() => {
+  const handlePointerEnter = () => contextSafe(() => {
     const imageEl = rootRef.current?.querySelector("[data-review-image]");
     if (!imageEl) return;
 
@@ -42,7 +42,7 @@ export function ReviewsImageFlip({ image }: ReviewsImageFlipProps) {
         overwrite: true,
       }
     );
-  });
+  })();
 
   return (
     <div

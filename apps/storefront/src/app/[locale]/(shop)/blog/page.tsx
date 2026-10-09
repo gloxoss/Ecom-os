@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
-export const revalidate = 60; // ISR cache for 1 minute
+type Post = { id: number; slug: string; title: { rendered: string }; excerpt: { rendered: string } };
 
-async function getPosts() {
+async function getPosts(): Promise<Post[]> {
   const WP_URL = process.env.WC_REST_URL?.replace('/wp-json/wc/v3', '');
   if (!WP_URL) return [];
   try {
@@ -24,7 +24,7 @@ export default async function BlogPage() {
         <p className="text-secondary">No posts found.</p>
       ) : (
         <div className="grid gap-8">
-          {posts.map((post: any) => (
+          {posts.map(post => (
             <article key={post.id} className="border-b border-foreground/10 pb-8">
               <h2 className="text-2xl font-semibold mb-2">
                 <Link href={`/blog/${post.slug}`} className="hover:underline" dangerouslySetInnerHTML={{ __html: post.title.rendered }} />

@@ -13,7 +13,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11.7.0
 
       - uses: actions/setup-node@v4
         with:
@@ -49,7 +49,11 @@ jobs:
 
       - run: pnpm --filter storefront build
         env:
-          ECOM_ENGINE: fake
+          ECOM_ENGINE: woocommerce
+          WC_GRAPHQL_URL: https://woocommerce.example.test/graphql
+          WC_REST_URL: https://woocommerce.example.test/wp-json/wc/v3
+          WC_REST_KEY: ci-placeholder
+          WC_REST_SECRET: ci-placeholder
           ECOM_OS_ENCRYPTION_KEY: ${{ secrets.ECOM_OS_ENCRYPTION_KEY_TEST }}
           REVALIDATE_SECRET: test-revalidate-secret-32byteslong!
           SESSION_COOKIE_SECRET: test-session-secret-32byteslong!!

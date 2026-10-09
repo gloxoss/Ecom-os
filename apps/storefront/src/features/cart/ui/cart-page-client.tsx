@@ -2,15 +2,14 @@
 import Link from 'next/link';
 import { useCartStore } from '@/stores/cart-store';
 import { useTranslations } from 'next-intl';
-import { useState, useEffect } from 'react';
+import { useHydrated } from '@/lib/use-hydrated';
 import { CouponInput } from './coupon-input';
 import { StoreCapabilities } from '@ecom-os/engine';
 
 export function CartPageClient({ capabilities }: { capabilities: StoreCapabilities }) {
   const { items, removeItem, updateQty, getCartTotal } = useCartStore();
   const t = useTranslations('cart');
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useHydrated();
 
   if (!mounted) return <CartSkeleton />;
 

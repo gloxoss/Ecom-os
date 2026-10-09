@@ -1,3 +1,4 @@
+import type { EcomAddon } from '@ecom-os/engine';
 
 
-export const registeredAddons = [];
+export const registeredAddons: EcomAddon[] = [];

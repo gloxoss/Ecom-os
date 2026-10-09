@@ -60,7 +60,7 @@ export class FakeEngine implements EcomEngine {
   }
 
   async initCheckout(cartId: string, input: CheckoutInput, items?: Array<{ productId: string; slug: string; quantity: number }>): Promise<CheckoutSession> {
-    return { cartId, status: 'PENDING', _input: input, _items: items };
+    return { cartId, status: 'PENDING', _input: input, ...(items ? { _items: items } : {}) };
   }
 
   async placeOrder(session: CheckoutSession): Promise<Order> {

@@ -10,11 +10,11 @@
   },
   "dependencies": {
     "@ecom-os/engine": "workspace:*",
-    "stripe": "^16.0.0"
+    "stripe": "^16.12.0"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "vitest": "^2.0.0"
+    "typescript": "^5.9.3",
+    "vitest": "4.1.11"
   },
   "scripts": {
     "test": "vitest run",

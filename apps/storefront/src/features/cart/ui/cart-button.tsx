@@ -1,7 +1,8 @@
 'use client';
 
 import { useCartStore } from '@/stores/cart-store';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useHydrated } from '@/lib/use-hydrated';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -9,10 +10,9 @@ import { useTranslations } from 'next-intl';
 export function CartButton() {
   const { items, getCartTotal, getItemCount, removeItem, updateQty } = useCartStore();
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const t = useTranslations('cart');
 
-  useEffect(() => { setMounted(true); }, []);
 
   const count = mounted ? getItemCount() : 0;
   const total = mounted ? getCartTotal() : 0;

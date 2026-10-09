@@ -10,7 +10,7 @@ function main() {
   const parsed = BrandConfigSchema.safeParse(brandConfig);
   if (!parsed.success) {
     console.error('❌ Invalid brand config:');
-    parsed.error.errors.forEach(err => {
+    parsed.error.issues.forEach(err => {
       console.error(`  - ${err.path.join('.')}: ${err.message}`);
     });
     process.exit(1);

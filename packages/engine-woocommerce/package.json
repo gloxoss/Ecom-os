@@ -9,11 +9,11 @@
   },
   "dependencies": {
     "@ecom-os/engine": "workspace:*",
-    "graphql": "^17.0.1",
+    "graphql": "^16.0.0",
     "graphql-request": "^7.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
-    "typescript": "latest"
+    "typescript": "5.9.3"
   }
 }

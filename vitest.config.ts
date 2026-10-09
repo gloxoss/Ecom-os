@@ -9,18 +9,8 @@ export default defineConfig({
   },
   test: {
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/*.spec.ts'],
-    projects: [
-      {
-        name: 'storefront',
-        testEnvironment: 'node',
-        include: ['apps/storefront/src/**/*.test.ts', 'apps/storefront/src/**/*.test.tsx'],
-      },
-      {
-        name: 'packages',
-        testEnvironment: 'node',
-        include: ['packages/*/src/**/*.test.ts'],
-      }
-    ],
+    environment: 'node',
+    include: ['apps/storefront/src/**/*.test.ts', 'apps/storefront/src/**/*.test.tsx', 'packages/*/src/**/*.test.ts'],
 
     coverage: {
       provider: 'v8',

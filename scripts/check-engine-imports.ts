@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'fs';
 import path from 'path';
+import ts from '../apps/storefront/node_modules/typescript';
 
 function walk(dir: string, fileList: string[] = []): string[] {
   try {
@@ -42,11 +43,26 @@ try {
       const index = path.join(packagesDir, pkg, 'src/index.ts');
       try {
         const content = readFileSync(index, 'utf-8');
-        if (!content.includes('export function register') && !content.includes('export const register')) {
+        const source = ts.createSourceFile(index, content, ts.ScriptTarget.Latest, true);
+        const exports = new Set<string>();
+        for (const statement of source.statements) {
+          if (ts.isExportDeclaration(statement) && statement.exportClause && ts.isNamedExports(statement.exportClause)) {
+            for (const element of statement.exportClause.elements) exports.add(element.name.text);
+          }
+          if (ts.canHaveModifiers(statement) && ts.getModifiers(statement)?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) {
+            if (ts.isFunctionDeclaration(statement) && statement.name) exports.add(statement.name.text);
+            if (ts.isVariableStatement(statement)) {
+              for (const declaration of statement.declarationList.declarations) {
+                if (ts.isIdentifier(declaration.name)) exports.add(declaration.name.text);
+              }
+            }
+          }
+        }
+        if (!exports.has('register')) {
           console.error(`❌ ${index} is missing export 'register'`);
           process.exit(1);
         }
-        if (!content.includes('export function disable') && !content.includes('export const disable')) {
+        if (!exports.has('disable')) {
           console.error(`❌ ${index} is missing export 'disable'`);
           process.exit(1);
         }

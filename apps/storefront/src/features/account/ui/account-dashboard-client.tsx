@@ -175,7 +175,7 @@ export function AccountDashboardClient() {
 }
 
 // Plus icon definition for the addresses tab since I forgot to import it
-function Plus(props: any) {
+function Plus(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}

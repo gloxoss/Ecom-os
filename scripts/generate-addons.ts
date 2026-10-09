@@ -24,7 +24,7 @@ function loadEnv() {
 loadEnv();
 
 const addonsEnv = process.env.ADDONS || '';
-const activeAddons = addonsEnv.split(',').filter(Boolean);
+const activeAddons = addonsEnv.split(',').map(name => name.trim()).filter(Boolean);
 const pluginsDir = path.join(__dirname, '../plugins');
 const packagesDir = path.join(__dirname, '../packages');
 const outPath = path.join(__dirname, '../apps/storefront/src/addons.generated.ts');
@@ -33,7 +33,7 @@ function resolveAddon(name: string): { importPath: string } | null {
   // Try packages/addons-{name} first (formal packages)
   const pkgPath = path.join(packagesDir, `addons-${name}`);
   if (fs.existsSync(pkgPath)) {
-    return { importPath: `../../../../packages/addons-${name}/src` };
+    return { importPath: `@ecom-os/addons-${name}` };
   }
   // Fall back to plugins/{name} (legacy plugins)
   const pluginPath = path.join(pluginsDir, name);
@@ -55,8 +55,8 @@ const resolvedAddons = activeAddons.map(name => {
 const imports = resolvedAddons
   .map((a, i) => `import * as addon${i} from '${a.importPath}';`)
   .join('\n');
-const exportsArr = `export const registeredAddons = [${resolvedAddons.map((_, i) => `addon${i}`).join(', ')}];`;
+const exportsArr = `export const registeredAddons: EcomAddon[] = [${resolvedAddons.map((_, i) => `addon${i}`).join(', ')}];`;
 
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
-fs.writeFileSync(outPath, `${imports}\n\n${exportsArr}\n`);
+fs.writeFileSync(outPath, `import type { EcomAddon } from '@ecom-os/engine';\n${imports}\n\n${exportsArr}\n`);
 console.log(`Generated addons.generated.ts with ${resolvedAddons.length} addons: ${resolvedAddons.map(a => a.name).join(', ')}`);

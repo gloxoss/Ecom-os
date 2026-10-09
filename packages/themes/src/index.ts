@@ -14,5 +14,5 @@ export const themeRegistry: Record<string, EcomTheme> = {
 };
 
 export function getTheme(name: string): EcomTheme {
-  return themeRegistry[name] || themeRegistry.default;
+  return themeRegistry[name] || defaultTheme;
 }

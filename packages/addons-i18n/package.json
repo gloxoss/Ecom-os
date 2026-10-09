@@ -9,10 +9,11 @@
     "flag": "i18n"
   },
   "dependencies": {
-    "next-intl": "^3.26.0"
+    "@ecom-os/engine": "workspace:*",
+    "next-intl": "4.9.2"
   },
   "devDependencies": {
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "test": "vitest run",
