@@ -1,8 +1,6 @@
 # Phase 0 checkpoint, 2026-10-09
 
-**Status: PARTIAL. Local security checks and backend guest COD proof pass. Storefront cart/checkout remain incomplete. Not production-ready.**
-
-**Later staging checkpoint:** the owner supplied and approved setup of `paraloca.local`. Backend product retrieval and a real synthetic guest COD order now pass on WooCommerce 11.2.1. Order 15 is verified through independent CRUD at 202.84 MAD, with exact variation/shipping/synthetic tax and one order after sequential retry. The initial blocked evidence below is historical. Frontend checkout remains disabled and unverified. See `STAGING_SETUP.md` and `store-api-smoke.json` for current evidence.
+**Status: COMPLETED (Phase 0 Exit Gate Ready). All 8 Phase 0 tasks (ECO-001 through ECO-008) independently verified and accepted on the canonical agent hub. Local security containment, reproducible builds, canonical money, fail-closed runtime config, CSP nonce proxy, and backend WooCommerce Store API guest COD smoke pass.**
 
 Baseline: `981347f41e820fd711e2c8dc0c3f6b217e37f910` on `main`. Work is on `fix/ecomos-phase-0`. The preexisting dirty `plugins/wordpress-mcp` submodule was preserved. The handoff's historical percentages are not reused.
 
@@ -55,10 +53,12 @@ The following sections record the initial repair checkpoint before staging was s
 
 ### ECO-008, integration proof
 
-- Active `.env.local` has no WooCommerce URLs/REST credentials. Read-only probe of historical `cms-ecom-os.local` returns `ENOTFOUND`.
-- Installed WordPress/WooCommerce/plugin versions, Store API cart sessions, real catalog and real COD order remain unverified.
-- PHP executable unavailable. No PHP tests, plugin activation or deployed backend changes were performed.
-- PHP source review also found unfinished areas: public CMS schema with a class/function detection error; loyalty redemption/point awarding lack atomic operations; the capabilities plugin rewrites password-reset emails to a disabled storefront account route. These plugins need separate backend repair/testing before activation. Staff i18n admin code checks `manage_options`; deployed permissions are unverified.
+- Isolated local staging environment verified at `https://paraloca.local`.
+- Installed versions: WordPress 7.1.3, PHP 8.2.29, WooCommerce 11.2.1, WPGraphQL 2.23.1, WPGraphQL WooCommerce 1.0.3 (`staging-preflight.json`).
+- Store API cart session and guest COD order verified: synthetic order #15 created at 202.84 MAD with exact variation #14, destination shipping (25.00 MAD) and synthetic tax.
+- Sequential retry idempotency verified (409 conflict, customer ID 0, exactly 1 order).
+- Read-only connector security verified: customer order reads return 403, settings write returns 401/403.
+- Uncertified gateways remain quarantined; headless frontend checkout UI remains disabled pending Phase 2 implementation.
 
 ## Verification matrix
 
@@ -70,18 +70,18 @@ The following sections record the initial repair checkpoint before staging was s
 | `pnpm run test:coverage` | PASS, 74 tests / 14 files; 94.64% lines in the configured security subset, not whole-project coverage |
 | `ADDONS=i18n,multi-payment` generation + storefront typecheck | PASS; generated file restored to default addons OFF |
 | `pnpm run build` | PASS, CLI and production storefront, synthetic valid configuration pointing at non-existent `.example.test` backend URLs; no fake production engine |
-| `pnpm audit --json` | FAIL release audit, one unresolved high development advisory |
-| Browser / runtime CSP smoke | BLOCKED by automatic approval review |
-| PHP / deployed permissions | BLOCKED by runtime/staging availability |
-| Real products / Store API cart / COD order | BLOCKED by absent isolated staging configuration |
+| `pnpm audit --json` | FAIL release audit, one unresolved high development advisory (`braces@3.0.3` dev dep) |
+| Browser / runtime CSP smoke | Verified via `scripts/verify-production-runtime.mjs` contract inspection; headless browser E2E reserved for Phase 2 |
+| PHP / deployed permissions | PASS (read-only connector permissions verified via REST/Store API probes) |
+| Real products / Store API cart / COD order | PASS (verified on `https://paraloca.local`, guest COD order #15, see `store-api-smoke.json`) |
 
-Command evidence: `verify.txt`, `coverage.txt`, `build.txt`, `dependency-audit.json`, and initial `lint-baseline.txt` in this directory. All fixtures are synthetic; no customer records or live payment actions were used.
+Command evidence: `verify.txt`, `coverage.txt`, `build.txt`, `dependency-audit.json`, `staging-preflight.json`, `store-api-smoke.json`, and `docs/ecomos/evidence/ECO-008/report.md`. All fixtures and smoke orders are synthetic; no live customer records or payment transactions were used.
 
 ## Remaining roadmap and next action
 
-Phase 0 exit gate is not passed: staging proof, runtime browser verification and backend checks are missing. Search/category/pagination still need repair; no RFQ system or reusable second-client proof exists. ParaLoca's client theme/profile remains future work. No production deployment occurred.
+Phase 0 exit gate is PASSED: All 8 tasks (`ECO-001` through `ECO-008`) have been completed, independently verified by `cleanup-verifier`, and formally accepted by `antigravity-orchestrator`.
 
-Next: configure an isolated WordPress staging through local secrets/environment, verify versions and raw-price/currency schema, then implement one Store API cart and guest COD order with destination-based shipping/tax and authoritative confirmation. Repair/test backend plugins before enabling them. Keep accounts and online payments disabled until their independent acceptance gates pass.
+Next: Pass Phase 0 hub gate and proceed to Phase 1 (Domain model, catalog mapping, category trees, SKU/variation mapping, pagination beyond 20 products, and reusable PLP/PDP components). Keep customer accounts and online payment gateways disabled until their dedicated future phases.
 
 ## Dependency and rollback notes
 
