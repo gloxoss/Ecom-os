@@ -19,15 +19,17 @@ Three separate agents prepared domain rules, agent kits and independent verifica
 
 ## Verification
 
-Executed on the submitted implementation:
+Executed during implementation, with the final path-boundary repair rechecked through the complete hub suite:
 
-- `pnpm verify`: PASS, engine/addon guards, lint, all workspace type checks, 74 application tests and 15 hub tests. Lint reports 18 preexisting warnings, zero errors; Vitest reports its existing config-loader warning.
+- `pnpm verify`: PASS before the final hub-only path-boundary repair, engine/addon guards, lint, all workspace type checks, 74 application tests and 15 hub tests. Lint reports 18 preexisting warnings, zero errors; Vitest reports its existing config-loader warning. That repair changes no application source or dependencies.
 - `node --test .agent-hub/test/hub.test.mjs`: PASS, 15 tests, including real concurrent claim processes, alias/secret protection, live/dead lock recovery, corrupt journal refusal, shared commit separation and independent verification/gates.
 - Nine repository hub-related skills validated using skill-creator `quick_validate.py`: PASS. All 32 tracked hub/discovery Markdown files have resolving relative links. Three additional ParaLoca-root discovery skills also validate and route to this repository; parent-folder shortcuts are outside this Git repository.
 - `node .agent-hub/hub.mjs check`: PASS, no stale registrations; role prompt and 59 unique tasks across phases 0–9 confirmed.
 - `git diff --cached --check`: PASS after normalizing final Markdown trailing blank lines. No secrets/runtime/submodule files staged.
 
 Independent exact-commit verdict and separate worktree/shared-tree checks: [verification/HUB-001/verification.md](verification/HUB-001/verification.md). Its report is deliberately committed separately from the executor submission.
+
+Independent exact-SHA review of initial commit `e116df0` found a Windows junction resolving to the immediate parent (`..`) bypassed the escape guard. HUB-001 was reopened before acceptance. The guard now rejects both the parent itself and its descendants; the actual-junction regression is included in the 15-test hub suite. Final submitted SHA includes this repair as a separate commit; the verifier reruns both suites on that artifact.
 
 ## Operational limits
 

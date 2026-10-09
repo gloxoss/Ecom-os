@@ -38,7 +38,7 @@ export function filePath(input, root, config) {
   while (!exists(ancestor)) { tail.unshift(path.basename(ancestor)); ancestor = path.dirname(ancestor); }
   const resolved = path.resolve(fs.realpathSync(ancestor), ...tail);
   const relative = path.relative(absoluteRoot, resolved).replace(/\\/g, '/');
-  requireThat(relative && !relative.startsWith('../') && !path.isAbsolute(relative), 'Path resolves outside the repository.');
+  requireThat(relative && relative !== '..' && !relative.startsWith('../') && !path.isAbsolute(relative), 'Path resolves outside the repository.');
   requireThat(!config.protectedPaths.some(p => overlaps(p, relative)), 'Path alias points into a protected directory.');
   requireThat(safeSegments(relative), 'Path alias points into a secret/internal file.');
   return relative;

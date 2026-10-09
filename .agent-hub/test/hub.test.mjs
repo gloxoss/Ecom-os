@@ -69,6 +69,7 @@ test('junction aliases cannot escape root or bypass a claim', t => {
   f.assign('T1', 'a', 'source'); f.assign('T2', 'b', 'alias/file.txt'); f.claim('T1', 'a', 'source');
   f.run(['claim', 'T2', '--agent', 'b', '--files', 'alias/file.txt'], 3);
   fs.symlinkSync(os.tmpdir(), path.join(f.root, 'outside'), 'junction');
+  f.run(['assign', 'T2', '--agent', 'orch', '--to', 'b', '--files', 'outside'], 1);
   f.run(['assign', 'T2', '--agent', 'orch', '--to', 'b', '--files', 'outside/target'], 1);
   f.write('.env.private/secret.txt', 'SYNTHETIC_ONLY');
   fs.symlinkSync(path.join(f.root, '.env.private'), path.join(f.root, 'hidden'), 'junction');
