@@ -11,7 +11,14 @@ import { QuickViewModal } from './quick-view-modal';
 export function ProductCard({ product }: { product: Product }) {
   const image = product.images[0];
 
-  const price = formatMoney(product.price);
+  const priceDisplay = () => {
+    if (product.priceRange && product.priceRange.min.amount_minor !== product.priceRange.max.amount_minor) {
+      return `${formatMoney(product.priceRange.min)} – ${formatMoney(product.priceRange.max)}`;
+    }
+    return formatMoney(product.price);
+  };
+
+  const isOutOfStock = product.inventory?.status === 'OUT_OF_STOCK';
 
   const [showQuickView, setShowQuickView] = useState(false);
 
@@ -27,9 +34,18 @@ export function ProductCard({ product }: { product: Product }) {
               fill
               // Hints the browser which image size to download per viewport
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              className={`object-cover group-hover:scale-105 transition-transform duration-500 ${
+                isOutOfStock ? 'opacity-75' : ''
+              }`}
             />
           )}
+
+          {isOutOfStock && (
+            <span className="absolute top-2 left-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider bg-black/80 text-white rounded">
+              Out of stock
+            </span>
+          )}
+
           <WishlistButton productId={product.id} />
 
           {/* Quick-view button — appears on hover, opens modal without navigating */}
@@ -40,8 +56,13 @@ export function ProductCard({ product }: { product: Product }) {
             Quick view
           </button>
         </div>
+        {product.brand && (
+          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-0.5">
+            {product.brand.name}
+          </p>
+        )}
         <h3 className="font-medium text-foreground">{product.name}</h3>
-        <p className="text-secondary">{price}</p>
+        <p className="text-secondary">{priceDisplay()}</p>
       </Link>
 
       {showQuickView && (
