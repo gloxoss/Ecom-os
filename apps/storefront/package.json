@@ -14,6 +14,7 @@
   "dependencies": {
     "@ecom-os/addons-i18n": "workspace:*",
     "@ecom-os/addons-multi-payment": "workspace:*",
+    "@ecom-os/addons-rfq": "workspace:*",
     "@ecom-os/brand-config": "workspace:*",
     "@ecom-os/engine": "workspace:*",
     "@ecom-os/engine-woocommerce": "workspace:*",
