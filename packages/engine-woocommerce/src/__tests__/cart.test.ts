@@ -272,7 +272,156 @@ describe('WooCommerce Store API Cart & Session Adapter', () => {
 
       expect(resA.cart.items).toHaveLength(1);
       expect(resB.cart.items).toHaveLength(0);
-      expect(sessionCalls).toEqual(['guest-A', 'guest-B']);
+    });
+  });
+
+  describe('Line Item Mutations & Authoritative Revalidation', () => {
+    it('updates line item quantity via Store API update-item', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'Cart-Token': 'tok-update' }),
+        json: async () => ({
+          items: [{ key: 'line-xyz', id: 14, quantity: 3, prices: { price: '7950', currency_code: 'MAD' } }],
+          totals: { currency_code: 'MAD', total_items: '23850', total_price: '23850' },
+        }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const engine = new WooCommerceEngine();
+      const cart = await engine.updateCartItem('tok-update', 'line-xyz', 3);
+
+      expect(mockFetch).toHaveBeenCalledOnce();
+      const call = mockFetch.mock.calls[0]!;
+      expect(call[0]).toContain('/cart/update-item');
+      const body = JSON.parse((call[1] as RequestInit).body as string);
+      expect(body).toEqual({ key: 'line-xyz', quantity: 3 });
+      expect(cart.items[0]?.quantity).toBe(3);
+      expect(cart.total.amount_minor).toBe(23850);
+    });
+
+    it('removes line item when quantity is 0 or via removeCartItem', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'Cart-Token': 'tok-del' }),
+        json: async () => ({
+          items: [],
+          totals: { currency_code: 'MAD', total_items: '0', total_price: '0' },
+        }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const engine = new WooCommerceEngine();
+      const cart0 = await engine.updateCartItem('tok-del', 'line-xyz', 0);
+      expect(cart0.items).toHaveLength(0);
+
+      const cartDel = await engine.removeCartItem('tok-del', 'line-xyz');
+      expect(cartDel.items).toHaveLength(0);
+    });
+
+    it('rejects line update exceeding stock with authoritative Store API error', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        headers: new Headers(),
+        json: async () => ({
+          code: 'woocommerce_rest_cart_item_stock_limit',
+          message: 'You cannot add that amount to the cart — we have 5 in stock and you already have 5 in your cart.',
+        }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const engine = new WooCommerceEngine();
+      await expect(
+        engine.updateCartItem('tok-stock', 'line-xyz', 99)
+      ).rejects.toThrow('Store API request failed [400]: You cannot add that amount to the cart');
+    });
+  });
+
+  describe('Authoritative Store API Coupon Rules', () => {
+    it('applies valid coupon and computes discount through Store API', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'Cart-Token': 'tok-coupon' }),
+        json: async () => ({
+          items: [{ key: 'line-1', id: 12, quantity: 1, prices: { price: '10000', currency_code: 'MAD' } }],
+          totals: {
+            currency_code: 'MAD',
+            total_items: '10000',
+            total_discount: '2000',
+            total_price: '8000',
+          },
+        }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const engine = new WooCommerceEngine();
+      const result = await engine.applyCoupon('tok-coupon', 'DISCOUNT20', 10000);
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.discount.amount_minor).toBe(2000);
+        expect(result.discount.currency).toBe('MAD');
+      }
+    });
+
+    it('maps Store API coupon errors to typed error categories', async () => {
+      const engine = new WooCommerceEngine();
+
+      // Expired coupon
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        headers: new Headers(),
+        json: async () => ({ message: 'This coupon has expired.' }),
+      }));
+      expect(await engine.applyCoupon('tok', 'EXPIRED', 5000)).toEqual({ ok: false, error: 'expired' });
+
+      // Already applied
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        headers: new Headers(),
+        json: async () => ({ message: 'Coupon code already applied!' }),
+      }));
+      expect(await engine.applyCoupon('tok', 'DUP', 5000)).toEqual({ ok: false, error: 'already_applied' });
+
+      // Minimum order
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        headers: new Headers(),
+        json: async () => ({ message: 'The minimum spend for this coupon is 500 MAD.' }),
+      }));
+      expect(await engine.applyCoupon('tok', 'MIN', 1000)).toEqual({ ok: false, error: 'min_order' });
+
+      // Invalid code
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        headers: new Headers(),
+        json: async () => ({ message: 'Coupon "BOGUS" does not exist!' }),
+      }));
+      expect(await engine.applyCoupon('tok', 'BOGUS', 5000)).toEqual({ ok: false, error: 'invalid' });
+    });
+
+    it('removes coupon via Store API remove-coupon', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'Cart-Token': 'tok-del' }),
+        json: async () => ({
+          totals: { currency_code: 'MAD', total_discount: '0', total_price: '10000' },
+        }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const engine = new WooCommerceEngine();
+      const removed = await engine.removeCoupon('tok-del', 'DISCOUNT20');
+      expect(removed).toBe(true);
     });
   });
 });

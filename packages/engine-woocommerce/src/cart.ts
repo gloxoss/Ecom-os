@@ -156,3 +156,40 @@ export async function removeStoreCartItem(
     raw: res.data,
   };
 }
+
+export async function applyCouponToStoreCart(
+  cartToken: string,
+  code: string
+): Promise<StoreCartResult> {
+  const res = await storeApiFetch('/cart/apply-coupon', {
+    method: 'POST',
+    cartToken,
+    body: { code },
+  });
+  const activeToken = res.cartToken || cartToken;
+  const cart = mapStoreCart(res.data, activeToken, res.data?.totals?.currency_code || 'MAD');
+  return {
+    cart,
+    cartToken: activeToken,
+    raw: res.data,
+  };
+}
+
+export async function removeCouponFromStoreCart(
+  cartToken: string,
+  code: string
+): Promise<StoreCartResult> {
+  const res = await storeApiFetch('/cart/remove-coupon', {
+    method: 'POST',
+    cartToken,
+    body: { code },
+  });
+  const activeToken = res.cartToken || cartToken;
+  const cart = mapStoreCart(res.data, activeToken, res.data?.totals?.currency_code || 'MAD');
+  return {
+    cart,
+    cartToken: activeToken,
+    raw: res.data,
+  };
+}
+

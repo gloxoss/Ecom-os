@@ -34,7 +34,14 @@ import { loginGql, registerRest, getCustomerByToken, getCustomerOrdersRest, requ
 import { restFetch } from './rest';
 import { mapProduct, mapCategory, mapBrand, buildCategoryTree } from './mappers';
 import { fetchCurrency } from './currency';
-import { fetchStoreCart, addItemToStoreCart } from './cart';
+import {
+  fetchStoreCart,
+  addItemToStoreCart,
+  updateStoreCartItem,
+  removeStoreCartItem,
+  applyCouponToStoreCart,
+  removeCouponFromStoreCart,
+} from './cart';
 
 export class WooCommerceEngine implements EcomEngine {
   async listProducts(query: ProductListQuery): Promise<ProductListResult> {
@@ -115,6 +122,20 @@ export class WooCommerceEngine implements EcomEngine {
     return cart;
   }
 
+  async updateCartItem(cartId: string, key: string, quantity: number): Promise<Cart> {
+    if (quantity <= 0) {
+      const { cart } = await removeStoreCartItem(cartId, key);
+      return cart;
+    }
+    const { cart } = await updateStoreCartItem(cartId, key, quantity);
+    return cart;
+  }
+
+  async removeCartItem(cartId: string, key: string): Promise<Cart> {
+    const { cart } = await removeStoreCartItem(cartId, key);
+    return cart;
+  }
+
   async listPaymentGateways(): Promise<Array<{ id: string; name: string; description?: string }>> {
     const gateways = await restFetch('/payment_gateways');
     return gateways.filter((g: any) => g.id === 'cod' && g.enabled === true)
@@ -186,11 +207,39 @@ export class WooCommerceEngine implements EcomEngine {
   }
 
   async applyCoupon(cartId: string, code: string, cartTotal: number): Promise<CouponResult> {
+    if (cartId) {
+      try {
+        const { raw, cart } = await applyCouponToStoreCart(cartId, code);
+        const discountMinor = parseInt(raw?.totals?.total_discount || '0', 10);
+        return {
+          ok: true,
+          discount: {
+            amount_minor: isNaN(discountMinor) ? 0 : discountMinor,
+            currency: cart.total.currency || 'MAD',
+          },
+          description: `Coupon ${code} applied successfully`,
+        };
+      } catch (err: any) {
+        const msg = String(err?.message || '').toLowerCase();
+        if (msg.includes('expired')) return { ok: false, error: 'expired' };
+        if (msg.includes('already') || msg.includes('applied')) return { ok: false, error: 'already_applied' };
+        if (msg.includes('min') || msg.includes('minimum')) return { ok: false, error: 'min_order' };
+        return { ok: false, error: 'invalid' };
+      }
+    }
     const { applyCouponRest } = await import('./orders');
     return applyCouponRest(cartId, code, cartTotal);
   }
 
   async removeCoupon(cartId: string, code: string): Promise<boolean> {
+    if (cartId) {
+      try {
+        await removeCouponFromStoreCart(cartId, code);
+        return true;
+      } catch {
+        return false;
+      }
+    }
     return true;
   }
 

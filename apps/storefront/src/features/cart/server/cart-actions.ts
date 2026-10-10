@@ -101,6 +101,42 @@ export async function addToCartAction(
   return cart;
 }
 
+interface CartMutationEngine {
+  updateCartItem?: (token: string, itemKey: string, quantity: number) => Promise<Cart>;
+  removeCartItem?: (token: string, itemKey: string) => Promise<Cart>;
+}
+
+/**
+ * Server Action: Updates quantity of an item in the authoritative server-side cart.
+ */
+export async function updateCartItemAction(
+  itemKey: string,
+  quantity: number
+): Promise<Cart | null> {
+  const engine = (await getEngine()) as unknown as CartMutationEngine;
+  const token = await getCartToken();
+  if (!token) return null;
+  if (typeof engine.updateCartItem === 'function') {
+    const cart = await engine.updateCartItem(token, itemKey, quantity);
+    return cart;
+  }
+  return null;
+}
+
+/**
+ * Server Action: Removes an item from the authoritative server-side cart.
+ */
+export async function removeCartItemAction(itemKey: string): Promise<Cart | null> {
+  const engine = (await getEngine()) as unknown as CartMutationEngine;
+  const token = await getCartToken();
+  if (!token) return null;
+  if (typeof engine.removeCartItem === 'function') {
+    const cart = await engine.removeCartItem(token, itemKey);
+    return cart;
+  }
+  return null;
+}
+
 export async function clearCartCookie(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(CART_TOKEN_COOKIE);

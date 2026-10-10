@@ -11,3 +11,11 @@ export async function applyCouponAction(code: string, cartTotal: number): Promis
   
   return engine.applyCoupon(cartId, code, cartTotal);
 }
+
+export async function removeCouponAction(code: string): Promise<boolean> {
+  const engine = await getEngine();
+  const cartId = await getCartId();
+  if (!cartId) return false;
+
+  return engine.removeCoupon(cartId, code);
+}
