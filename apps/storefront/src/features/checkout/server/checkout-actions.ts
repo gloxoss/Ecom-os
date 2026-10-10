@@ -2,6 +2,7 @@
 
 import { getEngine } from '@/lib/engine';
 import { getCartToken, clearCartCookie } from '@/features/cart/server/cart-actions';
+import { createGuestOrderGrant } from '@/lib/commerce/order-access';
 import { Coupon, ShippingMethod, Cart } from '@ecom-os/engine';
 import {
   CheckoutAddressInput,
@@ -46,6 +47,7 @@ export interface SubmitCheckoutResult {
   ok: boolean;
   orderId?: string | number;
   orderKey?: string;
+  orderToken?: string;
   status?: string;
   error?: string;
   errors?: Record<string, string>;
@@ -263,10 +265,17 @@ export async function submitCheckoutAction(
 
     await clearCartCookie();
 
+    const orderToken = createGuestOrderGrant({
+      orderId: result.orderId,
+      orderKey: result.orderKey,
+      email: addressPayload.email,
+    });
+
     return {
       ok: true,
       orderId: result.orderId,
       orderKey: result.orderKey,
+      orderToken,
       status: result.status,
     };
   } catch (err: unknown) {

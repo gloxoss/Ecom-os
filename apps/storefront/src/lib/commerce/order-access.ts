@@ -1,10 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 
-const SECRET =
-  process.env.ORDER_ACCESS_SECRET ||
-  process.env.ECOM_OS_ENCRYPTION_KEY ||
-  'paraloca-guest-order-access-secret-v1-production';
-
 export interface GuestOrderGrantPayload {
   orderId: string;
   orderKey: string;
@@ -16,6 +11,17 @@ export interface VerifyOrderGrantResult {
   valid: boolean;
   grant?: GuestOrderGrantPayload;
   error?: 'invalid_token' | 'expired_token' | 'tampered_token';
+}
+
+export function getOrderAccessSecret(): string {
+  const secret = process.env.ORDER_ACCESS_SECRET || process.env.ECOM_OS_ENCRYPTION_KEY;
+  if (!secret || secret.trim().length === 0) {
+    if (process.env.NODE_ENV === 'test') {
+      return 'test-order-access-secret-only-for-automated-tests';
+    }
+    throw new Error('ORDER_ACCESS_SECRET is required to generate or verify guest order tokens.');
+  }
+  return secret;
 }
 
 function base64UrlEncode(str: string): string {
@@ -34,8 +40,8 @@ function base64UrlDecode(str: string): string {
   return Buffer.from(b64, 'base64').toString('utf8');
 }
 
-function computeSignature(payloadB64: string): string {
-  return createHmac('sha256', SECRET)
+function computeSignature(payloadB64: string, secret: string): string {
+  return createHmac('sha256', secret)
     .update(payloadB64)
     .digest('base64url');
 }
@@ -50,6 +56,7 @@ export function createGuestOrderGrant(params: {
   email: string;
   ttlMs?: number;
 }): string {
+  const secret = getOrderAccessSecret();
   const ttlMs = params.ttlMs ?? 1000 * 60 * 60 * 24 * 7;
   const payload: GuestOrderGrantPayload = {
     orderId: String(params.orderId),
@@ -59,7 +66,7 @@ export function createGuestOrderGrant(params: {
   };
 
   const payloadB64 = base64UrlEncode(JSON.stringify(payload));
-  const sig = computeSignature(payloadB64);
+  const sig = computeSignature(payloadB64, secret);
   return `${payloadB64}.${sig}`;
 }
 
@@ -71,13 +78,20 @@ export function verifyGuestOrderGrant(token: string): VerifyOrderGrantResult {
     return { valid: false, error: 'invalid_token' };
   }
 
+  let secret: string;
+  try {
+    secret = getOrderAccessSecret();
+  } catch {
+    return { valid: false, error: 'invalid_token' };
+  }
+
   const parts = token.split('.');
   if (parts.length !== 2) {
     return { valid: false, error: 'invalid_token' };
   }
 
   const [payloadB64, sig] = parts as [string, string];
-  const expectedSig = computeSignature(payloadB64);
+  const expectedSig = computeSignature(payloadB64, secret);
 
   const sigBuf = Buffer.from(sig);
   const expectedBuf = Buffer.from(expectedSig);
@@ -134,4 +148,3 @@ export function verifyOrderOwnership(params: {
 
   return true;
 }
-

@@ -93,6 +93,22 @@ export class FakeEngine implements EcomEngine {
     return null;
   }
 
+  async getGuestOrder(orderId: string, orderKey: string): Promise<Order | null> {
+    if (!orderId || !orderKey) return null;
+    return {
+      id: orderId,
+      status: 'processing',
+      total: { amount_minor: 5000, currency: 'MAD' },
+      items: [],
+      customer: {
+        id: '0',
+        email: 'guest@example.com',
+        firstName: 'Guest',
+        lastName: 'Buyer',
+      },
+    };
+  }
+
   async listCustomerOrders(customerId: string, query?: OrderListQuery): Promise<OrderListResult> {
     return {
       items: [],

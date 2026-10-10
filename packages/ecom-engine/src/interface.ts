@@ -43,6 +43,7 @@ export interface EcomEngine {
   placeOrder(session: CheckoutSession): Promise<Order>;
   markOrderPaid(orderId: string, paymentRef: PaymentRef): Promise<void>;
   getOrder(orderId: string, customerId: string): Promise<Order | null>;
+  getGuestOrder?(orderId: string, orderKey: string): Promise<Order | null>;
   listCustomerOrders(customerId: string, query?: OrderListQuery): Promise<OrderListResult>;
   login(input: LoginInput): Promise<AuthSession>;
   registerCustomer(input: RegisterInput): Promise<AuthSession>;

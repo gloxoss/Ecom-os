@@ -1,18 +1,46 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import {
   createGuestOrderGrant,
   verifyGuestOrderGrant,
   verifyOrderOwnership,
+  getOrderAccessSecret,
 } from '../../lib/commerce/order-access';
 import { GET } from '../../app/api/orders/status/route';
+import { setEngine, FakeEngine } from '@ecom-os/engine';
 
-describe('Guest Order Access & Ownership Proof (ECO-206)', () => {
+describe('Guest Order Access & Ownership Proof (ECO-206 Hardened)', () => {
   const sampleParams = {
     orderId: 1050,
     orderKey: 'wc_order_xyz789',
     email: 'client@example.com',
   };
+
+  beforeEach(() => {
+    setEngine(new FakeEngine());
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  describe('Secret Configuration & Fail-Closed Behavior', () => {
+    it('uses configured ORDER_ACCESS_SECRET', () => {
+      vi.stubEnv('ORDER_ACCESS_SECRET', 'custom-production-secret-1234567890');
+      expect(getOrderAccessSecret()).toBe('custom-production-secret-1234567890');
+    });
+
+    it('fails closed in production if ORDER_ACCESS_SECRET and ECOM_OS_ENCRYPTION_KEY are missing', () => {
+      vi.stubEnv('NODE_ENV', 'production');
+      vi.stubEnv('ORDER_ACCESS_SECRET', '');
+      vi.stubEnv('ECOM_OS_ENCRYPTION_KEY', '');
+
+      expect(() => getOrderAccessSecret()).toThrow('ORDER_ACCESS_SECRET is required');
+      expect(() => createGuestOrderGrant(sampleParams)).toThrow('ORDER_ACCESS_SECRET is required');
+      expect(verifyGuestOrderGrant('abc.def').valid).toBe(false);
+    });
+  });
 
   describe('createGuestOrderGrant & verifyGuestOrderGrant', () => {
     it('creates and verifies a valid opaque HMAC grant token', () => {
@@ -39,9 +67,8 @@ describe('Guest Order Access & Ownership Proof (ECO-206)', () => {
     });
 
     it('rejects expired grant tokens', async () => {
-      // 10ms TTL
       const token = createGuestOrderGrant({ ...sampleParams, ttlMs: 10 });
-      await new Promise((r) => setTimeout(r, 20));
+      await new Promise((r) => setTimeout(r, 25));
 
       const result = verifyGuestOrderGrant(token);
       expect(result.valid).toBe(false);
@@ -64,18 +91,14 @@ describe('Guest Order Access & Ownership Proof (ECO-206)', () => {
 
     it('prevents public ID enumeration: rejects valid token used against another order ID', () => {
       const token = createGuestOrderGrant(sampleParams);
-      // Attacker guesses order ID 1051 using victim's or their own token
       expect(verifyOrderOwnership({ token, orderId: 1051 })).toBe(false);
       expect(verifyOrderOwnership({ token, orderId: 9999 })).toBe(false);
     });
 
     it('validates optional challenge email correctly', () => {
       const token = createGuestOrderGrant(sampleParams);
-      // Exact match
       expect(verifyOrderOwnership({ token, orderId: 1050, challengeEmail: 'client@example.com' })).toBe(true);
-      // Case-insensitive & trimmed match
       expect(verifyOrderOwnership({ token, orderId: 1050, challengeEmail: '  CLIENT@EXAMPLE.COM ' })).toBe(true);
-      // Wrong email
       expect(verifyOrderOwnership({ token, orderId: 1050, challengeEmail: 'wrong@example.com' })).toBe(false);
     });
   });
@@ -91,7 +114,7 @@ describe('Guest Order Access & Ownership Proof (ECO-206)', () => {
       expect(body.ok).toBe(false);
     });
 
-    it('rejects guessed order IDs with 403 Forbidden', async () => {
+    it('rejects guessed order IDs with 403 Forbidden without leaking existence', async () => {
       const token = createGuestOrderGrant(sampleParams);
       const req = new NextRequest(`http://localhost:3000/api/orders/status?orderId=9999&token=${token}`);
       const res = await GET(req);
@@ -104,9 +127,23 @@ describe('Guest Order Access & Ownership Proof (ECO-206)', () => {
       expect(body.error).toContain('Unauthorized');
     });
 
-    it('serves confirmed order status for verified ownership proof', async () => {
+    it('rejects requests with mismatched challenge email with 403', async () => {
       const token = createGuestOrderGrant(sampleParams);
-      const req = new NextRequest(`http://localhost:3000/api/orders/status?orderId=1050&token=${token}`);
+      const req = new NextRequest(`http://localhost:3000/api/orders/status?orderId=1050&token=${token}&email=attacker@evil.test`);
+      const res = await GET(req);
+
+      expect(res.status).toBe(403);
+      const body = await res.json();
+      expect(body.ok).toBe(false);
+    });
+
+    it('accepts grant token via x-order-token header and does not echo orderKey in response', async () => {
+      const token = createGuestOrderGrant(sampleParams);
+      const req = new NextRequest('http://localhost:3000/api/orders/status?orderId=1050', {
+        headers: {
+          'x-order-token': token,
+        },
+      });
       const res = await GET(req);
 
       expect(res.status).toBe(200);
@@ -114,9 +151,61 @@ describe('Guest Order Access & Ownership Proof (ECO-206)', () => {
       const body = await res.json();
       expect(body.ok).toBe(true);
       expect(body.orderId).toBe('1050');
-      expect(body.orderKey).toBe('wc_order_xyz789');
       expect(body.status).toBe('processing');
+      // Crucial: orderKey must not be echoed back
+      expect(body.orderKey).toBeUndefined();
+    });
+
+    it('accepts grant token via Authorization: Bearer header', async () => {
+      const token = createGuestOrderGrant(sampleParams);
+      const req = new NextRequest('http://localhost:3000/api/orders/status?orderId=1050', {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+      const res = await GET(req);
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.ok).toBe(true);
+      expect(body.status).toBe('processing');
+    });
+
+    it('queries genuine engine order status and handles not found (404)', async () => {
+      class MockEngine extends FakeEngine {
+        override async getGuestOrder(id: string, key: string) {
+          if (id === '1050' && key === 'wc_order_xyz789') {
+            return {
+              id: '1050',
+              status: 'completed',
+              total: { amount_minor: 9900, currency: 'MAD' },
+              items: [],
+              customer: { id: '0', email: 'client@example.com', firstName: 'C', lastName: 'E' },
+            };
+          }
+          return null;
+        }
+      }
+
+      setEngine(new MockEngine());
+
+      const token = createGuestOrderGrant(sampleParams);
+      const req = new NextRequest(`http://localhost:3000/api/orders/status?orderId=1050&token=${token}`);
+      const res = await GET(req);
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.ok).toBe(true);
+      expect(body.status).toBe('completed');
+      expect(body.currency).toBe('MAD');
+      expect(body.total_minor).toBe(9900);
+      expect(body.orderKey).toBeUndefined();
+
+      // Test order not found in backend
+      const notFoundToken = createGuestOrderGrant({ orderId: 8888, orderKey: 'wrong_key', email: 'test@example.com' });
+      const notFoundReq = new NextRequest(`http://localhost:3000/api/orders/status?orderId=8888&token=${notFoundToken}`);
+      const notFoundRes = await GET(notFoundReq);
+      expect(notFoundRes.status).toBe(404);
     });
   });
 });
-

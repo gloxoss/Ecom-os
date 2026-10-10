@@ -183,6 +183,11 @@ export class WooCommerceEngine implements EcomEngine {
     return null;
   }
 
+  async getGuestOrder(orderId: string, orderKey: string): Promise<Order | null> {
+    const { getGuestOrderRest } = await import('./orders');
+    return getGuestOrderRest(orderId, orderKey);
+  }
+
   async listCustomerOrders(customerId: string, query?: OrderListQuery): Promise<OrderListResult> {
     const orders = await getCustomerOrdersRest(customerId);
     return {
