@@ -227,6 +227,15 @@ export interface PaymentRef {
   status: string;
 }
 
+export type ProductSort = 'price_asc' | 'price_desc' | 'newest' | 'title_asc' | 'title_desc';
+
+export interface PageInfo {
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  startCursor?: string | null;
+  endCursor?: string | null;
+}
+
 export interface ProductListQuery {
   category?: string;
   brand?: string;
@@ -236,14 +245,60 @@ export interface ProductListQuery {
   cursor?: string;
   minPrice?: number;
   maxPrice?: number;
-  sort?: 'price_asc' | 'price_desc' | 'newest' | 'title_asc' | 'title_desc';
+  sort?: ProductSort;
   featured?: boolean;
   onSale?: boolean;
+  locale?: Locale;
+  inStockOnly?: boolean;
 }
 
 export interface ProductListResult {
   items: Product[];
   total: number;
+  pageInfo?: PageInfo;
+}
+
+export interface ProductQueryValidation {
+  valid: boolean;
+  error?: string;
+}
+
+export function validateProductQuery(query: ProductListQuery): ProductQueryValidation {
+  if (query.cursor !== undefined && query.cursor !== null && query.offset !== undefined && query.offset !== null) {
+    return { valid: false, error: 'Cannot combine cursor-based and offset-based pagination in the same query.' };
+  }
+  if (query.limit !== undefined && query.limit !== null) {
+    if (query.limit < 0 || !Number.isInteger(query.limit)) {
+      return { valid: false, error: 'Limit must be a non-negative integer.' };
+    }
+    if (query.limit > 100) {
+      return { valid: false, error: 'Limit cannot exceed 100 items per page.' };
+    }
+  }
+  if (query.offset !== undefined && query.offset !== null) {
+    if (query.offset < 0 || !Number.isInteger(query.offset)) {
+      return { valid: false, error: 'Offset must be a non-negative integer.' };
+    }
+  }
+  if (query.minPrice !== undefined && query.minPrice !== null && query.minPrice < 0) {
+    return { valid: false, error: 'Minimum price cannot be negative.' };
+  }
+  if (query.maxPrice !== undefined && query.maxPrice !== null && query.maxPrice < 0) {
+    return { valid: false, error: 'Maximum price cannot be negative.' };
+  }
+  if (
+    query.minPrice !== undefined &&
+    query.minPrice !== null &&
+    query.maxPrice !== undefined &&
+    query.maxPrice !== null &&
+    query.minPrice > query.maxPrice
+  ) {
+    return { valid: false, error: 'Minimum price cannot exceed maximum price.' };
+  }
+  if (query.cursor !== undefined && query.cursor !== null && typeof query.cursor === 'string' && query.cursor.trim() === '') {
+    return { valid: false, error: 'Cursor cannot be an empty string.' };
+  }
+  return { valid: true };
 }
 
 export interface AddToCartInput {

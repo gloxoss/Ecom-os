@@ -9,6 +9,8 @@ import {
   Locale,
   ProductListQuery,
   ProductListResult,
+  PageInfo,
+  validateProductQuery,
   AddToCartInput,
   CheckoutInput,
   LoginInput,
@@ -33,20 +35,43 @@ import { fetchCurrency } from './currency';
 
 export class WooCommerceEngine implements EcomEngine {
   async listProducts(query: ProductListQuery): Promise<ProductListResult> {
+    const validation = validateProductQuery(query);
+    if (!validation.valid) {
+      throw new Error(`Invalid product query: ${validation.error}`);
+    }
+
     const rawResult = await fetchProducts({
       ...(query.category !== undefined ? { category: query.category } : {}),
+      ...(query.brand !== undefined ? { brand: query.brand } : {}),
       ...(query.minPrice !== undefined ? { minPrice: query.minPrice } : {}),
       ...(query.maxPrice !== undefined ? { maxPrice: query.maxPrice } : {}),
       ...(query.search !== undefined ? { search: query.search } : {}),
       ...(query.limit !== undefined ? { limit: query.limit } : {}),
       ...(query.cursor !== undefined ? { after: query.cursor } : {}),
+      ...(query.offset !== undefined ? { offset: query.offset } : {}),
+      ...(query.sort !== undefined ? { sort: query.sort } : {}),
+      ...(query.inStockOnly !== undefined ? { inStockOnly: query.inStockOnly } : {}),
     });
     const currency = await fetchCurrency();
     const items = rawResult.nodes.map((raw) => mapProduct(raw, currency));
-    return {
+    const result: ProductListResult = {
       items,
       total: items.length,
     };
+    if (rawResult.pageInfo) {
+      const pageInfo: PageInfo = {
+        hasNextPage: Boolean(rawResult.pageInfo.hasNextPage),
+        hasPreviousPage: Boolean(rawResult.pageInfo.hasPreviousPage),
+      };
+      if (rawResult.pageInfo.startCursor) {
+        pageInfo.startCursor = rawResult.pageInfo.startCursor;
+      }
+      if (rawResult.pageInfo.endCursor) {
+        pageInfo.endCursor = rawResult.pageInfo.endCursor;
+      }
+      result.pageInfo = pageInfo;
+    }
+    return result;
   }
 
   async getProduct(slug: string, locale?: Locale): Promise<Product | null> {

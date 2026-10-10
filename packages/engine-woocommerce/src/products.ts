@@ -1,13 +1,36 @@
 import { gqlClient } from './graphql';
 import { gql } from 'graphql-request';
+import { ProductSort } from '@ecom-os/engine';
 
 export interface FetchProductsOptions {
   category?: string;
+  brand?: string;
   minPrice?: number;
   maxPrice?: number;
   search?: string;
   limit?: number;
   after?: string | null;
+  offset?: number;
+  sort?: ProductSort;
+  inStockOnly?: boolean;
+}
+
+export function mapSortToOrderby(sort?: ProductSort): Array<{ field: string; order: 'ASC' | 'DESC' }> | null {
+  if (!sort) return null;
+  switch (sort) {
+    case 'price_asc':
+      return [{ field: 'PRICE', order: 'ASC' }];
+    case 'price_desc':
+      return [{ field: 'PRICE', order: 'DESC' }];
+    case 'newest':
+      return [{ field: 'DATE', order: 'DESC' }];
+    case 'title_asc':
+      return [{ field: 'NAME', order: 'ASC' }];
+    case 'title_desc':
+      return [{ field: 'NAME', order: 'DESC' }];
+    default:
+      return null;
+  }
 }
 
 export async function fetchProducts(options?: FetchProductsOptions): Promise<{ nodes: any[]; pageInfo?: any }> {
@@ -19,6 +42,9 @@ export async function fetchProducts(options?: FetchProductsOptions): Promise<{ n
       $maxPrice: Float
       $category: String
       $search: String
+      $offset: Int
+      $orderby: [ProductsOrderbyInput]
+      $stockStatus: StockStatusFilterEnum
     ) {
       products(
         first: $first
@@ -28,6 +54,9 @@ export async function fetchProducts(options?: FetchProductsOptions): Promise<{ n
           maxPrice: $maxPrice
           category: $category
           search: $search
+          offset: $offset
+          orderby: $orderby
+          stockStatus: $stockStatus
         }
       ) {
         pageInfo {
@@ -130,6 +159,9 @@ export async function fetchProducts(options?: FetchProductsOptions): Promise<{ n
       maxPrice: options?.maxPrice,
       category: options?.category,
       search: options?.search,
+      offset: options?.offset ?? null,
+      orderby: mapSortToOrderby(options?.sort),
+      stockStatus: options?.inStockOnly ? 'IN_STOCK' : null,
     });
     if (!data?.products) {
       throw new Error('WooCommerce GraphQL returned invalid or missing products payload.');
