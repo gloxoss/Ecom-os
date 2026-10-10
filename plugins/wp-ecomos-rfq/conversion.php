@@ -44,6 +44,11 @@ function ecomos_rfq_get_mock_orders() {
 function ecomos_rfq_convert_quote_to_order($quote_id, $options = array()) {
     global $wpdb, $ecomos_rfq_mock_orders;
 
+    // Off-state barrier: reject conversion when addon is disabled
+    if (function_exists('ecomos_rfq_is_active') && !ecomos_rfq_is_active()) {
+        return new WP_Error('addon_disabled', 'RFQ Quotes addon is currently disabled on this platform.', array('status' => 404));
+    }
+
     $quote = ecomos_rfq_get_quote($quote_id);
     if (!$quote) {
         return new WP_Error('not_found', 'Quote not found', array('status' => 404));

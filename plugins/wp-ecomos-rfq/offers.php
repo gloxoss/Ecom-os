@@ -121,6 +121,11 @@ function ecomos_rfq_validate_offer_payload($data, $now_timestamp = null) {
  * @return array|WP_Error Updated quote array or WP_Error on failure.
  */
 function ecomos_rfq_create_staff_offer($quote_id, $staff, $offer_data) {
+    // Off-state barrier: reject offer creation when addon is disabled
+    if (function_exists('ecomos_rfq_is_active') && !ecomos_rfq_is_active()) {
+        return new WP_Error('addon_disabled', 'RFQ Quotes addon is currently disabled on this platform.', array('status' => 404));
+    }
+
     $quote = ecomos_rfq_get_quote($quote_id);
     if (!$quote) {
         return new WP_Error('not_found', 'Quote not found', array('status' => 404));

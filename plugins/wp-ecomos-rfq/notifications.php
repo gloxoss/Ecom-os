@@ -69,6 +69,11 @@ function ecomos_rfq_mark_notification_dispatched($idempotency_key) {
 function ecomos_rfq_send_email($idempotency_key, $to, $subject, $message, $headers = array()) {
     global $ecomos_rfq_test_mail_sink;
 
+    // Off-state side-effect barrier: suppress emails when addon is disabled
+    if (function_exists('ecomos_rfq_is_active') && !ecomos_rfq_is_active()) {
+        return false;
+    }
+
     if (ecomos_rfq_is_notification_dispatched($idempotency_key)) {
         return false; // Duplicate suppressed
     }
