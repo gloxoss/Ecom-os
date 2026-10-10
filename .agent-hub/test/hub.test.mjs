@@ -123,6 +123,13 @@ test('completion needs claimed committed report, clean checks and a clean claime
   f.run(['done', 'T1', '--agent', 'a', '--commit', tip, '--evidence', report, '--summary', 'Work', '--checks', 'test -> BLOCKED'], 1);
   f.submit('T1', 'a', tip, report); assert.equal(f.json(['status']).tasks.T1.status, 'REVIEW');
 });
+test('executor evidence must use the dedicated evidence root', t => {
+  const f = fixture(t); const report = 'app/report.md';
+  f.assign('T1', 'a', `app/a,${report}`); f.claim('T1', 'a', `app/a,${report}`);
+  f.write('app/a'); f.write(report, 'Executed tests PASS\n'); const sha = f.commit(['app/a', report]);
+  f.run(['done', 'T1', '--agent', 'a', '--commit', sha, '--evidence', report, '--summary', 'Work', '--checks', 'test -> PASS'], 1);
+  assert.equal(f.json(['status']).tasks.T1.status, 'IN_PROGRESS');
+});
 test('broad folder claims cannot submit a secret or protected child', t => {
   const f = fixture(t); const report = 'docs/ecomos/evidence/T1/report.md';
   f.assign('T1', 'a', `bundle,${report}`); f.claim('T1', 'a', `bundle,${report}`);

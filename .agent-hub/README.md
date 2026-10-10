@@ -15,7 +15,7 @@ node .agent-hub/hub.mjs prompt --role orchestrator --lane orchestrator
 
 The package shortcuts are `pnpm hub <command>` and `pnpm hub:test`. Codex discovery starts at [.agents/skills/ecomos-agent-hub/SKILL.md](../.agents/skills/ecomos-agent-hub/SKILL.md); Claude discovery starts at [.claude/skills/ecomos-orchestrator/SKILL.md](../.claude/skills/ecomos-orchestrator/SKILL.md). Both route to the same canonical hub.
 
-Use the dedicated [orchestrator skill](ecomos-agent-system/orchestrator/SKILL.md) for business decisions, assignments, report audits and acceptance. [The hub skill](skills/ecomos-agent-hub/SKILL.md) handles role routing and shared coordination; [the orchestrator starter](ecomos-agent-system/orchestrator/START.md) is paste-ready. Task-specific prompts come from `prompt TASK --agent ORCHESTRATOR_ID` after assignment. Paste the generated prompt into a new coding session; the hub does not launch AI sessions.
+Use the dedicated [orchestrator skill](ecomos-agent-system/orchestrator/SKILL.md) for business decisions, assignments, report audits and acceptance. [The hub skill](skills/ecomos-agent-hub/SKILL.md) handles role routing and shared coordination; [the orchestrator starter](ecomos-agent-system/orchestrator/START.md) is paste-ready. Task-specific prompts come from `prompt TASK --agent ORCHESTRATOR_ID` after assignment. Paste the generated prompt into a new coding session; the hub does not launch AI sessions. Create tasks with `task ID --title "..." --phase N --description "..."` so the acceptance intent is preserved in every generated prompt.
 
 ## Operating model
 
@@ -40,7 +40,7 @@ Read [PROJECT_CONTEXT](shared/PROJECT_CONTEXT.md), [BUSINESS_RULES](shared/BUSIN
 
 Tracked configuration/task definitions and these instructions describe intended work. Local runtime state lives under `.agent-hub/.runtime/`: state, append-only events, generated BOARD and CHANGELOG. It is gitignored and must not contain secrets or customer payloads. Generated runtime views must not be edited by hand.
 
-A report under `docs/ecomos/evidence/TASK-ID/` is supporting evidence. The implementation commit, independent checks and real staging behavior determine completion. Historical reports are not automatically accepted into the new hub.
+A report under `docs/ecomos/evidence/TASK-ID/` is supporting evidence; executor submissions outside that root are rejected. Independent reports belong under `docs/ecomos/verification/TASK-ID/`. The implementation commit, independent checks and real staging behavior determine completion. Historical reports are not automatically accepted into the new hub.
 
 ## Worktree isolation
 

@@ -52,7 +52,7 @@ Commands:
   join --agent ID --role orchestrator|executor|verifier --lane LANE --tool TOOL [--worktree PATH]
   status | next | check | log | sync
   assign TASK --agent ORCH --to EXEC --files paths [--resources names] [--note text]
-  task ID --agent ORCH --title text --phase 0..9
+  task ID --agent ORCH --title text --phase 0..9 [--description text]
   claim TASK --agent ID --files paths [--resources names]
   files TASK --agent ID --add paths
   resources TASK --agent ID --add names|--remove names
@@ -93,7 +93,7 @@ function execute(state) {
     actor(state, ['orchestrator']); const id = identifier(positions[0], 'Task');
     requireThat(!state.tasks[id], 'Task already exists.');
     const phase = Number(opts.phase); requireThat(Number.isInteger(phase) && phase >= 0 && phase <= 9, 'Phase must be 0..9.');
-    state.tasks[id] = { id, title: text(opts.title, 'Title'), phase, status: 'OPEN', assignment: null, claim: null, submission: null, verification: null };
+    state.tasks[id] = { id, title: text(opts.title, 'Title'), description: opts.description ? text(opts.description, 'Description') : '', phase, status: 'OPEN', assignment: null, claim: null, submission: null, verification: null };
     invalidateGates(state, phase);
     return { added: id };
   }
@@ -174,6 +174,7 @@ function execute(state) {
     holder(state, task, ['executor']); requireThat(task.status === 'IN_PROGRESS', 'Resume or claim active work before submitting.');
     requireThat(phaseReady(state, task.phase), 'Phase prerequisites have not passed.');
     const sha = commit(opts.commit, agent.worktree), report = evidence(opts.evidence, agent.worktree);
+    requireThat(report.toLowerCase().startsWith(config.evidenceRoot.toLowerCase() + '/'), `Executor evidence must be under ${config.evidenceRoot}.`);
     const slice = submittedSlice(agent.worktree, task.assignment.base, sha, state, task.id);
     const changed = slice.files.map(p => filePath(p, agent.worktree, config));
     requireThat(changed.length > 0 && changed.every(p => task.claim.files.some(held => overlaps(held, p))), 'Submission contains changes outside claimed files or no changes.');

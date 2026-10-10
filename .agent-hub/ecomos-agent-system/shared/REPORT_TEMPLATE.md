@@ -13,6 +13,10 @@
 
 State the concrete behavior implemented and remaining limits. Separate PASS, FAIL, BLOCKED and NOT RUN. Do not use a percentage or a phase-complete claim without the underlying accepted criteria.
 
+## Workflow and source of truth
+
+Describe the real entry-to-completion flow, who performs each action, and the authoritative source for every important state. Include retry, refresh, expiry, duplicate-submit and failure behavior where relevant.
+
 ## Changed behavior and files
 
 Describe the problem, the new behavior, contract compatibility and file paths. Distinguish reused working code from retired/replaced code.
@@ -20,6 +24,8 @@ Describe the problem, the new behavior, contract compatibility and file paths. D
 ## Acceptance evidence
 
 For each assigned condition, give the exact check, executed command, result, environment and safe output/report path. Include representative regression/failure cases. State which browser, API, WP/PHP, security, retry or concurrent cases were not proved.
+
+Executor reports must live under `docs/ecomos/evidence/<TASK-ID>/`. Screenshots, fixtures and mock-only checks are supporting evidence and do not replace direct proof of backend, permission, tenant, order, payment or stock behavior.
 
 ## Business integrity
 
