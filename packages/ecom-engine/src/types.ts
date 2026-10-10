@@ -5,32 +5,151 @@ export type Money = {
 
 export type Locale = string;
 
-export interface ProductVariant {
-  id: string;
-  sku: string;
-  name: string;
-  price: Money;
-  stock_quantity: number | null;
+export interface Media {
+  id?: string;
+  url: string;
+  altText: string;
+  title?: string;
+  width?: number;
+  height?: number;
 }
 
-export interface Product {
+export type StockStatus = 'IN_STOCK' | 'OUT_OF_STOCK' | 'ON_BACKORDER';
+
+export interface InventoryAvailability {
+  status: StockStatus;
+  quantity: number | null;
+  backordersAllowed: boolean;
+  lowStockThreshold?: number | null;
+  isPurchasable: boolean;
+}
+
+export type TaxDisplayMode = 'INCLUSIVE' | 'EXCLUSIVE';
+export type TaxStatus = 'TAXABLE' | 'NONE' | 'SHIPPING_ONLY';
+
+export interface TaxVisibility {
+  displayMode: TaxDisplayMode;
+  taxable: boolean;
+  taxStatus?: TaxStatus;
+  ratePercent?: number;
+  label?: string;
+}
+
+export interface TechnicalAttribute {
+  name: string;
+  label: string;
+  value: string | string[];
+  group?: string;
+}
+
+export type DocumentType = 'manual' | 'datasheet' | 'certificate' | 'safety' | 'catalog' | 'other';
+
+export interface Document {
+  id: string;
+  title: string;
+  url: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  type?: DocumentType;
+}
+
+export interface Brand {
   id: string;
   slug: string;
   name: string;
-  description: string;
-  price: Money;
-  images: { url: string; altText: string }[];
-  categories: string[];
-  variants?: ProductVariant[];
-  relatedProducts?: { id: string; slug: string; name: string; price: Money; images: any[] }[];
-  reviewCount?: number;
-  averageRating?: number;
+  description?: string;
+  logo?: Media;
+  websiteUrl?: string;
+  isOwned?: boolean;
 }
 
 export interface Category {
   id: string;
   slug: string;
   name: string;
+  description?: string;
+  parentId?: string | null;
+  children?: Category[];
+  image?: Media;
+  count?: number;
+}
+
+export interface VariationAttributeValue {
+  name: string;
+  value: string;
+  label?: string;
+}
+
+export interface Variation {
+  id: string;
+  sku: string;
+  name: string;
+  slug?: string;
+  price: Money;
+  regularPrice?: Money;
+  salePrice?: Money;
+  inventory?: InventoryAvailability;
+  stock_quantity: number | null;
+  attributes: VariationAttributeValue[];
+  image?: Media;
+  isPurchasable?: boolean;
+}
+
+// ProductVariant alias for backward compatibility with existing callers
+export type ProductVariant = Variation;
+
+export type ProductType = 'simple' | 'variable' | 'external' | 'grouped';
+
+export interface ProductAttribute {
+  id?: string;
+  name: string;
+  label?: string;
+  options: string[];
+  variation?: boolean;
+  visible?: boolean;
+}
+
+export interface ProductPriceRange {
+  min: Money;
+  max: Money;
+}
+
+export interface RelatedProductReference {
+  id: string;
+  slug: string;
+  name: string;
+  price: Money;
+  images: Media[];
+}
+
+export interface Product {
+  id: string;
+  slug: string;
+  name: string;
+  sku?: string;
+  type?: ProductType;
+  description: string;
+  shortDescription?: string;
+  price: Money;
+  regularPrice?: Money;
+  salePrice?: Money;
+  priceRange?: ProductPriceRange;
+  taxVisibility?: TaxVisibility;
+  inventory?: InventoryAvailability;
+  images: Media[];
+  categories: string[];
+  categoryDetails?: Category[];
+  brand?: Brand | null;
+  variants?: Variation[];
+  variations?: Variation[];
+  attributes?: ProductAttribute[];
+  technicalAttributes?: TechnicalAttribute[];
+  documents?: Document[];
+  relatedProducts?: RelatedProductReference[];
+  reviewCount?: number;
+  averageRating?: number;
+  isPurchasable?: boolean;
+  featured?: boolean;
 }
 
 export interface CartItem {
@@ -110,12 +229,16 @@ export interface PaymentRef {
 
 export interface ProductListQuery {
   category?: string;
+  brand?: string;
   search?: string;
   limit?: number;
   offset?: number;
+  cursor?: string;
   minPrice?: number;
   maxPrice?: number;
-  sort?: 'price_asc' | 'price_desc' | 'newest';
+  sort?: 'price_asc' | 'price_desc' | 'newest' | 'title_asc' | 'title_desc';
+  featured?: boolean;
+  onSale?: boolean;
 }
 
 export interface ProductListResult {

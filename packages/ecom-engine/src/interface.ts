@@ -1,6 +1,8 @@
 import {
   Product,
+  Variation,
   Category,
+  Brand,
   Cart,
   Order,
   CheckoutSession,
@@ -32,6 +34,8 @@ export interface EcomEngine {
   listProducts(query: ProductListQuery): Promise<ProductListResult>;
   getProduct(slug: string, locale?: Locale): Promise<Product | null>;
   listCategories(locale?: Locale): Promise<Category[]>;
+  listBrands?(locale?: Locale): Promise<Brand[]>;
+  getBrand?(slug: string, locale?: Locale): Promise<Brand | null>;
   getCart(cartId: string): Promise<Cart>;
   addToCart(cartId: string, input: AddToCartInput): Promise<Cart>;
   listPaymentGateways(): Promise<Array<{ id: string; name: string; description?: string }>>;

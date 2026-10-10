@@ -2,6 +2,7 @@ import {
   EcomEngine, 
   Product, 
   Category, 
+  Brand,
   Cart, 
   Order, 
   CheckoutSession, 
@@ -38,6 +39,14 @@ export class FakeEngine implements EcomEngine {
 
   async listCategories(locale?: Locale): Promise<Category[]> {
     return [];
+  }
+
+  async listBrands(locale?: Locale): Promise<Brand[]> {
+    return [];
+  }
+
+  async getBrand(slug: string, locale?: Locale): Promise<Brand | null> {
+    return null;
   }
 
   async getCart(cartId: string): Promise<Cart> {
