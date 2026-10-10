@@ -9,14 +9,7 @@ import {
   SearchFacetResult,
 } from './types';
 import { sanitizeSearchDocument } from './sanitizer';
-
-function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // remove diacritics
-    .trim();
-}
+import { normalizeText, computeRelevanceScore } from './ranking';
 
 /**
  * Repaired Native WooCommerce search provider.
@@ -52,6 +45,13 @@ export class NativeWooSearchProvider implements SearchProvider {
         const brandNorm = doc.brand ? normalizeText(doc.brand.name) : '';
         const categoryNorm = doc.categories.map((c) => normalizeText(c.name)).join(' ');
         const tagsNorm = doc.tags ? doc.tags.map(normalizeText).join(' ') : '';
+        const varSkuMatch = doc.variations ? doc.variations.some((v) => v.sku && normalizeText(v.sku).includes(term)) : false;
+        const varNameMatch = doc.variations ? doc.variations.some((v) => v.name && normalizeText(v.name).includes(term)) : false;
+        const attrMatch = doc.attributes ? Object.values(doc.attributes).some((v) => {
+          if (typeof v === 'string') return normalizeText(v).includes(term);
+          if (Array.isArray(v)) return v.some((item) => normalizeText(String(item)).includes(term));
+          return false;
+        }) : false;
 
         // Exact match boosts / partial match checks
         return (
@@ -60,7 +60,10 @@ export class NativeWooSearchProvider implements SearchProvider {
           brandNorm.includes(term) ||
           categoryNorm.includes(term) ||
           tagsNorm.includes(term) ||
-          descNorm.includes(term)
+          descNorm.includes(term) ||
+          varSkuMatch ||
+          varNameMatch ||
+          attrMatch
         );
       });
     }
@@ -109,14 +112,14 @@ export class NativeWooSearchProvider implements SearchProvider {
         const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return timeB - timeA;
       });
-    } else if (sort === 'relevance' && term) {
+    } else if (sort === 'relevance' && query.term) {
       matched.sort((a, b) => {
-        const aTitle = normalizeText(a.title);
-        const bTitle = normalizeText(b.title);
-        // Priority: title starts with term > title includes term > sku match
-        const aScore = aTitle.startsWith(term) ? 3 : aTitle.includes(term) ? 2 : 1;
-        const bScore = bTitle.startsWith(term) ? 3 : bTitle.includes(term) ? 2 : 1;
-        return bScore - aScore;
+        const scoreA = computeRelevanceScore(a, query.term);
+        const scoreB = computeRelevanceScore(b, query.term);
+        if (scoreB.score !== scoreA.score) {
+          return scoreB.score - scoreA.score;
+        }
+        return a.title.localeCompare(b.title);
       });
     }
 

@@ -1,3 +1,19 @@
+import type { StockStatus } from '../types';
+
+export interface SearchVariationReference {
+  id: string;
+  sku?: string | undefined;
+  name?: string | undefined;
+  priceMinor: number;
+  inStock: boolean;
+  attributes?: Record<string, string> | undefined;
+}
+
+export interface ProductProjectionOptions {
+  locale?: string | undefined;
+  includeVariationsAsSeparateDocuments?: boolean | undefined;
+}
+
 /**
  * Public search document representing an indexed product.
  * Invariant: Index public fields only. Never index customer data, quotes, tokens, or private metadata.
@@ -27,7 +43,15 @@ export interface SearchDocument {
     url: string;
     alt?: string | undefined;
   } | undefined;
+  thumbnail?: string | undefined;
   createdAt?: string | undefined;
+  // Product vs variation projection fields
+  parentId?: string | undefined;
+  isVariation?: boolean | undefined;
+  variationCount?: number | undefined;
+  variations?: SearchVariationReference[] | undefined;
+  availabilityStatus?: StockStatus | undefined;
+  isPurchasable?: boolean | undefined;
 }
 
 export type SearchSort = 'relevance' | 'price_asc' | 'price_desc' | 'newest';

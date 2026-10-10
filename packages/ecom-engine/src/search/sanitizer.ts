@@ -11,10 +11,18 @@ const DISALLOWED_PRIVATE_KEYS = [
   'sessionToken',
   'orderKey',
   'quoteSecret',
+  'quoteId',
+  'quote',
+  'quotes',
+  'rfq',
+  'rfqId',
   'billing',
   'shipping',
   'phone',
   'ipAddress',
+  'cost',
+  'margin',
+  'wholesaleSecret',
 ];
 
 /**
@@ -69,6 +77,12 @@ export function sanitizeSearchDocument(doc: Record<string, unknown>): SearchDocu
         }
       : undefined;
 
+  const thumbnail = doc.thumbnail
+    ? String(doc.thumbnail)
+    : image?.url
+    ? image.url
+    : undefined;
+
   return {
     id: String(doc.id),
     slug: String(doc.slug),
@@ -83,7 +97,14 @@ export function sanitizeSearchDocument(doc: Record<string, unknown>): SearchDocu
     ...(doc.attributes ? { attributes: doc.attributes as Record<string, string | string[]> } : {}),
     ...(Array.isArray(doc.tags) ? { tags: (doc.tags as string[]).map(String) } : {}),
     ...(image ? { image } : {}),
+    ...(thumbnail ? { thumbnail } : {}),
     ...(doc.createdAt ? { createdAt: String(doc.createdAt) } : {}),
+    ...(doc.parentId ? { parentId: String(doc.parentId) } : {}),
+    ...(typeof doc.isVariation === 'boolean' ? { isVariation: doc.isVariation } : {}),
+    ...(typeof doc.variationCount === 'number' ? { variationCount: doc.variationCount } : {}),
+    ...(Array.isArray(doc.variations) ? { variations: doc.variations as SearchDocument['variations'] } : {}),
+    ...(doc.availabilityStatus ? { availabilityStatus: doc.availabilityStatus as SearchDocument['availabilityStatus'] } : {}),
+    ...(typeof doc.isPurchasable === 'boolean' ? { isPurchasable: doc.isPurchasable } : {}),
   };
 }
 
