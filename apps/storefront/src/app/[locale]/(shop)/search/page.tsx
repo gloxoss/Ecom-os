@@ -1,8 +1,19 @@
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { getEngine } from '@/lib/engine';
 import { routing } from '@/i18n/routing';
 import { ProductGrid } from '@/features/catalog/ui/product-grid';
 import { Pagination } from '@/components/shared/pagination';
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: 'Search - Angelina Paris',
+    robots: {
+      index: false,
+      follow: true,
+    },
+  };
+}
 
 export default async function SearchPage({
   params,
