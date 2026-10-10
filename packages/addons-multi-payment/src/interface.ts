@@ -9,16 +9,27 @@ export type PaymentConfirmResult = {
   success: boolean;
   orderId: string;
   transactionId?: string;
+  error?: string;
 };
 
 export type RefundResult = {
   success: boolean;
   refundId?: string;
+  error?: string;
 };
+
+export interface PaymentCapability {
+  certified: boolean;
+  supportsRefunds: boolean;
+  requiresRedirect: boolean;
+  requiresClientElements: boolean;
+  webhookHandling: 'none' | 'signed_hmac' | 'signed_rsa';
+}
 
 export interface PaymentGateway {
   id: string;
   name: string;
+  capabilities?: PaymentCapability;
   initiate(order: Order): Promise<PaymentInitResult>;
   confirm(callbackData: unknown): Promise<PaymentConfirmResult>;
   refund(orderId: string, amountMinor: number): Promise<RefundResult>;
