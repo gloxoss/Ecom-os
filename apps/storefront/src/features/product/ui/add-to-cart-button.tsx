@@ -60,7 +60,7 @@ export function AddToCartButton({
         onClick={handleClick}
         disabled={!isAvailable && intentResult.reason !== 'INCOMPLETE_SELECTION'}
         aria-disabled={!isAvailable}
-        className={`inline-flex items-center justify-center rounded-full px-8 py-4 font-body text-[11px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 w-fit ${
+        className={`inline-flex items-center justify-center min-h-[44px] rounded-full px-8 py-3.5 font-body text-[11px] font-medium uppercase tracking-[0.25em] transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none motion-reduce:transition-none w-fit ${
           !isAvailable && intentResult.reason === 'OUT_OF_STOCK'
             ? 'bg-muted text-foreground/40 cursor-not-allowed border border-border'
             : !isAvailable && intentResult.reason === 'INCOMPLETE_SELECTION'

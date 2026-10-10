@@ -19,55 +19,86 @@ export function ProductCard({ product }: { product: Product }) {
   };
 
   const isOutOfStock = product.inventory?.status === 'OUT_OF_STOCK';
-
   const [showQuickView, setShowQuickView] = useState(false);
 
   return (
-    <>
-      {/* "group" lets child elements react to this link's hover state */}
-      <Link href={`/product/${product.slug}`} className="group block">
-        <div className="relative aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden mb-4">
-          {image && (
+    <article className="group relative flex flex-col h-full" aria-labelledby={`product-title-${product.id}`}>
+      {/* Product Image and Overlay Controls */}
+      <div className="relative aspect-[4/5] bg-muted rounded-lg overflow-hidden mb-4">
+        <Link
+          href={`/product/${product.slug}`}
+          className="block w-full h-full focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none rounded-lg"
+          aria-label={`Voir les détails de ${product.name}`}
+        >
+          {image ? (
             <Image
               src={image.url}
               alt={image.altText || product.name}
               fill
-              // Hints the browser which image size to download per viewport
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className={`object-cover group-hover:scale-105 transition-transform duration-500 ${
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className={`object-cover group-hover:scale-105 transition-transform duration-500 motion-reduce:transition-none motion-reduce:transform-none ${
                 isOutOfStock ? 'opacity-75' : ''
               }`}
             />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-xs">
+              Aucune image disponible
+            </div>
           )}
+        </Link>
 
-          {isOutOfStock && (
-            <span className="absolute top-2 left-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider bg-black/80 text-white rounded">
-              Out of stock
-            </span>
-          )}
-
-          <WishlistButton productId={product.id} />
-
-          {/* Quick-view button — appears on hover, opens modal without navigating */}
-          <button
-            onClick={e => { e.preventDefault(); setShowQuickView(true); }}
-            className="absolute bottom-2 left-1/2 -translate-x-1/2 px-4 py-1.5 text-xs font-medium bg-white/90 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+        {isOutOfStock && (
+          <span
+            className="absolute top-2 left-2 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider bg-black/80 text-white rounded"
+            role="status"
+            aria-label="Produit en rupture de stock"
           >
-            Quick view
-          </button>
+            Épuisé
+          </span>
+        )}
+
+        <div className="absolute top-2 right-2 z-10">
+          <WishlistButton productId={product.id} />
         </div>
+
+        {/* Quick view button - outside <a> to prevent nested interactive controls */}
+        <button
+          type="button"
+          onClick={() => setShowQuickView(true)}
+          className="absolute bottom-2 left-1/2 -translate-x-1/2 min-h-[44px] min-w-[44px] px-4 py-2 text-xs font-medium bg-white/95 text-foreground rounded-full opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none shadow-sm transition motion-reduce:transition-none"
+          aria-label={`Aperçu rapide de ${product.name}`}
+        >
+          Aperçu rapide
+        </button>
+      </div>
+
+      {/* Meta and Details */}
+      <div className="flex flex-col flex-1">
         {product.brand && (
           <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-0.5">
             {product.brand.name}
           </p>
         )}
-        <h3 className="font-medium text-foreground">{product.name}</h3>
-        <p className="text-secondary">{priceDisplay()}</p>
-      </Link>
+
+        <h3 id={`product-title-${product.id}`} className="font-medium text-sm leading-snug mb-1 text-foreground">
+          <Link
+            href={`/product/${product.slug}`}
+            className="hover:underline focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none rounded"
+          >
+            {product.name}
+          </Link>
+        </h3>
+
+        <div className="mt-auto pt-1 flex items-baseline justify-between">
+          <span className="text-sm font-semibold text-foreground">
+            {priceDisplay()}
+          </span>
+        </div>
+      </div>
 
       {showQuickView && (
         <QuickViewModal product={product} onClose={() => setShowQuickView(false)} />
       )}
-    </>
+    </article>
   );
 }
