@@ -2,8 +2,11 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": ".",
-    "strict": true
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@ecom-os/themes": ["../themes/src/index.ts"]
+    }
   },
-  "include": ["**/*.ts"]
+  "include": ["src/**/*", "index.ts"]
 }
