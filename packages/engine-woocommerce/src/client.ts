@@ -34,6 +34,7 @@ import { loginGql, registerRest, getCustomerByToken, getCustomerOrdersRest, requ
 import { restFetch } from './rest';
 import { mapProduct, mapCategory, mapBrand, buildCategoryTree } from './mappers';
 import { fetchCurrency } from './currency';
+import { fetchStoreCart, addItemToStoreCart } from './cart';
 
 export class WooCommerceEngine implements EcomEngine {
   async listProducts(query: ProductListQuery): Promise<ProductListResult> {
@@ -97,12 +98,21 @@ export class WooCommerceEngine implements EcomEngine {
     return rawBrand ? mapBrand(rawBrand) : null;
   }
 
-  async getCart(_cartId: string): Promise<Cart> {
-    throw new Error('Backend cart integration is unavailable pending Store API verification.');
+  async getCart(cartId: string): Promise<Cart> {
+    const { cart } = await fetchStoreCart(cartId || undefined);
+    return cart;
   }
 
-  async addToCart(_cartId: string, _input: AddToCartInput): Promise<Cart> {
-    throw new Error('Backend cart integration is unavailable pending Store API verification.');
+  async addToCart(cartId: string, input: AddToCartInput): Promise<Cart> {
+    const targetId = input.variantId ? parseInt(input.variantId, 10) : parseInt(input.productId, 10);
+    if (isNaN(targetId) || targetId <= 0) {
+      throw new Error(`Invalid product or variation ID for addToCart: ${input.variantId || input.productId}`);
+    }
+    const { cart } = await addItemToStoreCart(cartId || undefined, {
+      id: targetId,
+      quantity: input.quantity,
+    });
+    return cart;
   }
 
   async listPaymentGateways(): Promise<Array<{ id: string; name: string; description?: string }>> {

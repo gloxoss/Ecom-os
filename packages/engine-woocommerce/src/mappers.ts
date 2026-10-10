@@ -9,6 +9,8 @@ import {
   RelatedProductReference,
   Money,
   Brand,
+  Cart,
+  CartItem,
 } from '@ecom-os/engine';
 import { parseRawMoney } from './money';
 
@@ -346,3 +348,48 @@ export function mapProduct(raw: WCProduct, currency: string): Product {
 
   return product;
 }
+
+export function mapStoreCartItem(raw: any, defaultCurrency: string = 'MAD'): CartItem {
+  const currency = raw.prices?.currency_code || defaultCurrency;
+  const amountMinor = parseInt(raw.prices?.price || '0', 10);
+
+  const item: CartItem = {
+    id: String(raw.key || raw.id),
+    productId: String(raw.id),
+    quantity: Number(raw.quantity) || 1,
+    price: {
+      amount_minor: isNaN(amountMinor) ? 0 : amountMinor,
+      currency,
+    },
+  };
+
+  if (raw.type === 'variation' || (Array.isArray(raw.variation) && raw.variation.length > 0)) {
+    item.variantId = String(raw.id);
+  }
+
+  return item;
+}
+
+export function mapStoreCart(raw: any, cartToken: string, defaultCurrency: string = 'MAD'): Cart {
+  const currency = raw.totals?.currency_code || defaultCurrency;
+  const subtotalMinor = parseInt(raw.totals?.total_items || '0', 10);
+  const totalMinor = parseInt(raw.totals?.total_price || '0', 10);
+
+  const items: CartItem[] = Array.isArray(raw.items)
+    ? raw.items.map((item: any) => mapStoreCartItem(item, currency))
+    : [];
+
+  return {
+    id: cartToken,
+    items,
+    subtotal: {
+      amount_minor: isNaN(subtotalMinor) ? 0 : subtotalMinor,
+      currency,
+    },
+    total: {
+      amount_minor: isNaN(totalMinor) ? 0 : totalMinor,
+      currency,
+    },
+  };
+}
+
