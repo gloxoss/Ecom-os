@@ -1,0 +1,150 @@
+{
+  "client": "demo-2",
+  "brand": "Nordic Craft Supplies",
+  "categories": [
+    {
+      "id": "cat-tools",
+      "slug": "outillage-ebnisterie",
+      "name": "Outillage d'ébénisterie",
+      "description": "Outils à main forgés pour le travail du bois de précision."
+    },
+    {
+      "id": "cat-textiles",
+      "slug": "textiles-naturels",
+      "name": "Textiles & Toiles",
+      "description": "Fibres naturelles pures, toiles de lin et cotons bruts écologiques."
+    },
+    {
+      "id": "cat-ceramic",
+      "slug": "argiles-ceramique",
+      "name": "Céramique & Modelage",
+      "description": "Argiles pures et terres cuites pour artisans potiers."
+    }
+  ],
+  "products": [
+    {
+      "id": "nc-prod-001",
+      "slug": "ciseau-a-bois-ebeniste-18mm",
+      "name": "Ciseau à bois d'ébéniste 18mm",
+      "sku": "NC-TOOL-CH18",
+      "description": "Forgé à la main en acier trempé à haute teneur en carbone avec manche ergonomique en frêne huilé.",
+      "shortDescription": "Ciseau d'ébéniste haute précision 18mm",
+      "price": {
+        "amount_minor": 28000,
+        "currency": "MAD"
+      },
+      "inventory": {
+        "status": "IN_STOCK",
+        "quantity": 12,
+        "backordersAllowed": false,
+        "isPurchasable": true
+      },
+      "images": [
+        {
+          "url": "https://cdn.nordic-craft.example.com/products/chisel-18mm.jpg",
+          "altText": "Ciseau à bois d'ébéniste 18mm"
+        }
+      ],
+      "categories": ["outillage-ebnisterie"],
+      "brand": {
+        "id": "brand-nc",
+        "slug": "nordic-craft",
+        "name": "Nordic Craft Supplies"
+      },
+      "isPurchasable": true
+    },
+    {
+      "id": "nc-prod-002",
+      "slug": "toile-en-lin-naturel-brut-500g",
+      "name": "Toile en lin naturel brut 500g/m²",
+      "sku": "NC-TEX-LIN500",
+      "description": "Tissage serré 100% lin non blanchi, texture granuleuse idéale pour tapisserie et peinture artisanale.",
+      "shortDescription": "Rouleau de lin naturel écru 500g/m²",
+      "price": {
+        "amount_minor": 19500,
+        "currency": "MAD"
+      },
+      "inventory": {
+        "status": "IN_STOCK",
+        "quantity": 25,
+        "backordersAllowed": false,
+        "isPurchasable": true
+      },
+      "images": [
+        {
+          "url": "https://cdn.nordic-craft.example.com/products/raw-linen.jpg",
+          "altText": "Toile en lin naturel brut"
+        }
+      ],
+      "categories": ["textiles-naturels"],
+      "brand": {
+        "id": "brand-nc",
+        "slug": "nordic-craft",
+        "name": "Nordic Craft Supplies"
+      },
+      "isPurchasable": true
+    },
+    {
+      "id": "nc-prod-003",
+      "slug": "pied-a-coulisse-laiton-massif",
+      "name": "Pied à coulisse en laiton massif 100mm",
+      "sku": "NC-TOOL-CAL100",
+      "description": "Instrument de mesure d'atelier en laiton satiné, vernier gravé au laser précis au 1/10e de millimètre.",
+      "shortDescription": "Pied à coulisse de précision en laiton",
+      "price": {
+        "amount_minor": 14000,
+        "currency": "MAD"
+      },
+      "inventory": {
+        "status": "IN_STOCK",
+        "quantity": 18,
+        "backordersAllowed": false,
+        "isPurchasable": true
+      },
+      "images": [
+        {
+          "url": "https://cdn.nordic-craft.example.com/products/brass-caliper.jpg",
+          "altText": "Pied à coulisse en laiton massif"
+        }
+      ],
+      "categories": ["outillage-ebnisterie"],
+      "brand": {
+        "id": "brand-nc",
+        "slug": "nordic-craft",
+        "name": "Nordic Craft Supplies"
+      },
+      "isPurchasable": true
+    },
+    {
+      "id": "nc-prod-004",
+      "slug": "argile-ceramique-gres-blanc-10kg",
+      "name": "Argile céramique grès blanc 10kg",
+      "sku": "NC-CER-GRES10",
+      "description": "Pain d'argile de grès blanc fin pour tournage et estampage. Température de cuisson 1200°C - 1260°C.",
+      "shortDescription": "Pain de grès blanc naturel 10kg",
+      "price": {
+        "amount_minor": 8500,
+        "currency": "MAD"
+      },
+      "inventory": {
+        "status": "IN_STOCK",
+        "quantity": 40,
+        "backordersAllowed": false,
+        "isPurchasable": true
+      },
+      "images": [
+        {
+          "url": "https://cdn.nordic-craft.example.com/products/white-clay.jpg",
+          "altText": "Pain d'argile grès blanc"
+        }
+      ],
+      "categories": ["argiles-ceramique"],
+      "brand": {
+        "id": "brand-nc",
+        "slug": "nordic-craft",
+        "name": "Nordic Craft Supplies"
+      },
+      "isPurchasable": true
+    }
+  ]
+}
