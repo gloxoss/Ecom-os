@@ -16,6 +16,7 @@ define('ECOMOS_OPERATIONS_VERSION', '1.0.0');
 define('ECOMOS_OPERATIONS_DIR', plugin_dir_path(__FILE__));
 
 require_once ECOMOS_OPERATIONS_DIR . 'capabilities.php';
+require_once ECOMOS_OPERATIONS_DIR . 'admin-page.php';
 
 // Register roles on plugin activation
 register_activation_hook(__FILE__, 'ecomos_register_roles');
