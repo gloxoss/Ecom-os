@@ -1,0 +1,20 @@
+{
+  "id": "dummy-addon",
+  "name": "Dummy Exemplar Addon",
+  "version": "1.0.0",
+  "description": "Exemplar simple addon verifying manifest schema and lifecycle",
+  "ecomOsApiRange": "^1.0.0",
+  "capabilities": {
+    "provided": ["dummy_feature"]
+  },
+  "configSchema": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether dummy feature is active"
+    }
+  },
+  "routes": [],
+  "uiSlots": [],
+  "adminSlots": []
+}
