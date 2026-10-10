@@ -28,20 +28,24 @@ import {
 import { fetchProducts, fetchCategories, fetchProductBySlug } from './products';
 import { loginGql, registerRest, getCustomerByToken, getCustomerOrdersRest, requestPasswordResetGql, resetPasswordGql, requireCustomerAccounts } from './auth';
 import { restFetch } from './rest';
-import { mapProduct, mapCategory } from './mappers';
+import { mapProduct, mapCategory, buildCategoryTree } from './mappers';
 import { fetchCurrency } from './currency';
 
 export class WooCommerceEngine implements EcomEngine {
   async listProducts(query: ProductListQuery): Promise<ProductListResult> {
-    const rawProducts = await fetchProducts({
+    const rawResult = await fetchProducts({
       ...(query.category !== undefined ? { category: query.category } : {}),
       ...(query.minPrice !== undefined ? { minPrice: query.minPrice } : {}),
       ...(query.maxPrice !== undefined ? { maxPrice: query.maxPrice } : {}),
+      ...(query.search !== undefined ? { search: query.search } : {}),
+      ...(query.limit !== undefined ? { limit: query.limit } : {}),
+      ...(query.cursor !== undefined ? { after: query.cursor } : {}),
     });
     const currency = await fetchCurrency();
+    const items = rawResult.nodes.map((raw) => mapProduct(raw, currency));
     return {
-      items: rawProducts.map((raw: Parameters<typeof mapProduct>[0]) => mapProduct(raw, currency)),
-      total: rawProducts.length,
+      items,
+      total: items.length,
     };
   }
 
@@ -52,7 +56,8 @@ export class WooCommerceEngine implements EcomEngine {
 
   async listCategories(locale?: Locale): Promise<Category[]> {
     const rawCategories = await fetchCategories();
-    return rawCategories.map(mapCategory);
+    const flat = rawCategories.map(mapCategory);
+    return buildCategoryTree(flat);
   }
 
   async getCart(_cartId: string): Promise<Cart> {
