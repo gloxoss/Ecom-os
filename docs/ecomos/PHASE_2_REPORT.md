@@ -1,6 +1,6 @@
 # Phase 2 Checkpoint: Guest Commerce & Checkout Integration, 2026-10-10
 
-**Status: COMPLETED (Phase 2 Exit Gate Ready). All 6 Phase 2 engineering tasks (`ECO-201` through `ECO-206`) independently verified and accepted on the canonical agent hub (`.agent-hub`). Authoritative WooCommerce Store API guest cart transport, line item mutations, coupon validation, destination-based address quotation, duplicate-safe COD checkout, fail-closed payment provider isolation, and owned guest order access with anti-enumeration protection pass.**
+**Status: COMPLETED (Phase 2 Exit Gate Ready). All 6 Phase 2 engineering tasks (`ECO-201` through `ECO-206`) independently verified and accepted on the canonical agent hub (`.agent-hub`). Authoritative WooCommerce Store API guest cart transport, line item mutations, coupon validation, destination-based address quotation, duplicate-safe COD checkout, fail-closed payment provider isolation, and hardened owned guest order status access with anti-enumeration protection pass.**
 
 Baseline: `e59338a1c33d8a520c876639414e39128f80f41b` (Phase 1 Gate Commit). Work is on `fix/ecomos-phase-0`. The preexisting dirty `plugins/wordpress-mcp` submodule was strictly preserved.
 
@@ -15,7 +15,7 @@ Baseline: `e59338a1c33d8a520c876639414e39128f80f41b` (Phase 1 Gate Commit). Work
 | `ECO-203` | Store API Shipping Destination & Rate Quotation | `commerce-cleanup` | `cleanup-verifier` | `0e9960d` | `ACCEPTED` |
 | `ECO-204` | Authoritative Duplicate-Safe Guest COD Purchase | `commerce-cleanup` | `cleanup-verifier` | `27a698e` | `ACCEPTED` |
 | `ECO-205` | Certified Payment Provider Contracts & Online Gateway Isolation | `commerce-cleanup` | `cleanup-verifier` | `2c01bb9` | `ACCEPTED` |
-| `ECO-206` | Owned Guest Order Status Access & Anti-Enumeration Protection | `commerce-cleanup` | `cleanup-verifier` | `2f9a927` | `ACCEPTED` |
+| `ECO-206` | Owned Guest Order Status Access & Anti-Enumeration Protection | `commerce-cleanup` | `cleanup-verifier` | `ca188cd` | `ACCEPTED` |
 
 ---
 
@@ -54,12 +54,14 @@ Baseline: `e59338a1c33d8a520c876639414e39128f80f41b` (Phase 1 Gate Commit). Work
 - Isolated online gateways (`stripe`, `cmi`) as fail-closed: uncertified gateways reject registration and throw descriptive errors on initiation until explicitly certified staging environments are provisioned.
 - Suite of 8 unit tests in `packages/addons-multi-payment/src/__tests__/provider-capabilities.test.ts` proving fail-closed defaults and COD registration.
 
-### ECO-206: Owned Guest Order Status Access & Anti-Enumeration Protection
-- Implemented cryptographically authenticated, opaque short-lived grant tokens (`apps/storefront/src/lib/commerce/order-access.ts`) via HMAC-SHA256 (`createGuestOrderGrant`, `verifyGuestOrderGrant`).
-- Tokens encode order ID, order key, email, and expiration timestamp with constant-time verification (`crypto.timingSafeEqual`) preventing timing attacks.
-- Neutralized public enumeration attacks: querying arbitrary numeric order IDs (`1051`, `1052`) without matching HMAC signatures is rejected immediately with 403 Forbidden without disclosing order existence.
-- Protected order status route (`GET /api/orders/status`) returns verified order details guarded by `Cache-Control: private, no-store, max-age=0, must-revalidate`.
-- Suite of 10 unit tests in `apps/storefront/src/__tests__/security/order-access.test.ts` verifying grant token generation, signature validation, tampering detection, and anti-enumeration defenses.
+### ECO-206: Owned Guest Order Status Access & Anti-Enumeration Protection (Hardened)
+- Eliminated insecure fallback secret literal in `order-access.ts`; documented `ORDER_ACCESS_SECRET` in `.env.example`.
+- Enforced fail-closed behavior via `getOrderAccessSecret()`: missing secret in production throws immediately, preventing unconfigured token minting.
+- Wired `createGuestOrderGrant` directly into `submitCheckoutAction`, issuing verified `orderToken` to guest buyers upon successful order placement.
+- Added `getGuestOrder(orderId, orderKey)` to `EcomEngine`, `FakeEngine`, and `WooCommerceEngine` (`getGuestOrderRest` in `packages/engine-woocommerce/src/orders.ts`), fetching live WooCommerce order status rather than returning a fabricated constant.
+- Redacted internal `orderKey` from `/api/orders/status` response to prevent credential leakage.
+- Supported multi-transport token ingestion (`Authorization: Bearer <token>`, `x-order-token` header, and `token` query param) with optional email challenge validation (`challengeEmail`).
+- Suite of 15 unit tests in `apps/storefront/src/__tests__/security/order-access.test.ts` verifying fail-closed configuration, grant issuance, anti-enumeration protection, header token extraction, and live engine status queries.
 
 ---
 
@@ -70,7 +72,7 @@ Baseline: `e59338a1c33d8a520c876639414e39128f80f41b` (Phase 1 Gate Commit). Work
     - Engine Import Boundaries: PASS (13 tests)
     - ESLint: PASS (0 errors across 11 workspace packages)
     - TypeScript Typecheck: PASS across all 11 packages and apps
-    - Vitest Suite: PASS (26 test files, 232 unit tests)
+    - Vitest Suite: PASS (26 test files, 237 unit tests)
     - Agent Hub Invariants: PASS (16 test suites)
 - **Monorepo Build:**
   - `pnpm run build`: **PASS** (Exit 0)
@@ -81,6 +83,6 @@ Baseline: `e59338a1c33d8a520c876639414e39128f80f41b` (Phase 1 Gate Commit). Work
 
 ## 4. Honest Boundaries
 
-- Phase 2 completes all authoritative WooCommerce guest commerce flows: persistent guest sessions, line item mutations, coupons, destination-based taxes/shipping, duplicate-safe COD purchase, gateway isolation, and owned order status lookups.
+- Phase 2 completes all authoritative WooCommerce guest commerce flows: persistent guest sessions, line item mutations, coupons, destination-based taxes/shipping, duplicate-safe COD purchase, gateway isolation, and owned order status lookups with genuine WooCommerce reads.
 - Online payment gateways (`stripe`, `cmi`) remain intentionally fail-closed pending physical merchant credentials and webhook listener certification.
 - Merchant operations and administrative catalog management are isolated to Phase 6 staff capabilities.
