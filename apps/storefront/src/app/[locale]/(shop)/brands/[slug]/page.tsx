@@ -2,7 +2,9 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { defaultParaLocaContent, type BrandDefinition } from '../../../../../../../../clients/paraloca/content-schema';
+import { getBrandStory } from '../../../../../../../../clients/paraloca/brand-schema';
 import { WishlistButton } from '@/features/product/ui/wishlist-button';
+import { BrandStory } from '@/features/brands/ui/brand-story';
 
 interface BrandPageProps {
   params: Promise<{
@@ -27,11 +29,12 @@ export default async function BrandPage({ params }: BrandPageProps) {
   }
 
   const isArabic = locale === 'ar';
+  const story = getBrandStory(slug);
 
   return (
-    <div className="py-8 max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="py-8 max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
       {/* Breadcrumb Navigation */}
-      <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
+      <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground">
         <ol className="flex items-center space-x-2">
           <li>
             <Link href={`/${locale}`} className="hover:text-foreground transition-colors">
@@ -51,8 +54,8 @@ export default async function BrandPage({ params }: BrandPageProps) {
         </ol>
       </nav>
 
-      {/* Brand Hero & Header Banner */}
-      <header className="mb-10 pb-8 border-b border-border">
+      {/* Brand Hero Banner */}
+      <header className="pb-8 border-b border-border">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-2xl">
             <div className="flex items-center gap-3 mb-3">
@@ -80,6 +83,9 @@ export default async function BrandPage({ params }: BrandPageProps) {
           </div>
         </div>
       </header>
+
+      {/* Brand Story & Warranty Panel */}
+      {story && <BrandStory story={story} locale={locale} />}
 
       {/* Brand Catalog Listing Section */}
       <section aria-labelledby="brand-products-heading" className="space-y-6">
