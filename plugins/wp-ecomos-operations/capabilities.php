@@ -39,6 +39,7 @@ function ecomos_get_role_capabilities(): array {
             'activate_plugins'              => false,
             'edit_plugins'                  => false,
             'edit_themes'                   => false,
+            'edit_files'                    => false,
             'manage_options'                => false,
             'unfiltered_html'               => false,
         ),
@@ -57,6 +58,8 @@ function ecomos_get_role_capabilities(): array {
             'ecomos_manage_quotes'          => false,
             'activate_plugins'              => false,
             'edit_plugins'                  => false,
+            'edit_themes'                   => false,
+            'edit_files'                    => false,
             'manage_options'                => false,
         ),
     );
