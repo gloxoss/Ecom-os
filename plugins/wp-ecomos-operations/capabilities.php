@@ -81,21 +81,32 @@ function ecomos_register_roles(): void {
 }
 
 /**
+ * Checks whether an addon is active in the server-side feature registry.
+ */
+function ecomos_is_addon_enabled(string $addon_id): bool {
+    $addon_active = (bool) apply_filters('ecomos_is_addon_active', false, $addon_id);
+    if ($addon_active) {
+        return true;
+    }
+    $active_addons = (array) get_option('ecomos_active_addons', array());
+    if (in_array($addon_id, $active_addons, true)) {
+        return true;
+    }
+    return get_option("ecomos_addon_{$addon_id}_enabled") === 'yes';
+}
+
+/**
  * Checks whether quote capability is currently active.
  * Invariant: If quote addon is disabled, quote permissions return false regardless of role.
  */
 function ecomos_is_quote_addon_active(): bool {
-    // Check if quote addon option or plugin is enabled
-    $addon_active = (bool) apply_filters('ecomos_is_addon_active', false, 'quotes');
-    if ($addon_active) {
+    if (ecomos_is_addon_enabled('quotes')) {
         return true;
     }
-
     if (function_exists('is_plugin_active') && is_plugin_active('wp-epioso-quotes/wp-epioso-quotes.php')) {
         return true;
     }
-
-    return get_option('ecomos_addon_quotes_enabled') === 'yes';
+    return false;
 }
 
 /**
