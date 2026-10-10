@@ -4,3 +4,4 @@ export * from './policy';
 export * from './basket';
 export * from './submit-schema';
 export * from './client';
+export * from './offer';

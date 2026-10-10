@@ -21,6 +21,9 @@ define('ECOMOS_RFQ_PLUGIN_DIR', plugin_dir_path(__FILE__));
 
 require_once ECOMOS_RFQ_PLUGIN_DIR . 'schema.php';
 require_once ECOMOS_RFQ_PLUGIN_DIR . 'repository.php';
+require_once ECOMOS_RFQ_PLUGIN_DIR . 'offers.php';
+require_once ECOMOS_RFQ_PLUGIN_DIR . 'documents.php';
+require_once ECOMOS_RFQ_PLUGIN_DIR . 'notifications.php';
 require_once ECOMOS_RFQ_PLUGIN_DIR . 'routes.php';
 
 register_activation_hook(__FILE__, function () {

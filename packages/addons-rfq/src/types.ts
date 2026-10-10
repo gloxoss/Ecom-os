@@ -7,7 +7,8 @@ export type RfqState =
   | 'accepted'
   | 'rejected'
   | 'expired'
-  | 'converted';
+  | 'converted'
+  | 'revision_requested';
 
 export type ActorRole = 'guest' | 'operator' | 'administrator' | 'system';
 
@@ -91,6 +92,11 @@ export interface RfqQuote {
   expiresAt?: string;
   convertedOrderId?: string | number;
   rejectionReason?: string;
+  customerRevisionNotes?: string;
+  customerName?: string;
+  customerEmail?: string;
+  companyName?: string;
+  taxId?: string;
   clientConfigKey?: string;
 }
 
