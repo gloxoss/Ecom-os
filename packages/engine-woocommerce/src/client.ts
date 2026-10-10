@@ -2,6 +2,7 @@ import {
   EcomEngine,
   Product,
   Category,
+  Brand,
   Cart,
   Order,
   CheckoutSession,
@@ -28,9 +29,10 @@ import {
   LoyaltyRedemption,
 } from '@ecom-os/engine';
 import { fetchProducts, fetchCategories, fetchProductBySlug } from './products';
+import { fetchBrands, fetchBrandBySlug } from './brands';
 import { loginGql, registerRest, getCustomerByToken, getCustomerOrdersRest, requestPasswordResetGql, resetPasswordGql, requireCustomerAccounts } from './auth';
 import { restFetch } from './rest';
-import { mapProduct, mapCategory, buildCategoryTree } from './mappers';
+import { mapProduct, mapCategory, mapBrand, buildCategoryTree } from './mappers';
 import { fetchCurrency } from './currency';
 
 export class WooCommerceEngine implements EcomEngine {
@@ -83,6 +85,16 @@ export class WooCommerceEngine implements EcomEngine {
     const rawCategories = await fetchCategories();
     const flat = rawCategories.map(mapCategory);
     return buildCategoryTree(flat);
+  }
+
+  async listBrands(_locale?: Locale): Promise<Brand[]> {
+    const rawBrands = await fetchBrands();
+    return rawBrands.map(mapBrand);
+  }
+
+  async getBrand(slug: string, _locale?: Locale): Promise<Brand | null> {
+    const rawBrand = await fetchBrandBySlug(slug);
+    return rawBrand ? mapBrand(rawBrand) : null;
   }
 
   async getCart(_cartId: string): Promise<Cart> {

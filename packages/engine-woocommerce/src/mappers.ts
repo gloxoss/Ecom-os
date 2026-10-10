@@ -8,6 +8,7 @@ import {
   ProductType,
   RelatedProductReference,
   Money,
+  Brand,
 } from '@ecom-os/engine';
 import { parseRawMoney } from './money';
 
@@ -15,6 +16,18 @@ export type WCImage = {
   sourceUrl: string;
   altText?: string | null;
   title?: string | null;
+};
+
+export type WCBrand = {
+  databaseId?: number;
+  id?: string | number;
+  slug: string;
+  name: string;
+  description?: string | null;
+  websiteUrl?: string | null;
+  isOwned?: boolean | null;
+  count?: number | null;
+  image?: WCImage | null;
 };
 
 export type WCCategory = {
@@ -75,6 +88,8 @@ export type WCProduct = {
   productCategories?: { nodes?: WCCategory[] } | null;
   variations?: { nodes?: WCVariation[] } | null;
   related?: { nodes?: WCRelatedProduct[] } | null;
+  brands?: WCBrand[] | null;
+  productBrands?: { nodes?: WCBrand[] } | null;
   reviewCount?: number;
   averageRating?: number;
 };
@@ -203,6 +218,30 @@ export function mapCategory(raw: WCCategory): Category {
   return category;
 }
 
+export function mapBrand(raw: WCBrand): Brand {
+  const brand: Brand = {
+    id: String(raw.databaseId ?? raw.id ?? raw.slug),
+    slug: raw.slug,
+    name: raw.name,
+  };
+  if (raw.description) {
+    brand.description = raw.description;
+  }
+  if (raw.websiteUrl) {
+    brand.websiteUrl = raw.websiteUrl;
+  }
+  if (typeof raw.isOwned === 'boolean') {
+    brand.isOwned = raw.isOwned;
+  }
+  if (raw.image?.sourceUrl) {
+    brand.logo = {
+      url: raw.image.sourceUrl,
+      altText: raw.image.altText || raw.name,
+    };
+  }
+  return brand;
+}
+
 export function buildCategoryTree(flatCategories: Category[]): Category[] {
   const map = new Map<string, Category>();
   const listWithChildren: Category[] = [];
@@ -298,6 +337,11 @@ export function mapProduct(raw: WCProduct, currency: string): Product {
   }
   if (typeof raw.averageRating === 'number') {
     product.averageRating = raw.averageRating;
+  }
+
+  const rawBrand = (raw.productBrands?.nodes && raw.productBrands.nodes[0]) || (raw.brands && raw.brands[0]);
+  if (rawBrand) {
+    product.brand = mapBrand(rawBrand);
   }
 
   return product;
