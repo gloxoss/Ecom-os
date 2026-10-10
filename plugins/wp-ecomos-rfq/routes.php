@@ -69,6 +69,13 @@ add_action('rest_api_init', function () {
         'callback'            => 'ecomos_rfq_rest_request_revision',
         'permission_callback' => 'ecomos_rfq_rest_check_read_permission',
     ));
+
+    // 8. Convert accepted quote to order
+    register_rest_route($namespace, '/quotes/(?P<id>[\w-]+)/convert', array(
+        'methods'             => WP_REST_Server::CREATABLE,
+        'callback'            => 'ecomos_rfq_rest_convert_quote',
+        'permission_callback' => 'ecomos_rfq_rest_check_read_permission',
+    ));
 });
 
 function ecomos_rfq_rest_check_active() {
@@ -361,5 +368,21 @@ function ecomos_rfq_rest_get_document($request) {
     ));
 
     return $response;
+}
+
+function ecomos_rfq_rest_convert_quote($request) {
+    $quote_id = $request->get_param('id');
+    $options = $request->get_json_params() ?: array();
+
+    if (!function_exists('ecomos_rfq_convert_quote_to_order')) {
+        return new WP_Error('module_unavailable', 'Conversion module is unavailable', array('status' => 500));
+    }
+
+    $result = ecomos_rfq_convert_quote_to_order($quote_id, $options);
+    if (is_wp_error($result)) {
+        return $result;
+    }
+
+    return rest_ensure_response($result);
 }
 
