@@ -4,7 +4,7 @@
 
 - Task / lane / executor: ECO-304 / experience / experience-c-1
 - Base SHA: 8ab5c823ddb5d28a9dbb1f067090044e546ad831 (Phase 2 gate HEAD; ECO-302 has no integration commit, still OPEN)
-- Implementation SHA: a4948491ccf721856b8d8f028564e12d041bd56c
+- Implementation SHA: tip of fix/eco-304-autocomplete at submission (code commit a494849, evidence refresh 2486c25; see `git log fix/eco-304-autocomplete --oneline -3`)
 - Branch / worktree: fix/eco-304-autocomplete / C:/Users/OMEN/OneDrive/Documents/projects/ParaLoca/Ecom-os (requested worktree C:/dev/ecomos-eco304 does not exist; shared tree used, owned paths only)
 - Claimed files and resources: apps/storefront/src/components/search, docs/ecomos/evidence/ECO-304; git-index, workspace-build, browser requested (hub join blocked: max 4 workers registered, no orchestrator assignment; no hub claim recorded)
 - Evidence date and environment: 2026-10-10, Windows win32, Node v24.21.0, Next 16.3.8, vitest 4.1.11
