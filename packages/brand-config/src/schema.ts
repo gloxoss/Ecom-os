@@ -56,7 +56,7 @@ export const BrandConfigSchema = z.object({
     sm: z.string().default('8px'),
     md: z.string().default('12px'),
     lg: z.string().default('16px'),
-    full: z.string().default('9999px'),
+    full: z.string().optional(),
   }),
   slots: LayoutSlotsSchema.partial().optional(),
   commerce: CommerceConfigSchema.partial().optional(),
