@@ -15,7 +15,7 @@ export interface ClientShellProps {
 /**
  * Reusable client presentation shell for EcomOS.
  * Applies active client theme tokens, accessible skip-to-content anchors,
- * and presentation slots without mutating core commerce logic.
+ * discreet secondary professional quoting links, and presentation slots.
  */
 export function ClientShell({
   children,
@@ -44,6 +44,23 @@ export function ClientShell({
       >
         {locale === 'ar' ? 'الانتقال إلى المحتوى الرئيسي' : 'Passer au contenu principal'}
       </a>
+
+      {/* Discreet Secondary Professional RFQ Utility Banner */}
+      <div className="w-full bg-muted/60 border-b border-border text-xs py-1.5 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1320px] mx-auto flex items-center justify-between">
+          <span className="text-muted-foreground">
+            {locale === 'ar' ? 'موزع معتمد للمعدات الطبية بالمغرب' : 'Distributeur agréé de matériel médical au Maroc'}
+          </span>
+          <a
+            href={`/${locale}/devis`}
+            className="text-accent hover:underline font-medium flex items-center gap-1.5"
+            data-testid="pro-devis-link"
+          >
+            <span>{locale === 'ar' ? 'فضاء المهنيين وطلب عرض سعر' : 'Espace Professionnels & Demande de Devis'}</span>
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
 
       {/* Header Slot */}
       {headerSlot ? (

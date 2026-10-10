@@ -74,7 +74,7 @@ export const paralocaProfile: ClientProfile = {
     },
   },
   capabilities: {
-    quotes: false, // Activated discreetly in ECO-805
+    quotes: true, // Discreetly activated for ParaLoca B2B healthcare professional quoting (ECO-805)
     multiCurrency: false,
     guestCheckout: true,
     customerAccounts: false,
