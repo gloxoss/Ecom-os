@@ -29,6 +29,7 @@ import {
 
 // Re-export all types so consumers can just import from interface
 export * from './types';
+export * from './content';
 
 export interface EcomEngine {
   listProducts(query: ProductListQuery): Promise<ProductListResult>;
@@ -65,4 +66,7 @@ export interface EcomEngine {
 
   getLoyaltyBalance(customerId: string): Promise<LoyaltyBalance>;
   redeemLoyaltyPoints(customerId: string, points: number): Promise<LoyaltyRedemption>;
+
+  getContent?(slot: string, locale?: Locale): Promise<Record<string, unknown> | null>;
+  getPageSections?(pageSlug: string, locale?: Locale): Promise<import('./content').PageSectionsData | null>;
 }

@@ -201,4 +201,46 @@ export class FakeEngine implements EcomEngine {
       remainingPoints: 1000 - points,
     };
   }
+
+  async getContent(slot: string, locale?: Locale): Promise<Record<string, unknown> | null> {
+    return {
+      slot,
+      title: `Sample ${slot} Content`,
+      description: `Managed CMS content for ${slot}`,
+    };
+  }
+
+  async getPageSections(pageSlug: string, locale?: Locale): Promise<import('./content').PageSectionsData | null> {
+    return {
+      hero: {
+        title: 'Bienvenue chez Angelina',
+        description: "Retrouvez l'univers raffiné de la célèbre Maison parisienne.",
+        image: {
+          src: '/assets/angelina/hero-hot-chocolate-macro-texture.webp',
+          alt: 'Texture macro abstraite de chocolat chaud',
+        },
+        categories: [
+          { id: 'patisseries', label: 'Pâtisseries', href: '/menu' },
+          { id: 'epicerie-fine', label: 'Épicerie Fine', href: '/catalog' },
+        ],
+        cta: {
+          label: 'Découvrir',
+          href: '/catalog',
+        },
+      },
+      collection: {
+        label: 'Nos Produits',
+        title: 'Découvrez notre collection artisanale.',
+        tabs: [
+          { id: 'all', label: 'Tout' },
+          { id: 'patisseries', label: 'Pâtisseries' },
+        ],
+        cta: {
+          label: 'Tous nos produits',
+          href: '/catalog',
+        },
+      },
+    };
+  }
 }
+

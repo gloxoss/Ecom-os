@@ -27,6 +27,7 @@ import {
   StoreCapabilities,
   LoyaltyBalance,
   LoyaltyRedemption,
+  PageSectionsData,
 } from '@ecom-os/engine';
 import { fetchProducts, fetchCategories, fetchProductBySlug } from './products';
 import { fetchBrands, fetchBrandBySlug } from './brands';
@@ -52,6 +53,7 @@ import {
   type StoreCheckoutInput,
   type StoreCheckoutResult,
 } from './checkout';
+import { fetchCmsContent, fetchPageSections } from './content';
 
 export class WooCommerceEngine implements EcomEngine {
   async listProducts(query: ProductListQuery): Promise<ProductListResult> {
@@ -376,4 +378,12 @@ export class WooCommerceEngine implements EcomEngine {
     return requireCustomerAccounts();
   }
 
+  async getContent(slot: string, locale?: Locale): Promise<Record<string, unknown> | null> {
+    return fetchCmsContent(slot, locale);
+  }
+
+  async getPageSections(pageSlug: string, locale?: Locale): Promise<PageSectionsData | null> {
+    return fetchPageSections(pageSlug, locale);
+  }
 }
+

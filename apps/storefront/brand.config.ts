@@ -2,6 +2,7 @@ import { BrandConfig } from '@ecom-os/brand-config';
 
 export const brandConfig: BrandConfig = {
   name: 'Angelina Paris',
+  theme: 'angelina',
   logos: {
     light: '/logo-angelina.svg',
     dark: '/logo-angelina-dark.svg',
