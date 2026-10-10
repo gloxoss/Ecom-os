@@ -1,8 +1,12 @@
 {
-  "name": "@ecom-os/addons-dummy",
+  "name": "@ecom-os/addon-dummy",
+  "version": "1.0.0",
+  "description": "Exemplar simple addon verifying complete compatibility, on/off contract, and failure isolation",
   "main": "index.ts",
-  "ecom-os": {
-    "addon": true,
-    "flag": "dummy"
+  "types": "index.ts",
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {
+    "@ecom-os/engine": "workspace:*"
   }
 }

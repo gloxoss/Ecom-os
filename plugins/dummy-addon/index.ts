@@ -1,15 +1,20 @@
-import type { EcomAddon, AddonContext, AddonManifest } from '@ecom-os/engine';
-import manifestData from './manifest.json';
+import type { EcomAddon, AddonContext, AddonManifest } from '../../packages/ecom-engine/src/index';
+import { manifest } from './manifest';
 
-export const manifest: AddonManifest = manifestData as unknown as AddonManifest;
+export { manifest };
+
+let isRegistered = false;
 
 export const register = (ctx: AddonContext): void => {
-  // Exemplar dummy addon registration hook
+  // Harmless visible capability: records registered state
+  isRegistered = true;
 };
 
 export const disable = (): void => {
-  // Exemplar dummy addon disable hook
+  isRegistered = false;
 };
+
+export const isAddonRegistered = (): boolean => isRegistered;
 
 export const addon: EcomAddon = {
   manifest,
