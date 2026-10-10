@@ -1,3 +1,11 @@
+# Active update, 2026-10-10
+
+Planning artifacts: complete. Owner approved local-development execution order on 2026-10-10, recorded in APPROVAL.md. Application completion: read the canonical hub, never this planning state.
+
+UNDERSTAND: handoff/discovery reconciliation saved. RESEARCH: three read-only reviewers completed. PLAN: active sections 13 onward and manifest saved. REVIEW: eight-category review saved. VALIDATE: bidirectional coverage and machine checks saved. OUTPUT: SUMMARY and tracker saved. Planning output and owner review are complete; application feature acceptance remains separate.
+
+Resume: read SUMMARY.md and run `node .ultraplan/scripts/status.mjs`. Review the concurrent ECO-102 acceptance and residual catalog gaps before ECO-103/Phase 1 gate. Do not restart engine scaffold or execute archived account/payment/pilot sections. The original state/history below is retained and superseded for current execution.
+
 # UltraPlan State: Ecom OS
 
 > Auto-managed by UltraPlan. Do not edit manually.
@@ -166,3 +174,11 @@
 | .ultraplan/sections/08-i18n-rtl.md | complete | 2026-06-23 |
 | .ultraplan/sections/09-multi-payment.md | complete | 2026-06-23 |
 | .ultraplan/sections/10-security-test-deploy.md | complete | 2026-06-23 |
+
+## 2026-10-10 handoff checkpoint
+
+Draft saved and structurally/independently reviewed. Documentation Git commit pending because ECO-103 owns git-index; no lock was overridden. PLAN-001 remains PARTIAL only for commit/review handoff. Approval remains pending. Reclaim the planning assignment and git-index before committing only the owned .ultraplan/audit/progress paths. Do not include concurrent application or submodule changes.
+
+## Owner approval, 2026-10-10
+
+The owner approved the execution order. Planning is complete; actual application progress comes from the canonical hub. The earlier pending-review/lock notes above are historical checkpoints. Commit handoff is now being resumed; no other runner's claims are overridden.

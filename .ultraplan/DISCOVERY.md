@@ -160,3 +160,22 @@ A: Sidebar on desktop, slide-up bottom sheet on mobile
 
 **Q: What should the mobile navigation feel like?**
 A: Native-feeling bottom tab bar (Home, Search, Cart, Account)
+
+
+# 2026-10-10 handoff and run reconciliation
+
+The user requested an audit and a better tracked plan. Existing supplied handoff answers settled requirements; no new answers or approvals are fabricated. This update reuses prior discovery and reconciles all nine categories instead of sending redundant discovery questions.
+
+1. Core: reusable guest-first Woo commerce, not a client-specific rewrite.
+2. Users: guest buyers/quote requesters, capability-scoped WP staff and platform operators; customer accounts optional/off.
+3. Integrations: Woo authority, verified GraphQL catalog, Store API cart/checkout, CMS, optional search/provider/RFQ modules.
+4. Edges: outages/empty/deleted data, complete connections, exact variations, stock/price changes, duplicate/concurrent/uncertain transactions, expiry/off-state.
+5. Quality: exact-SHA evidence, production browser proof, real fixtures, accessibility, measured budgets, restore and independent second client.
+6. Patterns: preserve EcomEngine/theme/addon seams and one hub; native/hybrid WP admin.
+7. Preferences: preserve current UI and isolated client deployments; French first for ParaLoca.
+8. Business: reusable starter with optional addon capability, no invented fees/subscription/vendor/cost commitment.
+9. Visual: approved ParaLoca reference through profile/theme; different neutral client proves reuse.
+
+Authoritative source: ../00_START_HERE.md, ../01_MASTER_AGENT_PROMPT.md, ../02_PHASED_EXECUTION_PLAN.md, ../03_TARGET_ARCHITECTURE_AND_ADDONS.md, ../04_REPORTING_AND_ACCEPTANCE.md and their linked scope/design sources. Numbered duplicate integration/admin documents are not separate requirements.
+
+Open owner decisions D-01..D-08 live in SUMMARY; they block only affected activation/release. Historical contradictory requirements are superseded, not silently deleted. All 58 ECO requirements are retained in active-plan.json and VALIDATE.md.

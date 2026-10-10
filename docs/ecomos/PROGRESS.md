@@ -70,3 +70,15 @@ Sequence clarification: finish or explicitly record remaining Phase 0 gates, the
 Owner requested a project-specific hub patterned after the local IMC and SchoolOS examples. `.agent-hub` now provides executable task/claim/resource coordination, committed evidence, a separate verifier and orchestrator acceptance, four implementation lanes, domain rules/contracts and all 58 phased ECO tasks plus HUB-001. Root AGENTS/CLAUDE and Codex/Claude skills route agents into the same hub. Existing source and WordPress business behavior are unchanged by hub creation.
 
 Baseline task definitions start OPEN; historical reports are evidence pointers, not automatic independent acceptance. Phase 0 remains PARTIAL and no phase gate is pre-approved. Hub implementation checks and limitations are recorded in `HUB_IMPLEMENTATION.md`; independent exact-commit evidence belongs in `verification/HUB-001/verification.md`.
+
+## 2026-10-10 run audit and UltraPlan update
+
+Audit baseline cb80332 confirmed recorded Phase 0 gate and accepted ECO-001..008/ECO-101, but identified gaps in actual production-browser proof, independent exact-SHA execution provenance and historical staging labels. See AUDIT_2026-10-10.md for scope and fresh checks.
+
+The existing .ultraplan was updated non-destructively into a reviewable draft: 51 active sections, 170 small steps and all 58 owner ECO units, with bidirectional validation and a read-only hub progress view. Historical account/Vendure/Angelina/payment assumptions are superseded. See ../../.ultraplan/SUMMARY.md and TRACKING.md. Owner review is pending; planning completion is not app completion.
+
+While auditing, another runner accepted ECO-102 at 9200763, integrated documentation d805555. Recorded progress became Core 10/44, RFQ 0/7, ParaLoca 0/7; Phase 1 remains ungated. New mapping tests were freshly rerun: 13 pass. Full nested connection completeness, engine pagination metadata and representative live catalog proof remain before the Phase 1 gate. No application or staging changes were made by this planning task.
+
+## 2026-10-10 owner-approved execution order
+
+Owner answered Approve order (Recommended) for the saved local-development sequence. Approval recorded in .ultraplan/APPROVAL.md and active-plan.json. Planning is finalized; application acceptance remains hub/evidence-driven. Latest observed progress at 12:20 UTC: Core 11/44, RFQ 0/7, ParaLoca 0/7; ECO-103 accepted, ECO-105 in progress, Phase 1 ungated.
