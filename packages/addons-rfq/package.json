@@ -1,0 +1,23 @@
+{
+  "name": "@ecom-os/addons-rfq",
+  "version": "1.0.0",
+  "description": "EcomOS RFQ (Request for Quote / Devis) Addon: State Machine, Policy, and Private Revisions",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "private": true,
+  "ecom-os": {
+    "addon": true,
+    "flag": "quotes"
+  },
+  "dependencies": {
+    "@ecom-os/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "4.1.11"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}
