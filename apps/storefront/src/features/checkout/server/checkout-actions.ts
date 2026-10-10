@@ -1,7 +1,7 @@
 'use server';
 
 import { getEngine } from '@/lib/engine';
-import { getCartToken } from '@/features/cart/server/cart-actions';
+import { getCartToken, clearCartCookie } from '@/features/cart/server/cart-actions';
 import { Coupon, ShippingMethod, Cart } from '@ecom-os/engine';
 import {
   CheckoutAddressInput,
@@ -42,6 +42,15 @@ export interface CheckoutQuoteResult {
   };
 }
 
+export interface SubmitCheckoutResult {
+  ok: boolean;
+  orderId?: string | number;
+  orderKey?: string;
+  status?: string;
+  error?: string;
+  errors?: Record<string, string>;
+}
+
 interface CheckoutQuoteEngine {
   updateCustomerAddress?: (
     cartId: string,
@@ -64,6 +73,19 @@ interface CheckoutQuoteEngine {
     shippingPackages: CheckoutQuoteShippingPackage[];
     shippingTotal: { amount_minor: number; currency: string };
     taxTotal: { amount_minor: number; currency: string };
+  }>;
+  submitCheckout?: (
+    cartId: string,
+    input: {
+      billing_address: Record<string, string>;
+      shipping_address: Record<string, string>;
+      payment_method: string;
+    },
+    attemptKey?: string
+  ) => Promise<{
+    orderId: string | number;
+    orderKey: string;
+    status: string;
   }>;
 }
 
@@ -177,6 +199,78 @@ export async function selectShippingRateAction(
     };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown shipping selection error';
+    return {
+      ok: false,
+      error: message,
+    };
+  }
+}
+
+export async function submitCheckoutAction(
+  addressInput: Partial<CheckoutAddressInput>,
+  attemptKey?: string
+): Promise<SubmitCheckoutResult> {
+  const validation = validateCheckoutAddress(addressInput);
+  if (!validation.valid) {
+    return {
+      ok: false,
+      error: 'validation_failed',
+      errors: validation.errors,
+    };
+  }
+
+  const token = await getCartToken();
+  if (!token) {
+    return {
+      ok: false,
+      error: 'no_session',
+    };
+  }
+
+  const engine = (await getEngine()) as unknown as CheckoutQuoteEngine;
+  if (typeof engine.submitCheckout !== 'function') {
+    return {
+      ok: false,
+      error: 'unsupported_engine',
+    };
+  }
+
+  try {
+    const addressPayload = {
+      first_name: addressInput.firstName || '',
+      last_name: addressInput.lastName || '',
+      address_1: addressInput.address1 || '',
+      address_2: addressInput.address2 || '',
+      city: addressInput.city || '',
+      state: addressInput.state || '',
+      postcode: addressInput.postcode || '',
+      country: addressInput.country || 'MA',
+      email: addressInput.email || '',
+      phone: addressInput.phone || '',
+    };
+
+    const key = attemptKey || `${token}:${addressInput.email}:${addressInput.address1}`;
+
+    const result = await engine.submitCheckout(
+      token,
+      {
+        billing_address: addressPayload,
+        shipping_address: addressPayload,
+        payment_method: 'cod',
+      },
+      key
+    );
+
+    await clearCartCookie();
+
+    return {
+      ok: true,
+      orderId: result.orderId,
+      orderKey: result.orderKey,
+      status: result.status,
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Checkout failed';
     return {
       ok: false,
       error: message,

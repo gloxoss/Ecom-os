@@ -46,6 +46,12 @@ import {
   type UpdateCustomerInput,
   type StoreCustomerQuoteResult,
 } from './cart';
+import {
+  submitStoreCheckout,
+  executeIdempotentCheckout,
+  type StoreCheckoutInput,
+  type StoreCheckoutResult,
+} from './checkout';
 
 export class WooCommerceEngine implements EcomEngine {
   async listProducts(query: ProductListQuery): Promise<ProductListResult> {
@@ -146,7 +152,22 @@ export class WooCommerceEngine implements EcomEngine {
       .map((g: any) => ({ id: g.id, name: g.title || g.method_title, description: g.description || g.method_description }));
   }
 
-  async initCheckout(_cartId: string, _input: CheckoutInput, _items?: Array<{ productId: string; slug: string; quantity: number }>): Promise<CheckoutSession> {
+  async submitCheckout(
+    cartId: string,
+    input: StoreCheckoutInput,
+    attemptKey?: string
+  ): Promise<StoreCheckoutResult> {
+    if (attemptKey) {
+      return executeIdempotentCheckout(attemptKey, cartId, input);
+    }
+    return submitStoreCheckout(cartId, input);
+  }
+
+  async initCheckout(
+    _cartId: string,
+    _input: CheckoutInput,
+    _items?: Array<{ productId: string; slug: string; quantity: number }>
+  ): Promise<CheckoutSession> {
     throw new Error('Checkout is unavailable pending authoritative cart, shipping and tax integration.');
   }
 
