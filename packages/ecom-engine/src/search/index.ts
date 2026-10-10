@@ -6,3 +6,4 @@ export * from './meilisearch-provider';
 export * from './typesense-provider';
 export * from './ranking';
 export * from './projection';
+export * from './sync';

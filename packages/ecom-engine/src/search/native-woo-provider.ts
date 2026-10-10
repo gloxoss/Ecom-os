@@ -39,6 +39,7 @@ export class NativeWooSearchProvider implements SearchProvider {
     // 1. Text Search matching
     if (term) {
       matched = matched.filter((doc) => {
+        const idNorm = normalizeText(doc.id);
         const titleNorm = normalizeText(doc.title);
         const descNorm = normalizeText(doc.description);
         const skuNorm = doc.sku ? normalizeText(doc.sku) : '';
@@ -55,6 +56,7 @@ export class NativeWooSearchProvider implements SearchProvider {
 
         // Exact match boosts / partial match checks
         return (
+          idNorm.includes(term) ||
           titleNorm.includes(term) ||
           skuNorm.includes(term) ||
           brandNorm.includes(term) ||
@@ -240,6 +242,10 @@ export class NativeWooSearchProvider implements SearchProvider {
 
   async clear(): Promise<void> {
     this.documents.clear();
+  }
+
+  async get(id: string): Promise<SearchDocument | null> {
+    return this.documents.get(id) || null;
   }
 
   private computeFacets(
