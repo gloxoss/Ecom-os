@@ -193,3 +193,144 @@ export async function removeCouponFromStoreCart(
   };
 }
 
+export interface StoreAddress {
+  first_name?: string;
+  last_name?: string;
+  company?: string;
+  address_1?: string;
+  address_2?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface UpdateCustomerInput {
+  billing_address?: StoreAddress;
+  shipping_address?: StoreAddress;
+}
+
+export interface StoreShippingRate {
+  rate_id: string;
+  name: string;
+  description?: string;
+  delivery_time?: string;
+  price_minor: number;
+  taxes_minor: number;
+  selected: boolean;
+  currency: string;
+  method_id?: string;
+  instance_id?: number;
+}
+
+export interface StoreShippingPackage {
+  package_id: number | string;
+  name: string;
+  rates: StoreShippingRate[];
+}
+
+export interface StoreCustomerQuoteResult extends StoreCartResult {
+  shippingPackages: StoreShippingPackage[];
+  shippingTotal: {
+    amount_minor: number;
+    currency: string;
+  };
+  taxTotal: {
+    amount_minor: number;
+    currency: string;
+  };
+}
+
+export function extractShippingPackages(raw: any, currency = 'MAD'): StoreShippingPackage[] {
+  if (!raw || !Array.isArray(raw.shipping_rates)) return [];
+  return raw.shipping_rates.map((pkg: any) => ({
+    package_id: pkg.package_id ?? 0,
+    name: pkg.name || 'Shipping',
+    rates: Array.isArray(pkg.shipping_rates)
+      ? pkg.shipping_rates.map((r: any) => ({
+          rate_id: String(r.rate_id),
+          name: r.name || 'Standard Shipping',
+          ...(r.description ? { description: r.description } : {}),
+          ...(r.delivery_time ? { delivery_time: r.delivery_time } : {}),
+          price_minor: parseInt(r.price || '0', 10) || 0,
+          taxes_minor: parseInt(r.taxes || '0', 10) || 0,
+          selected: Boolean(r.selected),
+          currency: r.currency_code || currency,
+          ...(r.method_id ? { method_id: r.method_id } : {}),
+          ...(r.instance_id !== undefined ? { instance_id: r.instance_id } : {}),
+        }))
+      : [],
+  }));
+}
+
+export async function updateStoreCustomer(
+  cartToken: string,
+  input: UpdateCustomerInput
+): Promise<StoreCustomerQuoteResult> {
+  const res = await storeApiFetch('/cart/update-customer', {
+    method: 'POST',
+    cartToken,
+    body: input,
+  });
+  const activeToken = res.cartToken || cartToken;
+  const currency = res.data?.totals?.currency_code || 'MAD';
+  const cart = mapStoreCart(res.data, activeToken, currency);
+  const shippingPackages = extractShippingPackages(res.data, currency);
+  const shippingTotalMinor = parseInt(res.data?.totals?.total_shipping || '0', 10);
+  const taxTotalMinor = parseInt(res.data?.totals?.total_tax || '0', 10);
+
+  return {
+    cart,
+    cartToken: activeToken,
+    raw: res.data,
+    shippingPackages,
+    shippingTotal: {
+      amount_minor: isNaN(shippingTotalMinor) ? 0 : shippingTotalMinor,
+      currency,
+    },
+    taxTotal: {
+      amount_minor: isNaN(taxTotalMinor) ? 0 : taxTotalMinor,
+      currency,
+    },
+  };
+}
+
+export async function selectStoreShippingRate(
+  cartToken: string,
+  packageId: number | string,
+  rateId: string
+): Promise<StoreCustomerQuoteResult> {
+  const res = await storeApiFetch('/cart/select-shipping-rate', {
+    method: 'POST',
+    cartToken,
+    body: {
+      package_id: packageId,
+      rate_id: rateId,
+    },
+  });
+  const activeToken = res.cartToken || cartToken;
+  const currency = res.data?.totals?.currency_code || 'MAD';
+  const cart = mapStoreCart(res.data, activeToken, currency);
+  const shippingPackages = extractShippingPackages(res.data, currency);
+  const shippingTotalMinor = parseInt(res.data?.totals?.total_shipping || '0', 10);
+  const taxTotalMinor = parseInt(res.data?.totals?.total_tax || '0', 10);
+
+  return {
+    cart,
+    cartToken: activeToken,
+    raw: res.data,
+    shippingPackages,
+    shippingTotal: {
+      amount_minor: isNaN(shippingTotalMinor) ? 0 : shippingTotalMinor,
+      currency,
+    },
+    taxTotal: {
+      amount_minor: isNaN(taxTotalMinor) ? 0 : taxTotalMinor,
+      currency,
+    },
+  };
+}
+
+

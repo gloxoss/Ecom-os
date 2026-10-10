@@ -41,6 +41,10 @@ import {
   removeStoreCartItem,
   applyCouponToStoreCart,
   removeCouponFromStoreCart,
+  updateStoreCustomer,
+  selectStoreShippingRate,
+  type UpdateCustomerInput,
+  type StoreCustomerQuoteResult,
 } from './cart';
 
 export class WooCommerceEngine implements EcomEngine {
@@ -261,8 +265,45 @@ export class WooCommerceEngine implements EcomEngine {
     }
   }
 
+  async updateCustomerAddress(
+    cartId: string,
+    input: UpdateCustomerInput
+  ): Promise<StoreCustomerQuoteResult> {
+    return updateStoreCustomer(cartId, input);
+  }
+
+  async selectShippingRate(
+    cartId: string,
+    rateId: string,
+    packageId: number | string = 0
+  ): Promise<StoreCustomerQuoteResult> {
+    return selectStoreShippingRate(cartId, packageId, rateId);
+  }
+
   async listShippingMethods(_countryCode?: string): Promise<ShippingMethod[]> {
-    throw new Error('Shipping is unavailable pending destination-based Store API rates.');
+    try {
+      const zones = await restFetch('/shipping/zones');
+      if (Array.isArray(zones) && zones.length > 0) {
+        const methods = await restFetch(`/shipping/zones/${zones[0].id}/methods`);
+        if (Array.isArray(methods)) {
+          const currency = await fetchCurrency();
+          return methods
+            .filter((m: any) => m.enabled)
+            .map((m: any) => ({
+              id: `${m.method_id}:${m.instance_id}`,
+              title: m.title || m.method_title,
+              cost: {
+                amount_minor: Math.round(parseFloat(m.settings?.cost?.value || '0') * 100),
+                currency,
+              },
+              description: m.method_description,
+            }));
+        }
+      }
+    } catch {
+      // Return empty array when REST zones are unconfigured or unavailable
+    }
+    return [];
   }
 
   async getCapabilities(): Promise<StoreCapabilities> {
