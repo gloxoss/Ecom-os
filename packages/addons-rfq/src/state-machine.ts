@@ -46,8 +46,9 @@ const ALLOWED_TRANSITIONS: Record<RfqState, RfqState[]> = {
   draft: ['submitted'],
   submitted: ['verified', 'offer_created', 'rejected', 'expired'],
   verified: ['offer_created', 'rejected', 'expired'],
-  offer_created: ['revised', 'accepted', 'rejected', 'expired'],
-  revised: ['revised', 'accepted', 'rejected', 'expired'],
+  offer_created: ['revised', 'accepted', 'rejected', 'expired', 'revision_requested'],
+  revised: ['revised', 'accepted', 'rejected', 'expired', 'revision_requested'],
+  revision_requested: ['revised', 'rejected', 'expired'],
   accepted: ['converted', 'expired'],
   rejected: [],
   expired: [],
@@ -60,6 +61,7 @@ const ACTOR_PERMISSIONS: Record<RfqState, ActorRole[]> = {
   verified: ['guest', 'operator', 'administrator', 'system'],
   offer_created: ['operator', 'administrator'],
   revised: ['operator', 'administrator'],
+  revision_requested: ['guest', 'operator', 'administrator'],
   accepted: ['guest', 'administrator'],
   rejected: ['guest', 'operator', 'administrator', 'system'],
   expired: ['system', 'operator', 'administrator'],
@@ -219,6 +221,13 @@ export function transition(
     case 'rejected': {
       if (payload.reason) {
         updatedQuote.rejectionReason = payload.reason;
+      }
+      break;
+    }
+
+    case 'revision_requested': {
+      if (payload.staffNotes) {
+        updatedQuote.customerRevisionNotes = payload.staffNotes;
       }
       break;
     }

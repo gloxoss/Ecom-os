@@ -55,6 +55,20 @@ add_action('rest_api_init', function () {
         'callback'            => 'ecomos_rfq_rest_reject_quote',
         'permission_callback' => 'ecomos_rfq_rest_check_reject_permission',
     ));
+
+    // 6. Get quote document (HTML/PDF print view)
+    register_rest_route($namespace, '/quotes/(?P<id>[\w-]+)/document', array(
+        'methods'             => WP_REST_Server::READABLE,
+        'callback'            => 'ecomos_rfq_rest_get_document',
+        'permission_callback' => 'ecomos_rfq_rest_check_read_permission',
+    ));
+
+    // 7. Request revision (guest with token)
+    register_rest_route($namespace, '/quotes/(?P<id>[\w-]+)/revise', array(
+        'methods'             => WP_REST_Server::CREATABLE,
+        'callback'            => 'ecomos_rfq_rest_request_revision',
+        'permission_callback' => 'ecomos_rfq_rest_check_read_permission',
+    ));
 });
 
 function ecomos_rfq_rest_check_active() {
@@ -173,18 +187,41 @@ function ecomos_rfq_rest_add_offer($request) {
 
     $user = wp_get_current_user();
     $offer_data = array(
-        'staff_id'    => (string) $user->ID,
-        'staff_name'  => $user->display_name ?: 'Staff',
-        'lines'       => isset($params['lines']) ? $params['lines'] : array(),
-        'expires_at'  => isset($params['expiresAt']) ? $params['expiresAt'] : '',
-        'currency'    => isset($params['currency']) ? $params['currency'] : 'MAD',
-        'terms'       => isset($params['terms']) ? $params['terms'] : null,
-        'notes'       => isset($params['notes']) ? $params['notes'] : null,
+        'lines'      => isset($params['lines']) ? $params['lines'] : array(),
+        'expires_at' => isset($params['expiresAt']) ? $params['expiresAt'] : (isset($params['expires_at']) ? $params['expires_at'] : ''),
+        'currency'   => isset($params['currency']) ? $params['currency'] : 'MAD',
+        'terms'      => isset($params['terms']) ? $params['terms'] : null,
+        'notes'      => isset($params['notes']) ? $params['notes'] : null,
     );
 
-    $updated = ecomos_rfq_add_revision($quote_id, $offer_data);
+    // Call server-pricing and revision logic
+    if (function_exists('ecomos_rfq_create_staff_offer')) {
+        $updated = ecomos_rfq_create_staff_offer($quote_id, $user, $offer_data);
+    } else {
+        $updated = ecomos_rfq_add_revision($quote_id, array_merge($offer_data, array(
+            'staff_id'   => (string) $user->ID,
+            'staff_name' => $user->display_name ?: 'Staff',
+        )));
+    }
+
     if (is_wp_error($updated)) {
         return $updated;
+    }
+
+    // Trigger transactional notification
+    if (function_exists('ecomos_rfq_notify_offer_created')) {
+        $current_rev = null;
+        if (!empty($updated['revisions'])) {
+            foreach ($updated['revisions'] as $r) {
+                if ($r['revision_id'] === $updated['current_revision_id']) {
+                    $current_rev = $r;
+                    break;
+                }
+            }
+        }
+        if ($current_rev) {
+            ecomos_rfq_notify_offer_created($updated, $current_rev);
+        }
     }
 
     unset($updated['access_secret_hash']);
@@ -201,14 +238,20 @@ function ecomos_rfq_rest_accept_offer($request) {
         return new WP_Error('not_found', 'Quote not found', array('status' => 404));
     }
 
-    // Expiration check
-    if (!empty($quote['expires_at']) && strtotime($quote['expires_at']) < time()) {
-        return new WP_Error('quote_expired', 'Quotation offer has expired and cannot be accepted', array('status' => 410));
-    }
-
-    // Stale revision invariant
-    if (empty($revision_id) || $revision_id !== $quote['current_revision_id']) {
-        return new WP_Error('stale_revision', sprintf('Targeted revision "%s" is superseded or invalid. Current is "%s".', $revision_id, $quote['current_revision_id']), array('status' => 409));
+    // Validate using offers guard if available
+    if (function_exists('ecomos_rfq_can_accept_revision')) {
+        $guard = ecomos_rfq_can_accept_revision($quote, $revision_id);
+        if (is_wp_error($guard)) {
+            return $guard;
+        }
+    } else {
+        // Fallback validation
+        if (!empty($quote['expires_at']) && strtotime($quote['expires_at']) < time()) {
+            return new WP_Error('quote_expired', 'Quotation offer has expired and cannot be accepted', array('status' => 410));
+        }
+        if (empty($revision_id) || $revision_id !== $quote['current_revision_id']) {
+            return new WP_Error('stale_revision', sprintf('Targeted revision "%s" is superseded or invalid. Current is "%s".', $revision_id, $quote['current_revision_id']), array('status' => 409));
+        }
     }
 
     $transitioned = ecomos_rfq_update_state($quote_id, 'accepted', null, array(
@@ -217,6 +260,10 @@ function ecomos_rfq_rest_accept_offer($request) {
 
     if (!$transitioned) {
         return new WP_Error('update_failed', 'Could not transition quote to accepted', array('status' => 500));
+    }
+
+    if (function_exists('ecomos_rfq_notify_offer_accepted')) {
+        ecomos_rfq_notify_offer_accepted($quote);
     }
 
     return rest_ensure_response(array(
@@ -245,6 +292,10 @@ function ecomos_rfq_rest_reject_quote($request) {
         return new WP_Error('update_failed', 'Could not transition quote to rejected', array('status' => 500));
     }
 
+    if (function_exists('ecomos_rfq_notify_offer_rejected')) {
+        ecomos_rfq_notify_offer_rejected($quote, $reason);
+    }
+
     return rest_ensure_response(array(
         'success' => true,
         'quoteId' => $quote_id,
@@ -252,3 +303,63 @@ function ecomos_rfq_rest_reject_quote($request) {
         'reason'  => $reason,
     ));
 }
+
+function ecomos_rfq_rest_request_revision($request) {
+    $quote_id = $request->get_param('id');
+    $params = $request->get_json_params();
+    $notes = isset($params['notes']) ? sanitize_textarea_field($params['notes']) : '';
+
+    $quote = ecomos_rfq_get_quote($quote_id);
+    if (!$quote) {
+        return new WP_Error('not_found', 'Quote not found', array('status' => 404));
+    }
+
+    $transitioned = ecomos_rfq_update_state($quote_id, 'revision_requested', null, array(
+        'updated_at' => current_time('mysql', 1),
+    ));
+
+    if (!$transitioned) {
+        return new WP_Error('update_failed', 'Could not transition quote to revision_requested', array('status' => 500));
+    }
+
+    return rest_ensure_response(array(
+        'success' => true,
+        'quoteId' => $quote_id,
+        'state'   => 'revision_requested',
+        'notes'   => $notes,
+    ));
+}
+
+function ecomos_rfq_rest_get_document($request) {
+    $quote_id = $request->get_param('id');
+    $quote = ecomos_rfq_get_quote($quote_id);
+    if (!$quote) {
+        return new WP_Error('not_found', 'Quote not found', array('status' => 404));
+    }
+
+    $token = $request->get_header('x-quote-token');
+    if (empty($token)) {
+        $token = $request->get_param('token');
+    }
+
+    if (function_exists('ecomos_rfq_verify_document_access')) {
+        $auth_check = ecomos_rfq_verify_document_access($quote, $token, wp_get_current_user());
+        if (is_wp_error($auth_check)) {
+            return $auth_check;
+        }
+    }
+
+    $html = function_exists('ecomos_rfq_generate_document_html')
+        ? ecomos_rfq_generate_document_html($quote)
+        : '<html><body>Devis ' . esc_html($quote['quote_number']) . '</body></html>';
+
+    $response = new WP_REST_Response($html, 200);
+    $response->set_headers(array(
+        'Content-Type'        => 'text/html; charset=UTF-8',
+        'Cache-Control'       => 'no-store, private',
+        'Content-Disposition' => sprintf('inline; filename="devis-%s.html"', $quote['quote_number']),
+    ));
+
+    return $response;
+}
+
