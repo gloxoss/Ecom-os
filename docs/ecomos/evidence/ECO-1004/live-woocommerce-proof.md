@@ -80,6 +80,64 @@ GET /api/orders/status?orderId=20  x-order-token: bogus   -> 403
 is refused with `cart_out_of_sync`. That guard fired for real during this work when the
 browser claimed variation 12 while the cart held 13.
 
+## Finding 1 — the four cases the audit named
+
+With a 20% Moroccan VAT rate (`woocommerce_calc_taxes=yes`, tax applied to shipping) and
+a flat-rate shipping zone in place, the same cart produced, from WooCommerce:
+
+```
+subtotal 240000 (2400.00) | shipping 3000 (30.00) | tax 48600 (486.00) | total 291600 (2916.00) MAD
+```
+
+and a browser purchase through the storefront completed order 25 with the confirmation
+reading `Total : 2916.00 MAD`. In the database, order 25 carries a `line_item` for
+"Local Test Variable - S" (`_variation_id` 12, `_qty` 2, `_line_total` 2400,
+`_line_tax` 480), a `shipping` line "Livraison standard" (`cost` 30, `total_tax` 6) and a
+`tax` line `MA-TVA-1`, with `total_amount 2916.00` and `tax_amount 480.00`.
+
+| Case | Result |
+| --- | --- |
+| Shipping | Applied: 30.00, as a real `shipping` order line |
+| Tax | Applied: 486.00 total (20% of goods and shipping), as a real `tax` order line |
+| Out of stock | Refused. With variation 13 at zero stock, `POST /cart/add-item` returns **400** `woocommerce_rest_product_out_of_stock` — "You cannot add 'Local Test Variable - M' to the cart because the product is out of stock." |
+| Retry | Does not duplicate — see below |
+
+## A real idempotency defect, and the fix
+
+Retrying the same purchase **created duplicate orders** (26 and 28) even with the
+in-memory guard in place. Two distinct causes, both real:
+
+1. **The key was derived from the cart token**, which WooCommerce rotates between
+   requests: `key = token:email:address1`. A retry therefore always derived a different
+   key and the guard could never match. The key is now derived from what actually
+   identifies a submission — email, phone, address, postcode, city — so it is stable
+   across retries.
+2. **The attempt store was process-local**, so a fresh module instance lost it. The
+   storefront now points `ECOM_ATTEMPT_STORE_PATH` at the durable file store, which
+   survives restarts and is visible on disk:
+
+```
+$ node -e "const j=require('C:/wp-local/attempts.json'); ..."
+entries 3 | CONFIRMED#27, CONFIRMED#28, CONFIRMED#29
+```
+
+After the fix, two further submissions of the same order produced **no new order**
+(`max_id` stayed 29). The second was refused with the ownership guard:
+
+```
+La commande n'a pas pu être enregistrée (This submission key belongs to a different session.)
+```
+
+That is `OWNER_MISMATCH` from the owner-binding work: a key bound to one cart is never
+served to another. A same-owner retry replays the confirmed attempt instead (covered by
+the engine unit tests and the `CONFIRMED` records above).
+
+**Residual, stated plainly:** the stable key means a guest who deliberately places the
+same order twice from the same address is deduplicated. The production answer is a
+per-form UUID generated when the checkout form mounts; that is not implemented, and the
+form's submit button is already disabled while a submission is pending, so a double-click
+cannot produce two orders.
+
 ## Finding 4 — concurrent conversion against a real database
 
 The companion plugin was activated on this WordPress (its `wp_ecomos_rfq_quotes` and

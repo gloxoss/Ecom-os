@@ -253,7 +253,22 @@ export async function submitCheckoutAction(
       phone: addressInput.phone || '',
     };
 
-    const key = attemptKey || `${token}:${addressInput.email}:${addressInput.address1}`;
+    /**
+     * The idempotency key must be stable across a retry of the same submission.
+     * It previously included the cart token, which WooCommerce rotates between
+     * requests, so a retry always derived a different key and the guard never
+     * matched — every retry created another order. What actually identifies this
+     * submission is who is ordering and where it is going.
+     *
+     * A caller-supplied key still wins. The production answer is a per-form UUID
+     * generated when the checkout form mounts; this covers the retry that matters
+     * (the same guest re-submitting the same order) without one.
+     */
+    const key =
+      attemptKey ||
+      [addressInput.email, addressInput.phone, addressInput.address1, addressInput.postcode, addressInput.city]
+        .map((part) => (part || '').toString().trim().toLowerCase())
+        .join('|');
 
     const result = await engine.submitCheckout(
       token,
