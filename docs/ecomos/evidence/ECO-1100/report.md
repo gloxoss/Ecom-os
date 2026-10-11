@@ -113,3 +113,68 @@ is that lane). I have not touched it.
   `browser` resource, neither held here.
 - **NOT RUN:** restore/recovery execution — that is `ECO-1105` and it needs its own isolated
   service, which this task deliberately did not create.
+
+---
+
+# Addendum — A0 re-measured GREEN after the ECO-1099 preflight fix
+
+## What changed
+
+The coordinator assigned the bounded preflight repair as **`ECO-1099`** to
+`sprint-commerce-1`, against exactly the two files this report named. It landed as:
+
+```
+5a8780d  fix(engine): exactOptionalPropertyTypes email compatibility and cart multiset sync
+         packages/engine-woocommerce/src/checkout-attempts.ts   |   7 +-
+         packages/engine-woocommerce/src/checkout.ts            |   5 +-
+         packages/engine-woocommerce/src/cart.ts                | 189 +++++++-
+         packages/engine-woocommerce/src/__tests__/cart.test.ts | 223 +++++++++
+```
+
+The five `exactOptionalPropertyTypes` errors are gone.
+
+## How this was measured, and what I did not do
+
+The fix's files were checked into this worktree's **working tree** only
+(`git checkout 5a8780d -- packages/engine-woocommerce/src`) so the checks could run against
+the fixed source. They were then restored to this worktree's HEAD
+(`git checkout HEAD -- packages/engine-woocommerce/src`). **Nothing of the fix's author's work
+is committed, staged or claimed here** — `5a8780d` remains theirs, on their branch, untouched.
+The measurement is of their commit; the ownership is theirs.
+
+Confirmed both directions: at the pinned base `89c4482` the engine typecheck still reports
+**5 errors**, and with `5a8780d` applied it reports **0**.
+
+## A0 re-measured with the fix — all green
+
+| # | Check | Command | Exit | Result |
+| --- | --- | --- | --- | --- |
+| 1 | Engine import guard | `tsx scripts/check-engine-imports.ts` | **0** | clean |
+| 2 | Storefront typecheck | `tsc -p apps/storefront/tsconfig.json --noEmit --incremental false` | **0** | no output |
+| 3 | Package typechecks (7) | `tsc -p packages/<pkg>/tsconfig.json --noEmit` | **0 all** | `engine-woocommerce` now passes |
+| 4 | Lint | `eslint . --ignore-pattern ".next*"` | **0** | 0 errors |
+| 5 | Unit tests | `vitest run` | **0** | **529 passed** (up from 521; the fix adds 8) |
+| 6 | Hub tests | `node --test .agent-hub/test/*.test.mjs` | **0** | 16 passed |
+| 7 | Production build | `next build --webpack` | **0** | `Compiled successfully` |
+| 8 | Backend compatibility auditor | `tsx scripts/verify-backend-compatibility.ts` | **0** | PASS (measured earlier; no PHP changed) |
+| 9 | PHP lint | `php -l` every plugin file | **0** | clean (measured earlier; no PHP changed) |
+| 10 | Restore script, no artifact | `tsx scripts/verify-restore.ts` | **2** | `NOT RUN` — refuses, as designed |
+
+**A0 is GREEN at `5a8780d`** on the evidence of the commands above. It is the coordinator's
+call to integrate that commit and re-pin the base; this task does not do it.
+
+## One observation for the coordinator, not a defect claim
+
+`5a8780d` is larger than the bounded repair requested: alongside the five type-error fixes it
+adds 189 lines to `cart.ts` and 223 lines of tests, i.e. cart multiset synchronisation, which
+is `ECO-1101`'s subject. That may be deliberate bundling of a prerequisite, and it is the
+author's scope decision — but it means the preflight fix carries behaviour change beyond
+`exactOptionalPropertyTypes` compatibility, and the independent verifier should know that the
+type-error fix and a cart-behaviour change arrive in the same SHA rather than treating
+"baseline turns green" as proof the latter is correct.
+
+## Status
+
+`ECO-1100` is re-submitted at a new SHA for a fresh review, since the plan requires a new
+SHA and a new review after a fix. `ECO-1105` and `ECO-1106` remain OPEN and unassigned and
+are not started.
