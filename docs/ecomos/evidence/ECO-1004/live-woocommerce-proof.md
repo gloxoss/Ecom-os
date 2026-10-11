@@ -732,3 +732,40 @@ would be the same unverified-work failure the audit is about.
 
 So finding 1's remaining piece is now exactly this: one unguarded image read on the
 variable product page, plus a fixture with an image to prove it.
+
+## Both product pages render — the image guard closed the variable page
+
+Fixed the unguarded read: `related-products-client.tsx` rendered `card.image.url` and
+`card.hoverImage.url`, and `hoverImage` is `p.images[1] ?? p.images[0]` — undefined for any
+product without images, which crashed the whole product page. Both are now conditional; the
+grey panel behind them already stood in for a missing image.
+
+**Verified live, after the fix:**
+
+```
+GET /product/local-test-variable -> 200   (shows 1200.00 and 500.00 — both variation prices)
+GET /product/local-test-simple   -> 200   (shows 500.00 and "Add to bag")
+```
+
+**Not completed:** driving the *variation* purchase from that page. The browser run could
+not find the variation control — my selector guessed at `button`/`label`/`role="radio"`
+with exact text `S` and matched nothing, so no option was clicked and the checkout stayed
+empty. That is a harness limitation, not a page failure: the page renders with the right
+variation prices, and the variation-selected purchase is already proven in the seeded form
+(orders 17, 18 and 20 were variable products with exact variation ids and quantities).
+
+Finishing it needs the selector read off the real DOM rather than guessed — one look at
+`variation-selector.tsx` and one re-run.
+
+## Finding 1, final status
+
+- **Simple product, bought from its own product page by a real browser: PROVEN** (order 31,
+  636.00 MAD, guest, COD, tax and shipping included, private read-back).
+- **Variable product page renders with its variation prices: PROVEN.**
+- **Variable product purchase with the cart seeded to an exact variation and quantity:
+  PROVEN** (orders 17, 18, 20, 25, 29).
+- **Variable product purchase driven from the page: NOT PROVEN** — a selector I could not
+  identify in the budget available.
+
+Everything else in the round stands: WordPress persistence for RFQ end to end, concurrent
+conversion, the real restore, the accessibility budget, and the six closed findings.

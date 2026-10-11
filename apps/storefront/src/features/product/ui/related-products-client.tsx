@@ -33,16 +33,23 @@ export function RelatedProductsClient({ cards }: { cards: ProductCard[] }) {
           >
             <div className="relative flex items-center justify-center overflow-hidden rounded-2xl h-[280px]">
               <div className="absolute inset-0 bg-input" />
-              <Image
-                src={card.image.url}
-                alt={card.image.altText}
-                fill
-                sizes="260px"
-                className="object-cover z-[1] transition-transform duration-500 ease-out group-hover:scale-[1.08]"
-              />
+              {/* A product may legitimately have no image — the grey panel behind these
+                  stands in for it. Reading `.url` unguarded crashed the whole product
+                  page for any catalogue without images. */}
+              {card.image && (
+                <Image
+                  src={card.image.url}
+                  alt={card.image.altText}
+                  fill
+                  sizes="260px"
+                  className="object-cover z-[1] transition-transform duration-500 ease-out group-hover:scale-[1.08]"
+                />
+              )}
+              {card.hoverImage && (
               <div className="absolute bottom-4 right-4 z-[2] w-10 h-10 rounded-full overflow-hidden border border-border shadow-[0_2px_10px_0_rgba(0,0,0,0.11)]">
                 <Image src={card.hoverImage.url} alt={card.hoverImage.altText} fill sizes="40px" className="object-cover" />
               </div>
+              )}
             </div>
             <div className="flex flex-col gap-1">
               <h3 className="font-body text-xs font-medium uppercase tracking-[1.6px] text-foreground transition-opacity duration-500 group-hover:opacity-70">
