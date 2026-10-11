@@ -242,8 +242,12 @@ The round is recorded end to end in two places, and a reader needs only these:
   status, its commit and its evidence, plus the five additional defects the repair
   uncovered.
 - `docs/ecomos/verification/ECO-1001/verification.md` — the independent execution record
-  of the verified commit, its fail-closed controls, and what it does not establish.
+  of the verified commit, its fail-closed controls, the live-environment checks, and what
+  it does not establish.
+- `docs/ecomos/evidence/ECO-1004/live-woocommerce-proof.md` — the real WordPress,
+  WooCommerce and MySQL environment, the orders it produced, and the exact SQL.
 
 The last verified code state of this round is
-`de1c80239eaf68bf300df3eadb4708b10e354fcf`. Nothing here authorizes a deployment;
-production cutover still requires the explicit human authorization in `APPROVAL.md`.
+`727a662` (verification executed at its parent `a009e5e`; the commit adds documentation
+only). Nothing here authorizes a deployment; production cutover still requires the
+explicit human authorization in `APPROVAL.md`.
