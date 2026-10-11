@@ -70,11 +70,11 @@ add_action('rest_api_init', function () {
         'permission_callback' => 'ecomos_rfq_rest_check_read_permission',
     ));
 
-    // 8. Convert accepted quote to order
+    // 8. Convert accepted quote to order (merchant/staff action, never guest)
     register_rest_route($namespace, '/quotes/(?P<id>[\w-]+)/convert', array(
         'methods'             => WP_REST_Server::CREATABLE,
         'callback'            => 'ecomos_rfq_rest_convert_quote',
-        'permission_callback' => 'ecomos_rfq_rest_check_read_permission',
+        'permission_callback' => 'ecomos_rfq_rest_check_conversion_permission',
     ));
 });
 
@@ -128,6 +128,26 @@ function ecomos_rfq_rest_check_accept_permission($request) {
 
 function ecomos_rfq_rest_check_reject_permission($request) {
     return ecomos_rfq_rest_check_read_permission($request);
+}
+
+/**
+ * Conversion guard: creating a WooCommerce order is a merchant/staff action.
+ *
+ * A guest quote token is deliberately not sufficient here. The guest token
+ * authorizes reading, accepting or rejecting an offer for one quote; it never
+ * authorizes mutating WooCommerce order state and stock policy.
+ */
+function ecomos_rfq_rest_check_conversion_permission($request) {
+    $active_check = ecomos_rfq_rest_check_active();
+    if (is_wp_error($active_check)) {
+        return $active_check;
+    }
+
+    if (current_user_can('ecomos_operator') || current_user_can('manage_woocommerce')) {
+        return true;
+    }
+
+    return new WP_Error('forbidden', 'Merchant or staff permission is required to convert a quotation into an order', array('status' => 403));
 }
 
 function ecomos_rfq_rest_create_quote($request) {
@@ -372,13 +392,15 @@ function ecomos_rfq_rest_get_document($request) {
 
 function ecomos_rfq_rest_convert_quote($request) {
     $quote_id = $request->get_param('id');
-    $options = $request->get_json_params() ?: array();
 
     if (!function_exists('ecomos_rfq_convert_quote_to_order')) {
         return new WP_Error('module_unavailable', 'Conversion module is unavailable', array('status' => 500));
     }
 
-    $result = ecomos_rfq_convert_quote_to_order($quote_id, $options);
+    // The request body is deliberately not forwarded: fulfilment and stock policy
+    // are merchant-owned server configuration, so a caller cannot opt itself into
+    // or out of stock reservation.
+    $result = ecomos_rfq_convert_quote_to_order($quote_id, array());
     if (is_wp_error($result)) {
         return $result;
     }
