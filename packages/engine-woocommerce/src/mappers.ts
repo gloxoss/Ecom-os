@@ -453,3 +453,24 @@ export function mapStoreSimpleProduct(raw: any, defaultCurrency: string = 'MAD')
     isPurchasable: raw.is_purchasable !== false && raw.is_in_stock !== false,
   };
 }
+
+/** Maps a WooCommerce Store API category to the domain `Category`. */
+export function mapStoreCategory(raw: any): Category | null {
+  if (!raw || typeof raw !== 'object' || raw.id === undefined || !raw.slug) return null;
+  const category: Category = {
+    id: String(raw.id),
+    slug: String(raw.slug),
+    name: String(raw.name ?? ''),
+    parentId: raw.parent ? String(raw.parent) : null,
+  };
+  if (typeof raw.description === 'string' && raw.description) {
+    category.description = raw.description;
+  }
+  if (typeof raw.count === 'number') {
+    category.count = raw.count;
+  }
+  if (raw.image?.src) {
+    category.image = { url: String(raw.image.src), altText: String(raw.image.alt ?? '') };
+  }
+  return category;
+}

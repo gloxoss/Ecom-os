@@ -29,11 +29,11 @@ import {
   LoyaltyRedemption,
   PageSectionsData,
 } from '@ecom-os/engine';
-import { fetchProducts, fetchCategories, fetchProductBySlug, fetchStoreApiProductBySlug } from './products';
+import { fetchProducts, fetchCategories, fetchProductBySlug, fetchStoreApiProductBySlug, fetchStoreApiProducts, fetchStoreApiCategories } from './products';
 import { fetchBrands, fetchBrandBySlug } from './brands';
 import { loginGql, registerRest, getCustomerByToken, getCustomerOrdersRest, requestPasswordResetGql, resetPasswordGql, requireCustomerAccounts } from './auth';
 import { restFetch } from './rest';
-import { mapProduct, mapCategory, mapBrand, buildCategoryTree, mapStoreSimpleProduct } from './mappers';
+import { mapProduct, mapCategory, mapBrand, buildCategoryTree, mapStoreSimpleProduct, mapStoreCategory } from './mappers';
 import { fetchCurrency } from './currency';
 import {
   fetchStoreCart,
@@ -62,20 +62,42 @@ export class WooCommerceEngine implements EcomEngine {
       throw new Error(`Invalid product query: ${validation.error}`);
     }
 
-    const rawResult = await fetchProducts({
-      ...(query.category !== undefined ? { category: query.category } : {}),
-      ...(query.brand !== undefined ? { brand: query.brand } : {}),
-      ...(query.minPrice !== undefined ? { minPrice: query.minPrice } : {}),
-      ...(query.maxPrice !== undefined ? { maxPrice: query.maxPrice } : {}),
-      ...(query.search !== undefined ? { search: query.search } : {}),
-      ...(query.limit !== undefined ? { limit: query.limit } : {}),
-      ...(query.cursor !== undefined ? { after: query.cursor } : {}),
-      ...(query.offset !== undefined ? { offset: query.offset } : {}),
-      ...(query.sort !== undefined ? { sort: query.sort } : {}),
-      ...(query.inStockOnly !== undefined ? { inStockOnly: query.inStockOnly } : {}),
-    });
     const currency = await fetchCurrency();
-    const items = rawResult.nodes.map((raw) => mapProduct(raw, currency));
+
+    // GraphQL first (it carries variations with prices); the Store API when the
+    // WPGraphQL for WooCommerce bridge is not installed. Without the fallback every
+    // listing page — catalog, search, related products — throws with no bridge.
+    let items: Product[];
+    let graphqlPageInfo: any;
+    try {
+      const rawResult = await fetchProducts({
+        ...(query.category !== undefined ? { category: query.category } : {}),
+        ...(query.brand !== undefined ? { brand: query.brand } : {}),
+        ...(query.minPrice !== undefined ? { minPrice: query.minPrice } : {}),
+        ...(query.maxPrice !== undefined ? { maxPrice: query.maxPrice } : {}),
+        ...(query.search !== undefined ? { search: query.search } : {}),
+        ...(query.limit !== undefined ? { limit: query.limit } : {}),
+        ...(query.cursor !== undefined ? { after: query.cursor } : {}),
+        ...(query.offset !== undefined ? { offset: query.offset } : {}),
+        ...(query.sort !== undefined ? { sort: query.sort } : {}),
+        ...(query.inStockOnly !== undefined ? { inStockOnly: query.inStockOnly } : {}),
+      });
+      items = rawResult.nodes.map((raw) => mapProduct(raw, currency));
+      graphqlPageInfo = rawResult.pageInfo;
+    } catch {
+      const storeItems = await fetchStoreApiProducts({
+        ...(query.category !== undefined ? { category: query.category } : {}),
+        ...(query.search !== undefined ? { search: query.search } : {}),
+        ...(query.limit !== undefined ? { limit: query.limit } : {}),
+        ...(query.inStockOnly !== undefined ? { inStockOnly: query.inStockOnly } : {}),
+      });
+      items = storeItems
+        .map((raw) => mapStoreSimpleProduct(raw, currency))
+        .filter((product): product is Product => product !== null);
+      graphqlPageInfo = undefined;
+    }
+
+    const rawResult = { pageInfo: graphqlPageInfo };
     const result: ProductListResult = {
       items,
       total: items.length,
@@ -114,9 +136,16 @@ export class WooCommerceEngine implements EcomEngine {
   }
 
   async listCategories(locale?: Locale): Promise<Category[]> {
-    const rawCategories = await fetchCategories();
-    const flat = rawCategories.map(mapCategory);
-    return buildCategoryTree(flat);
+    try {
+      const rawCategories = await fetchCategories();
+      return buildCategoryTree(rawCategories.map(mapCategory));
+    } catch {
+      // No GraphQL bridge: the Store API serves categories too.
+      const flat = (await fetchStoreApiCategories())
+        .map(mapStoreCategory)
+        .filter((category): category is Category => category !== null);
+      return buildCategoryTree(flat);
+    }
   }
 
   async listBrands(_locale?: Locale): Promise<Brand[]> {

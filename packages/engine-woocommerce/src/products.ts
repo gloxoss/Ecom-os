@@ -345,3 +345,36 @@ export async function fetchStoreApiProductBySlug(slug: string): Promise<any | nu
     return null;
   }
 }
+
+/** Store API fallbacks for the reads that gated the product page. */
+export async function fetchStoreApiProducts(query: FetchProductsOptions = {}): Promise<any[]> {
+  try {
+    const params = new URLSearchParams();
+    if (query.limit !== undefined) params.set('per_page', String(query.limit));
+    if (query.search) params.set('search', query.search);
+    if (query.category) params.set('category', query.category);
+    if (query.inStockOnly) params.set('stock_status', 'instock');
+    const response = await fetch(
+      `${getStoreApiUrl()}/products?${params.toString()}`,
+      { cache: 'no-store' }
+    );
+    if (!response.ok) return [];
+    const list = await response.json();
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchStoreApiCategories(): Promise<any[]> {
+  try {
+    const response = await fetch(`${getStoreApiUrl()}/products/categories?per_page=100`, {
+      cache: 'no-store',
+    });
+    if (!response.ok) return [];
+    const list = await response.json();
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}

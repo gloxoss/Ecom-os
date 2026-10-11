@@ -635,3 +635,33 @@ errors, which would render a silently half-empty page.
 So finding 1's remaining piece is now precisely scoped: three Store-API reads
 (product, product list, categories) instead of a plugin install, with `getProduct` already
 done and proven.
+
+## The product page renders with no GraphQL bridge — and the click-through is not yet verified
+
+Added Store-API fallbacks for the three reads that gated the page — product, product list
+and categories — so the engine no longer needs the WPGraphQL for WooCommerce bridge to
+serve a catalog.
+
+**Verified live:** `GET /product/local-test-simple` returns **200** and the page renders
+the product name, its price (`500.00`) and the add-to-bag button. That is the entry point
+the audit's finding 1 was missing, reached with no plugin installed.
+
+**Not verified:** the click-through. A browser run loaded the page, clicked the real
+add-to-bag button, and then found the cart empty at checkout — the badge did not increment
+and the button never entered its "Added to bag" state, so `addToCartAction` did not take
+effect in that run. **The cause is not established.** Candidates, none confirmed:
+
+- the add-to-cart server action failed against this instance (its error is surfaced to the
+  user in the UI and logged, not thrown to the browser, so the run would look like this);
+- the click landed before hydration completed;
+- the selector matched a different button than the one wired to the handler.
+
+Reproducing it needs the dev server's log alongside the browser run, which this session no
+longer had budget for. It is recorded as unverified rather than as working, because
+"renders" and "can be bought" are different claims and only the first is proven here.
+
+So finding 1's status: purchases are **proven** through the shelf-to-order flow with the
+cart seeded by the same Store API call the button issues (orders 17, 18, 20, 25, 29, 30,
+including the product-page case only in the seeded form), the product **page** now renders
+without a bridge (proven), and the **click from that page** is the one remaining
+unverified link.
