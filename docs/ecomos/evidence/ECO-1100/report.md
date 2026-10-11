@@ -186,3 +186,35 @@ should know the two exist, so no one integrates the bundle believing it is the p
 `ECO-1100` is re-submitted at a new SHA for a fresh review, since the plan requires a new SHA
 and a new review after a fix. `ECO-1105` and `ECO-1106` remain OPEN and unassigned and are
 not started.
+
+## Submission — what exactly was verified, and by whom
+
+Recorded so the independent verifier does not have to reconstruct it:
+
+| Item | SHA | Whose work |
+| --- | --- | --- |
+| A0 base (pinned, RED) | `89c4482` | pre-existing HEAD at assignment |
+| ECO-1099 type fix | `ea7731d` | `sprint-commerce-1` — measured, not taken |
+| ECO-1099 evidence | `8659352` | `sprint-commerce-1` — submitted tip of that task |
+| This report | committed in this worktree | `sprint-recovery-1` |
+
+- The **red** was observed at `89c4482` (5 errors, `packages/engine-woocommerce`).
+- The **green** was observed with `ea7731d` applied on top, re-measured after the correction
+  above. Both directions were checked in the same worktree, on the same installed
+  dependencies, minutes apart.
+- No commit of the fix is present in this worktree: its files were checked into the working
+  tree to run the checks, then restored. `ea7731d` and `8659352` remain the author's.
+- **This report measures; it does not accept.** Acceptance of the fix, integration, and
+  re-pinning the base are the coordinator's, on the verifier's verdict.
+
+### A defect in the hub procedure, reported not worked around
+
+Reopening this task set its assignment base to `9e4af09`, which was this worktree's own HEAD
+at the time. `done` then computes the submitted slice as empty and refuses with "Submit your
+own new tip commit, not another task submission" — no commit can ever satisfy it, because the
+base already contains everything.
+
+The workaround used here is benign (this section is genuine content the report wanted), but
+the underlying behaviour will bite every evidence-only task that is reopened: the coordinator
+should set the reopen base to the **original** assignment base, or to a commit **before** the
+task's own evidence commits, rather than to the worktree's current HEAD.
