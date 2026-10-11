@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import { themeCommand } from './commands/theme';
 import { cmsCommand } from './commands/cms';
+import { provisionCommand } from './commands/provision';
 
 const program = new Command();
 
@@ -13,5 +14,6 @@ program
 
 program.addCommand(themeCommand);
 program.addCommand(cmsCommand);
+program.addCommand(provisionCommand);
 
 program.parse(process.argv);

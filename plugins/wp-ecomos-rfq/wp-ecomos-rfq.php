@@ -8,6 +8,9 @@
  * Author URI: https://epioso.com
  * License: GPLv2 or later
  * Text Domain: wp-ecomos-rfq
+ * Requires at least: 6.2
+ * Requires PHP: 8.1
+ * WC requires at least: 8.5
  *
  * @package EcomOS_RFQ
  */
@@ -15,6 +18,14 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Quotes convert into HPOS order tables; declare it so WooCommerce does not
+// fall back to legacy post storage with a compatibility warning.
+add_action('before_woocommerce_init', function () {
+    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+    }
+});
 
 define('ECOMOS_RFQ_VERSION', '1.0.0');
 define('ECOMOS_RFQ_PLUGIN_DIR', plugin_dir_path(__FILE__));

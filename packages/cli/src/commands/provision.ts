@@ -48,9 +48,9 @@ export function validateProvisioning(config: Partial<ProvisioningConfig>): {
 }
 
 export const provisionCommand = new Command('provision')
-  .description('Validate and provision an independent client environment')
+  .description('Validate a client environment configuration (provisioning is not implemented yet)')
   .argument('<client-id>', 'Unique client identifier')
-  .option('--dry-run', 'Validate environment configuration without writing state', false)
+  .option('--dry-run', 'Validate the configuration only; write no state', false)
   .action((clientId: string, options: { dryRun: boolean }) => {
     console.log(`[PROVISION] Validating environment for client: ${clientId}...`);
     const envPath = path.resolve(process.cwd(), `.env.${clientId}`);
@@ -87,5 +87,20 @@ export const provisionCommand = new Command('provision')
       process.exit(1);
     }
 
-    console.log(`[PROVISION-SUCCESS] Client ${clientId} validated successfully.`);
+    if (!options.dryRun) {
+      // Do not report success after only validating an input file. This command does
+      // not create an environment, database, or secrets yet, so it fails explicitly
+      // instead of implying a provisioned client.
+      console.error(
+        `[PROVISION-NOT-IMPLEMENTED] Client ${clientId} configuration is valid, but this ` +
+          'command does not provision an environment, database, or secrets.',
+      );
+      console.error('[PROVISION-NOT-IMPLEMENTED] No state was written. Re-run with --dry-run for validation only.');
+      process.exit(3);
+    }
+
+    console.log(
+      `[PROVISION-VALIDATED] Client ${clientId} configuration is valid. ` +
+        'Nothing was provisioned (--dry-run: validation only).',
+    );
   });

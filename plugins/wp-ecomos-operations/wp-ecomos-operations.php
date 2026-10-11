@@ -6,11 +6,19 @@
  * Author: EcomOS Core Team
  * Requires at least: 6.2
  * Requires PHP: 8.1
+ * WC requires at least: 8.5
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Staff order operations must work against HPOS order tables; declare support.
+add_action('before_woocommerce_init', function () {
+    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+    }
+});
 
 define('ECOMOS_OPERATIONS_VERSION', '1.0.0');
 define('ECOMOS_OPERATIONS_DIR', plugin_dir_path(__FILE__));
