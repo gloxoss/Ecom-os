@@ -786,3 +786,31 @@ at a real difference worth chasing, and neither is a claim I can make.
 Recorded as unresolved rather than as working. The next investigation is small and
 specific: run the browser with its console and page errors captured to the dev server log,
 and compare what the browser receives with what curl receives for the same URL.
+
+### Resolved: what the browser actually showed
+
+The diagnostic answered it. The variable page **does** render in a browser — the earlier
+"no price" reading was my regex, not the page. What the browser sees:
+
+```
+Local Test Variable   SKU: LOCAL-VAR-1   MAD 1,200.00 – MAD 1,500.00   In stock
+UNAVAILABLE
+buttons: 8 total, 0 with aria-checked
+```
+
+So: the price **range** from both variations renders (the mapping works), the variation
+selector does **not** render at all, and the call-to-action reads **"UNAVAILABLE"** — the
+`AddToCartButton` fallback. That combination means `resolvePurchaseIntent` did not return
+`INCOMPLETE_SELECTION` (which would render "Select options"), so it did not see required
+attributes — i.e. the variations reaching the client component carry no attribute values,
+and `findMatchingVariation` skips attribute-less variations, yielding `INVALID_VARIATION`.
+
+A fix was attempted — take each variation's selected attribute values from the parent's
+`variations[]` list, which is the only place they exist, rather than from the individual
+variation read — but the page rendered identically afterwards. So either the dev bundle did
+not pick the change up, or the cause is upstream of that mapping.
+
+**Not resolved.** The next step is exact: log `product.variations` in `ProductHero` (or
+print the RSC payload for the page) and see whether the attributes are present server-side
+and lost in serialization, or absent from the mapping entirely. Then re-run with a cold dev
+server so a stale bundle cannot mask the answer.

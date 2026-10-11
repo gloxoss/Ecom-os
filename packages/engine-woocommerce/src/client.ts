@@ -139,12 +139,31 @@ export class WooCommerceEngine implements EcomEngine {
     // The Store API lists a variable product's variations as ids with attributes and no
     // prices, so each is read individually. Without this the variation selector would
     // have nothing to match a selection against.
-    const variationIds: Array<string | number> = Array.isArray(storeProduct.variations)
-      ? storeProduct.variations.map((variation: any) => variation?.id).filter((id: any) => id !== undefined)
+    // The parent's variation list is the only place the **selected attribute values**
+    // live: `{ id, attributes: [{ name, value }] }`. The individual variation read
+    // returns the product's attributes, not that variation's choices, so mapping from it
+    // alone yields variations with no attributes — every one of which the variation
+    // matcher then skips, leaving the product rendered as "Unavailable".
+    const declared: Array<{ id: string | number; attributes: any[] }> = Array.isArray(
+      storeProduct.variations
+    )
+      ? storeProduct.variations
+          .filter((variation: any) => variation?.id !== undefined)
+          .map((variation: any) => ({
+            id: variation.id,
+            attributes: Array.isArray(variation.attributes) ? variation.attributes : [],
+          }))
       : [];
-    const details = await Promise.all(variationIds.map((id) => fetchStoreApiVariation(id)));
-    const variations = details
-      .map((detail) => (detail ? mapStoreVariation(detail, currency, mapped.name) : null))
+    const details = await Promise.all(declared.map((entry) => fetchStoreApiVariation(entry.id)));
+    const variations = declared
+      .map((entry, index) => {
+        const detail = details[index] ?? {};
+        return mapStoreVariation(
+          { ...detail, attributes: entry.attributes.length > 0 ? entry.attributes : detail.attributes },
+          currency,
+          mapped.name
+        );
+      })
       .filter((variation): variation is NonNullable<typeof variation> => variation !== null);
     if (variations.length === 0) return null;
     const amounts = variations.map((variation) => variation.price.amount_minor);
