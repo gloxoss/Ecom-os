@@ -183,3 +183,30 @@ authorization gate.
 | `ECO-1008` | Install and extension docs executable as written. |
 | `ECO-1009` | Real browser UAT, budgets and second isolated client. |
 | `ECO-1010` | Attributable owner evidence for merchant facts and claims. |
+| `ECO-1011` | Declare HPOS compatibility and version headers on the required plugins. |
+| `ECO-1012` | Storefront production build: engine package resolution. |
+| `ECO-1013` | Storefront production build: builder selection and route exports. |
+| `ECO-1014` | Make repo lint pass so the CI claim is true. |
+
+## Status at the time of writing
+
+Repaired and verified locally: workspace resolution, the architecture guard, gate 3
+provenance, owner-bound durable checkout and RFQ idempotency, the guest cart /
+checkout / order wiring, the RFQ quote routes and shared store, RFQ conversion
+authorization and atomicity, the backend/restore/provisioning checks, the install and
+extension docs, the merchant and product claim status, HPOS declarations, and the
+production build (exit 0, with the previously unmounted routes compiled in).
+
+**Still outstanding, and blocking any release claim:**
+
+1. A real browser purchase against a live WooCommerce instance (finding 1's actual
+   requirement), with out-of-stock, retry, shipping and tax cases.
+2. Live WordPress persistence, staff access and concurrent conversion for RFQ.
+3. Executed PHP/HPOS/Store API tests and a real backup import plus rollback rehearsal.
+4. A second isolated client with its own deployment, database and secrets.
+5. Owner-supplied merchant facts and product claim sources (findings 8 and the
+   content-approval register).
+6. Repo lint clean, so the CI pipeline actually passes as documented.
+
+Nothing above is a formality: each is a thing the audit asked for that cannot be
+produced without infrastructure or owner input this environment does not have.
