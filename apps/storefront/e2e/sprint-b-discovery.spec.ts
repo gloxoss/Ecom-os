@@ -15,8 +15,7 @@ import { test, expect, devices, type APIRequestContext } from '@playwright/test'
  * - storefront unreachable -> whole file BLOCKED (no runnable app in runner);
  * - staging unreachable -> BLOCKED/NOT MEASURED;
  * - catalog < 100 products -> 100-scale traversal NOT MEASURED with counts;
- * - no mounted search box -> interaction legs NOT MEASURED (the
- *   SearchAutocomplete component exists but is not mounted in this UI revision).
+ * - search box -> mounted via SearchAutocomplete in header and search surface.
  */
 
 const STAGING = process.env.ECOM_STAGING_URL || 'http://paraloca.local';

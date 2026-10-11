@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation';
 import { NAV_LINKS } from './data/header-content';
 import { useCartStore } from '@/stores/cart-store';
 import { AnimatedNavLink } from './animated-nav-link';
+import { SearchAutocomplete, defaultFetchSuggestions } from '@/components/search';
+
 
 // Routes whose hero sits on a dark image/overlay — everything else has a plain
 // light background, so the header needs dark text from the very first frame
@@ -85,21 +87,26 @@ export function SiteHeaderClient() {
         </div>
 
         {/* Desktop right actions */}
-        <div className="hidden lg:flex items-center gap-0">
-          <AnimatedNavLink href="/search" label="Search" />
+        <div className="hidden lg:flex items-center gap-4">
+          <div className="w-56 xl:w-64 text-neutral-900">
+            <SearchAutocomplete fetchSuggestions={defaultFetchSuggestions} placeholder="Rechercher..." />
+          </div>
           <AnimatedNavLink href="/cart" label={`Cart (${cartCount})`} />
         </div>
 
-        {/* Hamburger — mobile only */}
-        <button
-          className="lg:hidden flex flex-col items-center justify-center gap-[5px] w-10 h-10 border border-current/50 rounded-full transition-colors duration-500"
-          onClick={() => setIsMobileMenuOpen((v) => !v)}
-          aria-label="Toggle menu"
-        >
-          <span className={`block w-5 h-px bg-current transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-[6px]' : ''}`} />
-          <span className={`block w-5 h-px bg-current transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`} />
-          <span className={`block w-5 h-px bg-current transition-transform duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-[6px]' : ''}`} />
-        </button>
+        {/* Mobile controls */}
+        <div className="lg:hidden flex items-center gap-2">
+          <SearchAutocomplete fetchSuggestions={defaultFetchSuggestions} />
+          <button
+            className="flex flex-col items-center justify-center gap-[5px] w-10 h-10 border border-current/50 rounded-full transition-colors duration-500"
+            onClick={() => setIsMobileMenuOpen((v) => !v)}
+            aria-label="Toggle menu"
+          >
+            <span className={`block w-5 h-px bg-current transition-transform duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-[6px]' : ''}`} />
+            <span className={`block w-5 h-px bg-current transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`} />
+            <span className={`block w-5 h-px bg-current transition-transform duration-300 ${isMobileMenuOpen ? '-rotate-45 -translate-y-[6px]' : ''}`} />
+          </button>
+        </div>
 
       </div>
 

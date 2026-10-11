@@ -5,3 +5,7 @@ export * from "./keyboard-nav";
 export * from "./recent-searches";
 export * from "./search-autocomplete";
 export * from "./use-debounced-suggestions";
+export * from "./fetch-suggestions";
+export * from "./search-bar";
+
+

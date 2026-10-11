@@ -4,6 +4,8 @@ import { getEngine } from '@/lib/engine';
 import { routing } from '@/i18n/routing';
 import { ProductGrid } from '@/features/catalog/ui/product-grid';
 import { Pagination } from '@/components/shared/pagination';
+import { SearchBar } from '@/components/search';
+
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -42,18 +44,9 @@ export default async function SearchPage({
     <main className="max-w-7xl mx-auto px-4 py-16">
       <div className="mb-8 border-b pb-8">
         <h1 className="text-4xl font-bold mb-4">{t('title')}</h1>
-        <form action={locale === routing.defaultLocale ? '/search' : `/${locale}/search`} method="GET" className="flex max-w-md gap-2">
-          <input
-            type="text"
-            name="q"
-            defaultValue={query}
-            placeholder={t('placeholder')}
-            className="flex-1 px-4 py-2 border rounded-md"
-          />
-          <button type="submit" className="px-6 py-2 bg-foreground text-background rounded-md">
-            {t('button')}
-          </button>
-        </form>
+        <div className="max-w-md">
+          <SearchBar placeholder={t('placeholder')} initialQuery={query} />
+        </div>
       </div>
 
       {query && (
