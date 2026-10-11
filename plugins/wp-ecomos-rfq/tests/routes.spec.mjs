@@ -34,6 +34,10 @@ test('wp-ecomos-rfq routes.php endpoint definitions and security callbacks', () 
   assert.ok(routesCode.includes("'x-quote-token'"), 'Must read x-quote-token header for guest authentication');
   assert.ok(routesCode.includes('ecomos_rfq_verify_guest_access'), 'Must invoke guest access verification');
 
+  // Verify guest/staff decoupling: accept and revise require guest token and reject staff substitution
+  assert.ok(routesCode.includes('Guest access token required to accept offer'), 'Accept offer requires guest token');
+  assert.ok(routesCode.includes('Guest access token required to request revision'), 'Request revision requires guest token');
+
   // Verify stale revision rejection (HTTP 409)
   assert.ok(routesCode.includes("'stale_revision'"), 'Must reject stale revision acceptance');
   assert.ok(routesCode.includes('409'), 'Must emit HTTP 409 status on stale revision attempt');

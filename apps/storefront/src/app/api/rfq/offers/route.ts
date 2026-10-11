@@ -41,19 +41,37 @@ export async function GET(req: Request) {
     );
   }
 
-  const quote = await getRfqQuoteStore().getQuote(quoteId, token);
-  if (!quote) {
-    return new Response(
-      JSON.stringify({ success: false, error: 'Quote not found' }),
-      { status: 404, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
-
-  // Token verification
+  // Token verification FIRST
   if (!token) {
     return new Response(
       JSON.stringify({ success: false, error: 'Authentication token required' }),
       { status: 401, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  let quote: RfqQuote | undefined;
+  try {
+    quote = await getRfqQuoteStore().getQuote(quoteId, token);
+  } catch (err: unknown) {
+    const status = (err && typeof err === 'object' && 'statusCode' in err && typeof (err as any).statusCode === 'number')
+      ? (err as any).statusCode
+      : 502;
+    const code = (err && typeof err === 'object' && 'errorCode' in err && typeof (err as any).errorCode === 'string')
+      ? (err as any).errorCode
+      : (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
+        ? (err as any).code
+        : 'UPSTREAM_ERROR';
+    const message = (err instanceof Error) ? err.message : 'Upstream error fetching quote';
+    return new Response(
+      JSON.stringify({ success: false, code, error: message }),
+      { status: status >= 400 && status <= 599 ? status : 502, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (!quote) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Quote not found' }),
+      { status: 404, headers: { 'Content-Type': 'application/json' } }
     );
   }
 
@@ -62,7 +80,7 @@ export async function GET(req: Request) {
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   if (quote.accessSecretHash && tokenHash !== quote.accessSecretHash) {
     return new Response(
-      JSON.stringify({ success: false, error: 'Access denied: invalid token' }),
+      JSON.stringify({ success: false, code: 'FORBIDDEN', error: 'Access denied: invalid token' }),
       { status: 403, headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -119,7 +137,25 @@ export async function POST(req: Request) {
   }
 
   const store = getRfqQuoteStore();
-  const quote = await store.getQuote(quoteId);
+  let quote: RfqQuote | undefined;
+  try {
+    quote = await store.getQuote(quoteId, String(accessSecret).trim());
+  } catch (err: unknown) {
+    const status = (err && typeof err === 'object' && 'statusCode' in err && typeof (err as any).statusCode === 'number')
+      ? (err as any).statusCode
+      : 502;
+    const code = (err && typeof err === 'object' && 'errorCode' in err && typeof (err as any).errorCode === 'string')
+      ? (err as any).errorCode
+      : (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
+        ? (err as any).code
+        : 'UPSTREAM_ERROR';
+    const message = (err instanceof Error) ? err.message : 'Upstream error fetching quote';
+    return new Response(
+      JSON.stringify({ success: false, code, error: message }),
+      { status: status >= 400 && status <= 599 ? status : 502, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
   if (!quote) {
     return new Response(
       JSON.stringify({ success: false, error: 'Quote not found' }),
@@ -132,8 +168,8 @@ export async function POST(req: Request) {
   // A local store returns the quote with its stored hash and this comparison is the
   // authorization. A WordPress-backed store cannot: the plugin never transmits
   // access_secret_hash, it authorizes the read itself from the token, and the mapped
-  // quote carries no hash. An absent hash therefore means "the store already decided",
-  // and re-checking it here would reject every legitimate guest.
+  // quote carries no hash (unless cached locally in knownHashes). An absent hash
+  // means the remote store already verified the token during getQuote.
   const storeAuthorized = !quote.accessSecretHash;
   const computedHash = crypto.createHash('sha256').update(String(accessSecret).trim()).digest('hex');
   if (!storeAuthorized && computedHash !== quote.accessSecretHash) {
@@ -195,11 +231,19 @@ export async function POST(req: Request) {
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '';
+    } catch (err: unknown) {
+      const status = (err && typeof err === 'object' && 'statusCode' in err && typeof (err as any).statusCode === 'number')
+        ? (err as any).statusCode
+        : 400;
+      const code = (err && typeof err === 'object' && 'errorCode' in err && typeof (err as any).errorCode === 'string')
+        ? (err as any).errorCode
+        : (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
+          ? (err as any).code
+          : undefined;
+      const message = err instanceof Error ? err.message : 'Invalid state transition';
       return new Response(
-        JSON.stringify({ success: false, error: message || 'Invalid state transition' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, ...(code ? { code } : {}), error: message }),
+        { status: status >= 400 && status <= 599 ? status : 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
   }
@@ -220,11 +264,19 @@ export async function POST(req: Request) {
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '';
+    } catch (err: unknown) {
+      const status = (err && typeof err === 'object' && 'statusCode' in err && typeof (err as any).statusCode === 'number')
+        ? (err as any).statusCode
+        : 400;
+      const code = (err && typeof err === 'object' && 'errorCode' in err && typeof (err as any).errorCode === 'string')
+        ? (err as any).errorCode
+        : (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
+          ? (err as any).code
+          : undefined;
+      const message = err instanceof Error ? err.message : 'Invalid state transition';
       return new Response(
-        JSON.stringify({ success: false, error: message || 'Invalid state transition' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, ...(code ? { code } : {}), error: message }),
+        { status: status >= 400 && status <= 599 ? status : 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
   }
@@ -245,11 +297,19 @@ export async function POST(req: Request) {
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '';
+    } catch (err: unknown) {
+      const status = (err && typeof err === 'object' && 'statusCode' in err && typeof (err as any).statusCode === 'number')
+        ? (err as any).statusCode
+        : 400;
+      const code = (err && typeof err === 'object' && 'errorCode' in err && typeof (err as any).errorCode === 'string')
+        ? (err as any).errorCode
+        : (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
+          ? (err as any).code
+          : undefined;
+      const message = err instanceof Error ? err.message : 'Invalid state transition';
       return new Response(
-        JSON.stringify({ success: false, error: message || 'Invalid state transition' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, ...(code ? { code } : {}), error: message }),
+        { status: status >= 400 && status <= 599 ? status : 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
   }

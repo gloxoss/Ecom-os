@@ -1,6 +1,15 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { transition, type RfqQuote } from '../../../../../../packages/addons-rfq/src/index';
+import {
+  transition,
+  type RfqQuote,
+  type OfferRevision,
+  type OfferLineItem,
+  StaleRevisionError,
+  ExpiredQuoteError,
+  UnauthorizedActorError,
+  IllegalTransitionError,
+} from '../../../../../../packages/addons-rfq/src/index';
 
 /**
  * Server-side quote persistence for the RFQ addon.
@@ -19,6 +28,20 @@ import { transition, type RfqQuote } from '../../../../../../packages/addons-rfq
  * That implementation is NOT shipped here: no live WordPress instance is
  * available in this environment, so the durable path below is local-only.
  */
+
+export class UpstreamRfqError extends Error {
+  readonly statusCode: number;
+  readonly errorCode: string;
+  readonly details?: unknown;
+
+  constructor(statusCode: number, errorCode: string, message: string, details?: unknown) {
+    super(message);
+    this.name = 'UpstreamRfqError';
+    this.statusCode = statusCode;
+    this.errorCode = errorCode;
+    this.details = details;
+  }
+}
 
 /**
  * A cached submission response, bound to the guest who created it.
@@ -82,8 +105,7 @@ function guestActorFor(quote: RfqQuote) {
 
 /**
  * Shared local implementation of the three guest actions: load, run the domain state
- * machine, persist. Invalid transitions throw, exactly as they did when this lived in
- * the route, so the route's 400 handling is unchanged.
+ * machine, persist. Invalid transitions throw honest errors with accurate HTTP codes.
  */
 async function applyGuestAction(
   store: RfqQuoteStore,
@@ -93,9 +115,25 @@ async function applyGuestAction(
 ): Promise<RfqQuote | undefined> {
   const quote = await store.getQuote(id);
   if (!quote) return undefined;
-  const next = transition(quote, target, guestActorFor(quote), payload as never);
-  await store.putQuote(next);
-  return next;
+  try {
+    const next = transition(quote, target, guestActorFor(quote), payload as never);
+    await store.putQuote(next);
+    return next;
+  } catch (err) {
+    if (err instanceof StaleRevisionError) {
+      throw new UpstreamRfqError(409, 'STALE_REVISION', err.message);
+    }
+    if (err instanceof ExpiredQuoteError) {
+      throw new UpstreamRfqError(410, 'QUOTE_EXPIRED', err.message);
+    }
+    if (err instanceof UnauthorizedActorError) {
+      throw new UpstreamRfqError(403, 'FORBIDDEN', err.message);
+    }
+    if (err instanceof IllegalTransitionError) {
+      throw new UpstreamRfqError(400, 'INVALID_STATE_TRANSITION', err.message);
+    }
+    throw err;
+  }
 }
 
 export class InMemoryRfqQuoteStore implements RfqQuoteStore {
@@ -278,25 +316,79 @@ export class WordPressRfqQuoteStore implements RfqQuoteStore {
   private baseUrl: string;
   private staffAuth?: string;
   private idempotency = new Map<string, StoredIdempotencyEntry>();
+  private knownHashes = new Map<string, string>();
 
   constructor(baseUrl: string, staffAuth?: string) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.staffAuth = staffAuth;
   }
 
-  private async call(path: string, token?: string, body?: unknown): Promise<Record<string, unknown> | null> {
+  private async call(
+    path: string,
+    token?: string,
+    body?: unknown,
+    options?: { timeoutMs?: number }
+  ): Promise<Record<string, unknown>> {
     const headers: Record<string, string> = { 'Cache-Control': 'no-store' };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (token) headers['x-quote-token'] = token;
+    // Server service credentials authorize transport only, never implicitly authorize a guest
     if (this.staffAuth) headers['Authorization'] = `Basic ${this.staffAuth}`;
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      method: body === undefined ? 'GET' : 'POST',
-      headers,
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      cache: 'no-store',
-    });
-    if (!response.ok) return null;
-    return (await response.json().catch(() => null)) as Record<string, unknown> | null;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), options?.timeoutMs ?? 10000);
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        method: body === undefined ? 'GET' : 'POST',
+        headers,
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new UpstreamRfqError(504, 'UPSTREAM_TIMEOUT', 'Upstream request timed out');
+      }
+      throw new UpstreamRfqError(502, 'UPSTREAM_NETWORK_ERROR', err instanceof Error ? err.message : 'Network error contacting upstream');
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!response.ok) {
+      let errJson: Record<string, unknown> | null = null;
+      try {
+        errJson = (await response.json()) as Record<string, unknown>;
+      } catch {
+        // Fallback for non-JSON error
+      }
+      const code = typeof errJson?.code === 'string'
+        ? errJson.code
+        : (typeof errJson?.error === 'string' ? errJson.error : 'UPSTREAM_ERROR');
+      const message = typeof errJson?.message === 'string'
+        ? errJson.message
+        : (typeof errJson?.error === 'string' ? errJson.error : `Upstream request failed with status ${response.status}`);
+      throw new UpstreamRfqError(response.status, String(code).toUpperCase(), message, errJson);
+    }
+
+    let data: unknown;
+    try {
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        throw new UpstreamRfqError(502, 'UPSTREAM_EMPTY_RESPONSE', 'Upstream returned an empty response');
+      }
+      data = JSON.parse(text);
+    } catch (err) {
+      if (err instanceof UpstreamRfqError) throw err;
+      throw new UpstreamRfqError(502, 'UPSTREAM_MALFORMED_RESPONSE', 'Upstream returned a malformed response');
+    }
+
+    if (!data || typeof data !== 'object') {
+      throw new UpstreamRfqError(502, 'UPSTREAM_MALFORMED_RESPONSE', 'Upstream response is not an object');
+    }
+
+    return data as Record<string, unknown>;
   }
 
   private map(raw: Record<string, unknown> | null): RfqQuote | undefined {
@@ -311,8 +403,52 @@ export class WordPressRfqQuoteStore implements RfqQuoteStore {
     };
     const state = STATE_FROM_WORDPRESS[String(raw.state)] ?? String(raw.state);
     const createdAt = String(raw.created_at ?? '');
+
+    const mapRevisions = (revs: unknown): OfferRevision[] => {
+      if (!Array.isArray(revs)) return [];
+      return revs.map((r: Record<string, unknown>) => {
+        const parseLines = (l: unknown): OfferLineItem[] => {
+          if (Array.isArray(l)) return l as OfferLineItem[];
+          if (typeof l === 'string') {
+            try { return JSON.parse(l) as OfferLineItem[]; } catch { return []; }
+          }
+          return [];
+        };
+        const revId = String(r.revision_id ?? r.revisionId ?? '');
+        const revNum = Number(r.revision_number ?? r.revisionNumber ?? 1);
+        const revCreated = String(r.created_at ?? r.createdAt ?? createdAt);
+        const staffId = String(r.created_by_staff_id ?? (r.createdBy as { staffId?: string })?.staffId ?? 'operator');
+        const staffName = String(r.created_by_staff_name ?? (r.createdBy as { staffName?: string })?.staffName ?? 'Operator');
+        const lines = parseLines(r.lines_data ?? r.lines);
+        const subtotal = Number(r.subtotal_excl_tax ?? r.subtotalExclTax ?? 0);
+        const tax = Number(r.total_tax ?? r.totalTax ?? 0);
+        const total = Number(r.total_incl_tax ?? r.totalInclTax ?? 0);
+        const cur = String(r.currency ?? 'MAD');
+        const exp = String(r.expires_at ?? r.expiresAt ?? '');
+        const isCur = Boolean(r.is_current ?? r.isCurrent);
+        return {
+          revisionId: revId,
+          revisionNumber: revNum,
+          createdAt: revCreated,
+          createdBy: { staffId, staffName },
+          expiresAt: exp,
+          currency: cur,
+          lines,
+          subtotalExclTax: subtotal,
+          totalTax: tax,
+          totalInclTax: total,
+          termsAndConditions: (r.terms ?? r.termsAndConditions) ? String(r.terms ?? r.termsAndConditions) : undefined,
+          staffNotes: (r.notes ?? r.staffNotes) ? String(r.notes ?? r.staffNotes) : undefined,
+          isCurrent: isCur,
+        };
+      });
+    };
+
+    const quoteId = String(raw.id);
+    const hash = this.knownHashes.get(quoteId) || (typeof raw.access_secret_hash === 'string' ? raw.access_secret_hash : '');
+
     return {
-      id: raw.id,
+      id: quoteId,
       quoteNumber: String(raw.quote_number ?? ''),
       state: state as RfqQuote['state'],
       contact: (parse(raw.contact_data) as RfqQuote['contact']) ?? {
@@ -321,10 +457,9 @@ export class WordPressRfqQuoteStore implements RfqQuoteStore {
       },
       consents: Array.isArray(raw.consents) ? (raw.consents as RfqQuote['consents']) : [],
       items: (parse(raw.items_data) as RfqQuote['items']) ?? [],
-      revisions: Array.isArray(raw.revisions) ? (raw.revisions as RfqQuote['revisions']) : [],
+      revisions: mapRevisions(raw.revisions),
       ...(raw.current_revision_id ? { currentRevisionId: String(raw.current_revision_id) } : {}),
-      // WordPress does not transmit the hash; see the class comment.
-      accessSecretHash: '',
+      accessSecretHash: hash,
       guestChallengeEmail: String(raw.customer_email ?? ''),
       isContactVerified: Boolean(raw.is_contact_verified),
       createdAt,
@@ -339,22 +474,37 @@ export class WordPressRfqQuoteStore implements RfqQuoteStore {
   }
 
   async getQuote(id: string, accessToken?: string): Promise<RfqQuote | undefined> {
-    return this.map(await this.call(`/quotes/${encodeURIComponent(id)}`, accessToken));
+    try {
+      const res = await this.call(`/quotes/${encodeURIComponent(id)}`, accessToken);
+      return this.map(res);
+    } catch (err: unknown) {
+      if (err instanceof UpstreamRfqError && err.statusCode === 404) {
+        return undefined;
+      }
+      throw err;
+    }
   }
 
   async putQuote(quote: RfqQuote): Promise<void> {
-    // Creation only: the caller-issued identity is what WordPress now accepts, so the
-    // quote the guest holds is the quote WordPress stores.
-    await this.call('/quotes', undefined, {
+    if (quote.accessSecretHash) {
+      this.knownHashes.set(quote.id, quote.accessSecretHash);
+    }
+    const res = await this.call('/quotes', undefined, {
       id: quote.id,
       quoteNumber: quote.quoteNumber,
       accessSecretHash: quote.accessSecretHash,
       contact: quote.contact,
       items: quote.items,
     });
+    if (!res || (!res.quoteId && !res.id)) {
+      throw new UpstreamRfqError(502, 'UPSTREAM_PERSISTENCE_FAILED', 'Upstream failed to persist quote');
+    }
   }
 
   private async guestAction(path: string, id: string, token: string | undefined, body: unknown): Promise<RfqQuote | undefined> {
+    if (!token || token.trim() === '') {
+      throw new UpstreamRfqError(401, 'UNAUTHORIZED', 'Guest access token is required');
+    }
     await this.call(`/quotes/${encodeURIComponent(id)}${path}`, token, body);
     return this.getQuote(id, token);
   }

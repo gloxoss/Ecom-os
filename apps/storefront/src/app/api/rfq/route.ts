@@ -166,7 +166,33 @@ export async function POST(req: Request) {
   });
 
   // Store in the shared durable store: this is the same quote the offers route reads.
-  await store.putQuote(submittedQuote);
+  try {
+    await store.putQuote(submittedQuote);
+  } catch (err: unknown) {
+    const status = (err && typeof err === 'object' && 'statusCode' in err && typeof (err as any).statusCode === 'number')
+      ? (err as any).statusCode
+      : 502;
+    const code = (err && typeof err === 'object' && 'errorCode' in err && typeof (err as any).errorCode === 'string')
+      ? (err as any).errorCode
+      : (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
+        ? (err as any).code
+        : 'UPSTREAM_ERROR';
+    const message = (err instanceof Error) ? err.message : 'Failed to persist quote with upstream store';
+    return new Response(
+      JSON.stringify({
+        success: false,
+        code,
+        errors: [message],
+      }),
+      {
+        status: status >= 400 && status <= 599 ? status : 502,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, private',
+        },
+      }
+    );
+  }
 
   const responsePayload = {
     success: true,

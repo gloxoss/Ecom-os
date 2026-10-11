@@ -60,14 +60,14 @@ add_action('rest_api_init', function () {
     register_rest_route($namespace, '/quotes/(?P<id>[\w-]+)/document', array(
         'methods'             => WP_REST_Server::READABLE,
         'callback'            => 'ecomos_rfq_rest_get_document',
-        'permission_callback' => 'ecomos_rfq_rest_check_read_permission',
+        'permission_callback' => 'ecomos_rfq_rest_check_document_permission',
     ));
 
     // 7. Request revision (guest with token)
     register_rest_route($namespace, '/quotes/(?P<id>[\w-]+)/revise', array(
         'methods'             => WP_REST_Server::CREATABLE,
         'callback'            => 'ecomos_rfq_rest_request_revision',
-        'permission_callback' => 'ecomos_rfq_rest_check_read_permission',
+        'permission_callback' => 'ecomos_rfq_rest_check_revise_permission',
     ));
 
     // 8. Convert accepted quote to order (merchant/staff action, never guest)
@@ -91,10 +91,6 @@ function ecomos_rfq_rest_check_read_permission($request) {
         return $active_check;
     }
 
-    if (current_user_can('ecomos_operator') || current_user_can('manage_woocommerce')) {
-        return true;
-    }
-
     $quote_id = $request->get_param('id');
     $quote = ecomos_rfq_get_quote($quote_id);
     if (!$quote) {
@@ -102,11 +98,26 @@ function ecomos_rfq_rest_check_read_permission($request) {
     }
 
     $token = $request->get_header('x-quote-token');
-    if (!empty($token) && ecomos_rfq_verify_guest_access($quote, $token)) {
+    if (empty($token)) {
+        $token = $request->get_param('token');
+    }
+
+    // When a guest token is provided, it MUST be valid. Privileged transport keys
+    // must NEVER authorize a request presenting an invalid or forged token.
+    if (!empty($token)) {
+        if (ecomos_rfq_verify_guest_access($quote, $token)) {
+            return true;
+        }
+        return new WP_Error('forbidden', 'Access denied to quote: invalid guest token', array('status' => 403));
+    }
+
+    // No token provided: only authorized staff operators with capability can read.
+    // Guests without token are refused.
+    if (current_user_can('ecomos_operator') || current_user_can('manage_woocommerce')) {
         return true;
     }
 
-    return new WP_Error('forbidden', 'Access denied to quote', array('status' => 403));
+    return new WP_Error('unauthorized', 'Authentication token required', array('status' => 401));
 }
 
 function ecomos_rfq_rest_check_staff_permission($request) {
@@ -123,11 +134,127 @@ function ecomos_rfq_rest_check_staff_permission($request) {
 }
 
 function ecomos_rfq_rest_check_accept_permission($request) {
-    return ecomos_rfq_rest_check_read_permission($request);
+    $active_check = ecomos_rfq_rest_check_active();
+    if (is_wp_error($active_check)) {
+        return $active_check;
+    }
+
+    $quote_id = $request->get_param('id');
+    $quote = ecomos_rfq_get_quote($quote_id);
+    if (!$quote) {
+        return new WP_Error('not_found', 'Quote not found', array('status' => 404));
+    }
+
+    $token = $request->get_header('x-quote-token');
+    if (empty($token)) {
+        $token = $request->get_param('token');
+    }
+
+    // Accepting an offer is an exclusively guest operation: valid guest token is mandatory.
+    // Privileged backend service credentials cannot substitute for guest proof.
+    if (empty($token)) {
+        return new WP_Error('unauthorized', 'Guest access token required to accept offer', array('status' => 401));
+    }
+
+    if (!ecomos_rfq_verify_guest_access($quote, $token)) {
+        return new WP_Error('forbidden', 'Access denied to quote: invalid guest token', array('status' => 403));
+    }
+
+    return true;
+}
+
+function ecomos_rfq_rest_check_revise_permission($request) {
+    $active_check = ecomos_rfq_rest_check_active();
+    if (is_wp_error($active_check)) {
+        return $active_check;
+    }
+
+    $quote_id = $request->get_param('id');
+    $quote = ecomos_rfq_get_quote($quote_id);
+    if (!$quote) {
+        return new WP_Error('not_found', 'Quote not found', array('status' => 404));
+    }
+
+    $token = $request->get_header('x-quote-token');
+    if (empty($token)) {
+        $token = $request->get_param('token');
+    }
+
+    // Requesting a revision on a quote is a guest operation: valid guest token is mandatory.
+    // Privileged backend service credentials cannot substitute for guest proof.
+    if (empty($token)) {
+        return new WP_Error('unauthorized', 'Guest access token required to request revision', array('status' => 401));
+    }
+
+    if (!ecomos_rfq_verify_guest_access($quote, $token)) {
+        return new WP_Error('forbidden', 'Access denied to quote: invalid guest token', array('status' => 403));
+    }
+
+    return true;
 }
 
 function ecomos_rfq_rest_check_reject_permission($request) {
-    return ecomos_rfq_rest_check_read_permission($request);
+    $active_check = ecomos_rfq_rest_check_active();
+    if (is_wp_error($active_check)) {
+        return $active_check;
+    }
+
+    $quote_id = $request->get_param('id');
+    $quote = ecomos_rfq_get_quote($quote_id);
+    if (!$quote) {
+        return new WP_Error('not_found', 'Quote not found', array('status' => 404));
+    }
+
+    $token = $request->get_header('x-quote-token');
+    if (empty($token)) {
+        $token = $request->get_param('token');
+    }
+
+    if (!empty($token)) {
+        if (ecomos_rfq_verify_guest_access($quote, $token)) {
+            return true;
+        }
+        return new WP_Error('forbidden', 'Access denied to quote: invalid guest token', array('status' => 403));
+    }
+
+    // Staff rejecting without token must have real capability
+    if (current_user_can('ecomos_operator') || current_user_can('manage_woocommerce')) {
+        return true;
+    }
+
+    return new WP_Error('unauthorized', 'Authentication token required to reject quote', array('status' => 401));
+}
+
+function ecomos_rfq_rest_check_document_permission($request) {
+    $active_check = ecomos_rfq_rest_check_active();
+    if (is_wp_error($active_check)) {
+        return $active_check;
+    }
+
+    $quote_id = $request->get_param('id');
+    $quote = ecomos_rfq_get_quote($quote_id);
+    if (!$quote) {
+        return new WP_Error('not_found', 'Quote not found', array('status' => 404));
+    }
+
+    $token = $request->get_header('x-quote-token');
+    if (empty($token)) {
+        $token = $request->get_param('token');
+    }
+
+    if (!empty($token)) {
+        if (ecomos_rfq_verify_guest_access($quote, $token)) {
+            return true;
+        }
+        return new WP_Error('forbidden', 'Access denied: valid guest access token required to view quote document', array('status' => 403));
+    }
+
+    // Staff accessing document without token must have real capability
+    if (current_user_can('ecomos_operator') || current_user_can('manage_woocommerce')) {
+        return true;
+    }
+
+    return new WP_Error('unauthorized', 'Access token required to view quote document', array('status' => 401));
 }
 
 /**
