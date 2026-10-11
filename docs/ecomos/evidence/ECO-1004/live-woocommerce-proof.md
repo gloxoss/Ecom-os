@@ -949,3 +949,50 @@ database and secrets", executed.
   nginx 1.26 and php-cgi, both present and unused here.
 - **Finding 8**: owner-supplied merchant facts and product-claim sources. Not producible by
   any agent.
+
+## Production CSP and HSTS — observed, closing the last item of finding 5
+
+TLS was stood up rather than declared impossible. Local ships nginx 1.26 and php-cgi
+alongside the PHP binary used throughout; a self-signed cert plus a **loopback-bound**
+nginx (`listen 127.0.0.1:8443 ssl`) serving client 1 over FastCGI, with `WP_HOME` moved to
+`https://localhost:8443`, was enough. The app's own production guard then accepted the
+backend: `WC_REST_URL must use HTTPS without embedded credentials` no longer fires.
+
+Production also validates its secrets, which is itself evidence the config is checked rather
+than assumed — it refused the placeholder and required a **base64-encoded 32-byte**
+`ECOM_OS_ENCRYPTION_KEY`. With real secrets, `next build --webpack` **succeeded (exit 0)**
+against HTTPS WordPress, and `next start` served it.
+
+**The real production headers, observed:**
+
+```
+content-security-policy: default-src 'self';
+  script-src 'self' 'nonce-MjNmZmFmZmUtMmJlYy00ZGZjLTllZmUtYzMyMWM3OGRkY2Q1' 'strict-dynamic'
+    https://js.stripe.com;
+  style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*;
+  connect-src 'self' https://api.stripe.com https://js.stripe.com;
+  frame-src https://js.stripe.com; font-src 'self';
+  object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+permissions-policy: camera=(), microphone=(), geolocation=()
+referrer-policy: strict-origin-when-cross-origin
+strict-transport-security: max-age=15552000; includeSubDomains
+x-content-type-options: nosniff
+x-frame-options: DENY
+```
+
+Two things this settles that the development run could not:
+
+- **The production policy is the nonce policy, not the development one.** The development
+  CSP measured earlier was permissive (`'unsafe-inline' 'unsafe-eval'` in `script-src`, no
+  nonce). Production uses a **nonce plus `strict-dynamic`**, and the nonce **rotates per
+  request** (two requests produced different nonces). `object-src 'none'`,
+  `frame-ancestors 'none'` and `base-uri 'self'` are set; HSTS adds `includeSubDomains`.
+- The app **refuses to run in production against a non-HTTPS backend**, which is a genuine
+  guard, and it **rejects a short encryption key**.
+
+**Honest limit:** the page itself returned 500 while the headers were emitted, so this
+establishes the *headers*, not a working production render. The 500 is consistent with the
+server-side data fetch to a self-signed certificate, and with `NODE_TLS_REJECT_UNAUTHORIZED=0`
+set only for the build and `next start` rather than propagated everywhere; it was not
+diagnosed. What is **observed** is the production CSP, HSTS, framing and content-type
+policy, and the per-request nonce.
