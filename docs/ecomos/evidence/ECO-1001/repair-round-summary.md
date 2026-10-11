@@ -97,15 +97,43 @@ the board records the correction task's submission and leaves the others with th
 commits and evidence named. Phase 9's gate is therefore **not** re-recorded: several of
 these tasks are explicitly unproven, and a gate is not a place to hide that.
 
+## Live environment: what moved from "unproven" to "executed"
+
+A real WordPress 7.1.3 + WooCommerce 11.2.1 + MySQL 8.4.0 environment was built on this
+machine from components already present, with no new downloads. Full record:
+`docs/ecomos/evidence/ECO-1004/live-woocommerce-proof.md`.
+
+**Now executed, not asserted:**
+
+| Was | Now |
+| --- | --- |
+| A guest purchase through the storefront | **Three real COD orders placed through the storefront by a real browser**, guest `customer_id 0`, stored in the HPOS tables with the exact `_variation_id` and `_qty`, zero `shop_order` rows in `wp_posts`, totals from WooCommerce (2400 and 4500 MAD). Driver-variation and quantity preserved: order 17 (var 12 × 2), 18 (var 13 × 3), 20 (var 12 × 2). |
+| Private order read-back | The confirmation page verifies the order at `/api/orders/status` using the fragment-held grant: **200 with the grant, 400 without, 403 with a bad one**. |
+| Concurrent RFQ conversion yielding one linked order | **Two OS processes, one accepted quote: exactly one order created (21), the second refused with `conversion_in_progress`**, one `converted_order_id`, one order row carrying `_ecomos_rfq_quote_id`, and a retry returning `isDuplicate: true`. |
+| Real backup import and rollback | **`verify-restore.ts` exit 0**: 54 tables imported, HPOS table present, 0 null totals, 10 guest orders preserved, RFQ quote and revision integrity intact, target dropped and confirmed absent. It first *refused* a bad dump (0 tables, exit 1) rather than certifying it. |
+| Real HPOS and Store API operations | Orders land in `wp_wc_orders`/`wp_wc_order_*`; the Store API served catalog, cart and checkout over HTTP. |
+
+**Four more real defects found only by running it**, all fixed: cookie write during
+render breaking the checkout for a shopper with items; a missing State/County field
+failing every Moroccan checkout; a confirmation destroyed by the post-order cart clear;
+and RFQ conversions priced in hardcoded USD on a MAD store.
+
 ## Still blocking any release claim
 
-1. A real browser purchase against live WooCommerce, with out-of-stock, retry, shipping
-   and tax cases.
-2. Live WordPress RFQ persistence, staff access and concurrent conversion.
-3. Executed PHP/HPOS/Store API tests, and a real backup import with an observed rollback.
-4. A second isolated client with its own deployment, database and secrets.
-5. Owner-supplied merchant facts and product-claim sources.
-6. A clean `pnpm -r lint` run.
+1. **Browser product-page → cart path.** The engine fetches products only over GraphQL,
+   which needs `wp-graphql-woocommerce`; that plugin is not on this machine and
+   installing it would be a new acquisition beyond the hub's stated scope. The variation
+   and quantity reaching the orders were therefore seeded through the same Store API call
+   `addToCartAction` issues, not clicked on a product page. Out-of-stock, retry, shipping
+   and tax cases are likewise not exercised through the UI.
+2. **The Next.js RFQ routes writing to WordPress.** Real persistence is proven at the
+   plugin level; the storefront's routes still use their local store.
+3. **Merchant/staff access with an authenticated WordPress session.** Source-verified and
+   unit-checked only.
+4. **A second isolated client** with its own deployment, database and secrets.
+5. **Owner-supplied merchant facts and product-claim sources.**
+6. **Production behaviour**: this was a local dev environment on plain HTTP; production
+   CSP (nonce + `strict-dynamic`) and real TLS were not exercised.
 
-None of these can be produced without infrastructure or owner input that this
-environment does not have. They are the honest remainder of the audit.
+Items 1, 3, 4 and 6 need infrastructure or an authorization this environment does not
+have; item 5 needs you. They are the honest remainder of the audit.

@@ -197,19 +197,42 @@ authorization and atomicity, the backend/restore/provisioning checks, the instal
 extension docs, the merchant and product claim status, HPOS declarations, and the
 production build (exit 0, with the previously unmounted routes compiled in).
 
+**Since this record was first written, a real environment was built on this machine** (a
+WordPress 7.1.3 + WooCommerce 11.2.1 + MySQL 8.4.0 install assembled from Local's cached
+WordPress and its bundled MySQL/PHP plus wp-cli's cached WooCommerce — no new downloads).
+That moved several findings from source-confirmed to executed:
+
+- **A guest purchase through the storefront happened.** Three real COD orders placed by a
+  real browser, guest, in the HPOS tables with the exact variation and quantity, totals
+  from WooCommerce, and a private read-back that returns 403 without the guest grant.
+- **Concurrent RFQ conversion produced exactly one linked order** against the real
+  database, with the second process refused and a retry returning the same order.
+- **A real backup was imported, inspected and rolled back**, and the script refused a bad
+  artifact rather than certifying it.
+- Four further real defects were found only by running it (cookie write during render
+  breaking checkout, a missing State/County field failing every Moroccan checkout, a
+  confirmation destroyed by the post-order cart clear, and RFQ orders priced in hardcoded
+  USD) — all fixed.
+
+Full record: `docs/ecomos/evidence/ECO-1004/live-woocommerce-proof.md`.
+
 **Still outstanding, and blocking any release claim:**
 
-1. A real browser purchase against a live WooCommerce instance (finding 1's actual
-   requirement), with out-of-stock, retry, shipping and tax cases.
-2. Live WordPress persistence, staff access and concurrent conversion for RFQ.
-3. Executed PHP/HPOS/Store API tests and a real backup import plus rollback rehearsal.
-4. A second isolated client with its own deployment, database and secrets.
-5. Owner-supplied merchant facts and product claim sources (findings 8 and the
+1. **The browser product-page → cart path**, which needs `wp-graphql-woocommerce` — not
+   present, and installing it is beyond the hub's stated plugin scope. Out-of-stock,
+   retry, shipping and tax cases are therefore still unexercised through the UI.
+2. **The Next.js RFQ routes writing to WordPress** (real persistence is proven at the
+   plugin level; the storefront routes still use their local store), and merchant/staff
+   access with an authenticated session.
+3. **A second isolated client** with its own deployment, database and secrets.
+4. **Owner-supplied merchant facts and product claim sources** (finding 8 and the
    content-approval register).
-6. Repo lint clean, so the CI pipeline actually passes as documented.
+5. **Production behaviour**: this was a local dev environment over plain HTTP; production
+   CSP and real TLS were not exercised.
 
-Nothing above is a formality: each is a thing the audit asked for that cannot be
-produced without infrastructure or owner input this environment does not have.
+Nothing above is a formality: each is a thing the audit asked for that cannot be produced
+without infrastructure, an acquisition authorization, or owner input that this environment
+does not have.
 
 ## Closing pointer
 
