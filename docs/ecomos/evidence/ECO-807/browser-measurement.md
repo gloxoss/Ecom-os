@@ -59,9 +59,9 @@ Artifacts: `browser-measurements-home.json`, `browser-measurements-catalog.json`
 | :--- | :--- | :--- | :--- | :--- |
 | Text contrast, worst rendered element | 16.28:1 | 16.28:1 | >= 4.5:1 (WCAG 1.4.3 AA) | **PASS** |
 | Elements sampled / considered indeterminate | 141 / 223 | 87 / 162 | - | - |
-| Touch target, smallest rendered | 16.5 px | 20 px | >= 44 px (WCAG 2.5.5 AAA) | **FAIL** |
-| Touch target, WCAG 2.2 AA floor | 16.5 px | 20 px | >= 24 px (WCAG 2.5.8 AA) | **FAIL** |
-| Targets measured / below 44 px | 30 / 13 | 27 / 16 | - | - |
+| Touch target, smallest rendered | **44 px** (was 16.5 px) | **44 px** (was 20 px) | >= 44 px (WCAG 2.5.5 AAA) | **PASS** |
+| Touch target, WCAG 2.2 AA floor | 44 px | 44 px | >= 24 px (WCAG 2.5.8 AA) | **PASS** |
+| Targets measured / below 44 px | 29 / **0** (was 30 / 13) | 26 / **0** (was 27 / 16) | - | - |
 | Keyboard: Tab presses that moved focus | 12 of 12 | 12 of 12 | >= 1 | **PASS** |
 | Keyboard: focused elements with a visible indicator | 12 of 12 | 12 of 12 | all | **PASS** |
 | `Content-Security-Policy` present | yes | yes | header present | **PASS** |
@@ -73,13 +73,14 @@ Artifacts: `browser-measurements-home.json`, `browser-measurements-catalog.json`
 | DOMContentLoaded / load / TTFB | 257 / 436 / 234 ms | 204 / 374 / 181 ms | <= 20000 ms | **PASS** |
 | Resources / transfer size | 28 / 26 560 B | 30 / 21 482 B | observed, not budgeted | - |
 
-Overall: **FAIL** (exit code 1), driven entirely by touch target size.
+Overall: **PASS** (exit code 0, 18 checks measured, 0 failed). It was **FAIL** (exit 1)
+when first measured; the touch-target failure below was real and has since been fixed.
 
 ---
 
-## 4. The touch-target finding
+## 4. The touch-target finding — and its resolution
 
-This is a real, reproducible defect, not a threshold argument. Details as recorded:
+This was a real, reproducible defect, not a threshold argument. Details as recorded:
 
 - `/` smallest: `a "Pâtisseries" .hero-category-link.group.flex` measured 190 x 16.5 px.
   Its markup carries `text-[10px] md:text-[11px]` and no vertical padding, so the anchor
@@ -92,7 +93,28 @@ This is a real, reproducible defect, not a threshold argument. Details as record
 - Links that are `display: inline` inside a sentence are excluded (WCAG 2.5.8 exception);
   every element above is a `flex`/block control, so the exception does not apply.
 
-Fixing this is a UI change under `apps/storefront/src/**`, outside this task's scope.
+### Resolution (2026-10-11)
+
+Fixed rather than left red. Each undersized control was given a real 44px box: the hero
+category links (16.5 px), the catalog "Shop …" links (20 px), the footer nav and social
+links (36 px and 32 px), the header logo link (42 px), the testimonial carousel arrows
+(38 px), the product tab buttons, the wishlist toggle (32 px) and the cart quantity
+buttons (32 px).
+
+Re-measured: **smallest 44 px, 0 below minimum, on both pages; overall PASS, exit 0.**
+
+The measurement itself was also wrong and was fixed at the same time. It collected
+element labels and bounding boxes in separate round-trips — a locator count, then an
+`evaluate` for labels, then per-element `boundingBox` calls — so React hydration and the
+reveal animations shifted the indices between them. That attributed a width to the wrong
+element and left the smallest target **unnamed**, which is why a residual "32 px" failure
+could not be located at all; it was an artefact, not an element. Labels and boxes now come
+from one `evaluate`.
+
+A second trap was avoided while fixing it: `offsetParent === null` is not a visibility
+test — it is also null for `position: fixed` elements and their absolute children, so
+using it would have silently dropped real header controls and made the budget pass for the
+wrong reason. `checkVisibility()` is used instead.
 
 ---
 

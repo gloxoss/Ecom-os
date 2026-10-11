@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-10-11T00:21:39.391Z",
-  "source": "playwright chromium via playwright.config.ts against the locally served storefront (next dev, ECOM_ENGINE=fake)",
+  "generatedAt": "2026-10-11T01:21:43.812Z",
+  "source": "chromium 153.0.8010.12 via installed chromium build C:\\Users\\OMEN\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe -> http://localhost:3100",
   "targets": {
     "/": {
       "target": "/",
-      "capturedAt": "2026-10-11T00:21:38.235Z",
+      "capturedAt": "2026-10-11T01:21:42.966Z",
       "contrast": {
-        "scope": "computed styles of rendered text on / (playwright chromium -> chromium)",
+        "scope": "computed styles of rendered text on / (chromium 153.0.8010.12 via installed chromium build C:\\Users\\OMEN\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe -> http://localhost:3100)",
         "samples": 141,
         "indeterminate": 223,
         "worstRatio": 16.28,
@@ -20,52 +20,52 @@
         }
       },
       "touchTargets": {
-        "scope": "boundingBox() of interactive elements on / (playwright chromium -> chromium)",
-        "samples": 30,
-        "smallestPx": 16.5,
+        "scope": "boundingBox() of interactive elements on / (chromium 153.0.8010.12 via installed chromium build C:\\Users\\OMEN\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe -> http://localhost:3100)",
+        "samples": 29,
+        "smallestPx": 44,
         "minimumRequired": 44,
-        "belowMinimum": 13,
+        "belowMinimum": 0,
         "smallestTargets": [
+          {
+            "label": "a .flex-none.flex.items-center",
+            "widthPx": 146.95,
+            "heightPx": 44,
+            "shortestPx": 44
+          },
           {
             "label": "a \"Pâtisseries\" .hero-category-link.group.flex",
             "widthPx": 190,
-            "heightPx": 16.5,
-            "shortestPx": 16.5
+            "heightPx": 44,
+            "shortestPx": 44
           },
           {
             "label": "a \"Épicerie Fine\" .hero-category-link.group.flex",
             "widthPx": 190,
-            "heightPx": 16.5,
-            "shortestPx": 16.5
+            "heightPx": 44,
+            "shortestPx": 44
           },
           {
-            "label": "a \"InstagramInstagram\" .group.inline-flex.overflow-hidden",
-            "widthPx": 104.28,
-            "heightPx": 32,
-            "shortestPx": 32
+            "label": "button[Previous review] .group.flex.items-center",
+            "widthPx": 44,
+            "heightPx": 44,
+            "shortestPx": 44
           },
           {
-            "label": "a \"Twitter/XTwitter/X\" .group.inline-flex.overflow-hidden",
-            "widthPx": 104.28,
-            "heightPx": 32,
-            "shortestPx": 32
+            "label": "button[Next review] .group.flex.items-center",
+            "widthPx": 44,
+            "heightPx": 44,
+            "shortestPx": 44
           },
           {
-            "label": "a \"LinkedInLinkedIn\" .group.inline-flex.overflow-hidden",
-            "widthPx": 104.28,
-            "heightPx": 32,
-            "shortestPx": 32
-          },
-          {
-            "label": "",
-            "widthPx": 32,
-            "heightPx": 32,
-            "shortestPx": 32
+            "label": "a \"HomeHome\" .group.inline-flex.items-center",
+            "widthPx": 280,
+            "heightPx": 44,
+            "shortestPx": 44
           }
         ]
       },
       "keyboard": {
-        "scope": "real Tab key presses on / (playwright chromium -> chromium)",
+        "scope": "real Tab key presses on / (chromium 153.0.8010.12 via installed chromium build C:\\Users\\OMEN\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe -> http://localhost:3100)",
         "tabPresses": 12,
         "focusMoves": 12,
         "visibleFocusIndicators": 12,
@@ -92,11 +92,11 @@
       },
       "timings": {
         "url": "http://localhost:3100/",
-        "domContentLoadedMs": 862,
-        "loadMs": 1338.9000000357628,
-        "responseStartMs": 775.7000000476837,
-        "transferSizeBytes": 26561,
-        "resourceCount": 29
+        "domContentLoadedMs": 315.10000002384186,
+        "loadMs": 494.69999998807907,
+        "responseStartMs": 294.60000002384186,
+        "transferSizeBytes": 26581,
+        "resourceCount": 28
       }
     }
   }

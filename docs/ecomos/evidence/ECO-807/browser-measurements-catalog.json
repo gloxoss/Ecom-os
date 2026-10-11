@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-10-11T00:21:41.869Z",
-  "source": "playwright chromium via playwright.config.ts against the locally served storefront (next dev, ECOM_ENGINE=fake)",
+  "generatedAt": "2026-10-11T01:21:43.812Z",
+  "source": "chromium 153.0.8010.12 via installed chromium build C:\\Users\\OMEN\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe -> http://localhost:3100",
   "targets": {
     "/catalog": {
       "target": "/catalog",
-      "capturedAt": "2026-10-11T00:21:41.256Z",
+      "capturedAt": "2026-10-11T01:21:43.421Z",
       "contrast": {
-        "scope": "computed styles of rendered text on /catalog (playwright chromium -> chromium)",
+        "scope": "computed styles of rendered text on /catalog (chromium 153.0.8010.12 via installed chromium build C:\\Users\\OMEN\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe -> http://localhost:3100)",
         "samples": 87,
         "indeterminate": 162,
         "worstRatio": 16.28,
@@ -20,52 +20,52 @@
         }
       },
       "touchTargets": {
-        "scope": "boundingBox() of interactive elements on /catalog (playwright chromium -> chromium)",
-        "samples": 27,
-        "smallestPx": 20,
+        "scope": "boundingBox() of interactive elements on /catalog (chromium 153.0.8010.12 via installed chromium build C:\\Users\\OMEN\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe -> http://localhost:3100)",
+        "samples": 26,
+        "smallestPx": 44,
         "minimumRequired": 44,
-        "belowMinimum": 16,
+        "belowMinimum": 0,
         "smallestTargets": [
           {
-            "label": "a \"Shop Pâtisseries\" .font-body.text-sm.font-medium",
+            "label": "a .flex-none.flex.items-center",
+            "widthPx": 146.95,
+            "heightPx": 44,
+            "shortestPx": 44
+          },
+          {
+            "label": "a \"Shop Pâtisseries\" .inline-flex.items-center.min-h-[44px]",
             "widthPx": 141.56,
-            "heightPx": 20,
-            "shortestPx": 20
+            "heightPx": 44,
+            "shortestPx": 44
           },
           {
-            "label": "a \"Shop Épicerie Fine\" .font-body.text-sm.font-medium",
+            "label": "a \"Shop Épicerie Fine\" .inline-flex.items-center.min-h-[44px]",
             "widthPx": 154.44,
-            "heightPx": 20,
-            "shortestPx": 20
+            "heightPx": 44,
+            "shortestPx": 44
           },
           {
-            "label": "a \"Shop Macarons\" .font-body.text-sm.font-medium",
+            "label": "a \"Shop Macarons\" .inline-flex.items-center.min-h-[44px]",
             "widthPx": 134.27,
-            "heightPx": 20,
-            "shortestPx": 20
+            "heightPx": 44,
+            "shortestPx": 44
           },
           {
-            "label": "a \"Shop Thés\" .font-body.text-sm.font-medium",
+            "label": "a \"Shop Thés\" .inline-flex.items-center.min-h-[44px]",
             "widthPx": 87.41,
-            "heightPx": 20,
-            "shortestPx": 20
+            "heightPx": 44,
+            "shortestPx": 44
           },
           {
-            "label": "a \"Shop Chocolats\" .font-body.text-sm.font-medium",
+            "label": "a \"Shop Chocolats\" .inline-flex.items-center.min-h-[44px]",
             "widthPx": 141.94,
-            "heightPx": 20,
-            "shortestPx": 20
-          },
-          {
-            "label": "a \"Shop Cadeaux\" .font-body.text-sm.font-medium",
-            "widthPx": 120,
-            "heightPx": 20,
-            "shortestPx": 20
+            "heightPx": 44,
+            "shortestPx": 44
           }
         ]
       },
       "keyboard": {
-        "scope": "real Tab key presses on /catalog (playwright chromium -> chromium)",
+        "scope": "real Tab key presses on /catalog (chromium 153.0.8010.12 via installed chromium build C:\\Users\\OMEN\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe -> http://localhost:3100)",
         "tabPresses": 12,
         "focusMoves": 12,
         "visibleFocusIndicators": 12,
@@ -92,11 +92,11 @@
       },
       "timings": {
         "url": "http://localhost:3100/catalog",
-        "domContentLoadedMs": 394.7999999523163,
-        "loadMs": 578.5,
-        "responseStartMs": 371.89999997615814,
-        "transferSizeBytes": 21485,
-        "resourceCount": 30
+        "domContentLoadedMs": 195,
+        "loadMs": 248.30000001192093,
+        "responseStartMs": 180.30000001192093,
+        "transferSizeBytes": 21505,
+        "resourceCount": 29
       }
     }
   }
