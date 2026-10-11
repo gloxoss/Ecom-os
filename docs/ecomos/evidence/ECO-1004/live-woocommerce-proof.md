@@ -882,3 +882,31 @@ totals including tax and shipping, COD submitted, and a private read-back.
 It was a stale dev bundle. With `.next` deleted the server HTML contains `aria-checked` and
 "Taille" and no "UNAVAILABLE", and the browser then saw the same thing. Nothing was wrong
 with the page.
+
+## Client 2: the install is sound, its HTTP path deadlocks
+
+Retried the client-2 purchase now that the nonce defect is fixed. The result narrows the
+failure to the web server rather than the deployment.
+
+**The install is healthy.** Over WP-CLI on client 2's own database: the product updated
+(`product 10 stock=25`), the store reads `currency=EUR name=Nordic Craft Supplies`, and its
+schema, salts, REST key pair and catalogue remain entirely separate from client 1's.
+
+**The HTTP path does not work.** `GET /wp-json/wc/store/v1/products` on client 2 returns
+200 after **30.26 seconds** — exactly PHP's `max_execution_time` — with no usable body.
+Client 1, on the same MySQL server and the same PHP binary, answers the same route in well
+under a second.
+
+30 seconds to the second is the signature of a **loopback deadlock**: PHP's built-in server
+is single-threaded, so any request it makes to itself blocks until the limit fires. Client 1
+avoids it; client 2 hits it. Which request is looping is not established.
+
+**So a completed second-client order needs a real web server, not PHP's built-in one.**
+Local ships nginx 1.26 in the same lightning-services directory two levels up from the PHP
+binary used throughout this round, which is the obvious way to serve client 2 properly and
+re-run this.
+
+What finding 5 asked for — "a second client with its own deployment, WordPress, database
+and secrets" — is otherwise established: separate directory, separate database, separate
+salt set, separate REST key pair, different currency, its own catalogue, serving its own
+Store API (when the server holds up). The one thing not obtained is an order placed on it.
