@@ -843,3 +843,42 @@ products (order 31, clicked, guest, COD, tax and shipping), and for variable pro
 catalogue, product page and price range all render correctly — the variation-selected
 purchase driven from the page is the one step left to run, and it is a matter of timing the
 browser run against a warm server.
+
+## Finding 1 — FULLY CLOSED: a browser chose an exact variation and bought it
+
+The last step ran. A real browser loaded the variable product page, chose the **S**
+variation by clicking the real radio control, added it to the bag, completed checkout, and
+the order landed with the chosen variation on it:
+
+```
+VARIATION  optionFound: true                     (clicked only ENABLED options)
+CHECKOUT   loaded: true, showsProduct: true      (cart filled by the click, not seeded)
+ORDER      /checkout/success?order=32 -> "n° 32", "Total : 1476.00 MAD", "processing"
+
+wp_wc_orders: 32 | wc-processing | 1476.00000000 | MAD | customer_id 0    (guest, COD)
+item meta:    _variation_id 12   _qty 1
+```
+
+1476.00 MAD is 1200 (variation S) + 30 shipping + 246 VAT — every figure computed by
+WooCommerce. The confirmation verified the order through the ownership-checked endpoint.
+
+**And the run proved the out-of-stock case through the UI.** The first attempt hung because
+the harness tried to click the **M** variation, which the page had rendered as
+
+```html
+<button disabled role="radio" aria-checked="false" class="... cursor-not-allowed line-through">M</button>
+```
+
+M is the variation set to zero stock earlier in this round, and the storefront correctly
+disables it and strikes it through rather than letting a shopper pick it. The harness now
+skips disabled options; the page was right and the harness was wrong.
+
+So the audit's finding 1 acceptance is met in full, with **no plugin installed**:
+a real browser, an exact variation chosen from the page, an exact quantity, Woo-authoritative
+totals including tax and shipping, COD submitted, and a private read-back.
+
+### The earlier "unexplained discrepancy" is withdrawn
+
+It was a stale dev bundle. With `.next` deleted the server HTML contains `aria-checked` and
+"Taille" and no "UNAVAILABLE", and the browser then saw the same thing. Nothing was wrong
+with the page.
