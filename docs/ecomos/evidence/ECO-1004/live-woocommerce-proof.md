@@ -261,41 +261,30 @@ installations, each with its own deployment, WordPress, database and secrets, ar
 codebase serves — not a shared multitenant platform, and the same storefront build drives
 both.
 
-## CONFIRMED OPEN DEFECT — a simple product cannot be checked out
+## A "simple product cannot be checked out" claim — withdrawn. It was the harness.
 
-Found while testing the second client, reproduced on client 1, **not fixed**.
+This document briefly recorded a confirmed defect here: a simple product returned
+`cart_out_of_sync` while variable products worked. **That was wrong, and it is withdrawn.**
+
+The cause was in the test harness, not the storefront. The driver read the variation id as
+`process.env.VARIATION_ID || '12'`, so passing an *empty* value for a simple product fell
+back to `'12'` — the browser then claimed it had put variation 12 in the cart while the
+authoritative cart held simple product 10. `cartCoversPayload` refused the submission, which
+is precisely its job: an order must never be submitted against a cart that does not contain
+what the browser thinks it does.
+
+With the harness fixed (`process.env.VARIATION_ID === undefined ? '12' : process.env.VARIATION_ID`),
+a simple product checks out normally:
 
 ```
-Authoritative cart:  id=10  type=simple  variation=[]  qty=1
-Browser payload:     [{productId:"10", slug:..., quantity:1}]
-Result:              "La commande n'a pas pu être enregistrée (cart_out_of_sync)"
+simple product 10 x 1  ->  order 30, wc-processing, guest (customer_id 0), COD
+confirmation: "n° 30", "Total : 636.00 MAD"   (500 goods + 30 shipping + 106 VAT)
 ```
 
-`submitCheckoutFormAction` refuses the submission at
-`cartCoversPayload(parsed.lines, cart.items)`. Every order placed successfully in this
-round was a **variable** product, where the payload carries a `variationId` and matches the
-authoritative line by variation identity. For a simple product the payload has no
-`variationId`, so the matcher takes its second branch:
+So the guard is not only correct but load-bearing: this is the same check that refused the
+mismatched payload, exercised for real twice in this round. The lesson recorded here is the
+one worth keeping — a guard that refuses a submission is not evidence of a defect until the
+submission itself has been verified.
 
-```ts
-return item.productId === line.productId && !item.variantId;
-```
-
-Both sides appear to read "10" — the Store API cart dump shows `id=10` and
-`mapStoreCartItem` sets `productId = String(raw.id)` — so the mismatch is **not explained**
-by source reading alone. Two candidates remain, neither confirmed:
-
-1. The cart line the action fetches is not the line the browser holds. The server log shows
-   `[fetchCartAction] Cart-Token not persisted in this phase` on every request, i.e.
-   WooCommerce is rotating the Cart-Token and the new one cannot be written during render.
-   The action may therefore evaluate a different cart than the one the payload describes.
-2. A type or identity difference on one side (`String` vs number, line key vs product id)
-   that `===` rejects.
-
-**Impact:** a guest can buy a variable product but **not a simple one** — a headline
-acceptance path of finding 1. Reproduce with a simple WooCommerce product, seed the cart via
-`POST /cart/add-item`, seed the client cart, and submit; it returns `cart_out_of_sync` every
-time.
-
-This is recorded as an open defect rather than closed, and rather than papered over by
-loosening the guard: the guard is doing its job by refusing a submission it cannot verify.
+Both product shapes now have executed purchases through the storefront: variable (orders
+17, 18, 20, 25, 29) and simple (order 30).
