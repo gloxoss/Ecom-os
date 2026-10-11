@@ -574,3 +574,42 @@ Four changes, each found by doing the work rather than reasoning about it:
 Remaining from the audit overall is unchanged: the product-page path (needs
 `wp-graphql-woocommerce`), production CSP/TLS (needs a certificate), a completed
 second-client order, and the owner's merchant facts.
+
+## Correction to the product-page plan: it does not need the owner's authorization
+
+Earlier entries here recorded the product-page → cart gap as blocked on installing
+`wp-graphql-woocommerce`, and asked for authorization to fetch it. That was the wrong
+conclusion, and it is worth correcting because it removes an unnecessary dependency on the
+owner.
+
+The engine fetches products only through GraphQL (`packages/engine-woocommerce/src/products.ts`,
+`fetchProducts` / `fetchProductBySlug`), which is why the bridge looked required. But
+**WooCommerce's Store API already serves the catalog** — the same endpoint this work has
+been using successfully throughout for cart and checkout:
+
+```
+GET /wp-json/wc/store/v1/products        -> 2 products, with prices, currency, type and stock
+GET /wp-json/wc/store/v1/products?slug=… -> a single product
+```
+
+So the product-page gap can be closed **inside this repository**, with no plugin install and
+no new dependency: add a Store-API product fetch and a mapper from the Store API product
+shape to the `Product` domain type, and let `getProduct`/`listProducts` fall back to it (or
+prefer it). That is ordinary engine work with a live instance available to verify it — the
+same instance that produced orders 17, 18, 20, 25, 29 and 30 — and it would close finding 1
+completely, including the product-page entry point.
+
+What it needs from whoever picks it up:
+
+- a `mapStoreProduct` covering id, slug, name, sku, prices, images, type and inventory;
+- variation handling: the Store API lists variations for a variable product, and the
+  variation selector needs their prices and attributes, so each may need a follow-up read;
+- a decision on precedence when both transports are configured (probably Store API first,
+  GraphQL as the richer fallback);
+- verification by loading a real product page in a browser and clicking add-to-cart, then
+  completing the purchase — which the existing harness already does end to end once the
+  cart is seeded.
+
+Not started: the remaining budget in this session cannot implement *and* verify a mapper
+plus variation handling, and an unverified mapper would be the same class of failure this
+audit was written about.
