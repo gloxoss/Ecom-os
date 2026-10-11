@@ -251,7 +251,154 @@ export class JsonFileRfqQuoteStore implements RfqQuoteStore {
  * checkout attempts); without it the process keeps an in-memory store, which is
  * only correct for tests and single-shot local runs.
  */
+/** WordPress names one state differently from the domain. */
+const STATE_FROM_WORDPRESS: Record<string, string> = {
+  converted_to_order: 'converted',
+};
+
+/**
+ * The production store: the WordPress companion plugin, over its REST namespace.
+ *
+ * Two consequences of WordPress owning the data are worth stating, because they are why
+ * the interface carries an access token and named guest actions rather than a generic
+ * whole-quote write:
+ *
+ *  - `ecomos_rfq_rest_get_quote` never transmits `access_secret_hash`, so there is no
+ *    local hash to compare. The read carries the guest's token and WordPress decides;
+ *    the mapped quote therefore has an empty `accessSecretHash`, which the routes read
+ *    as "the store already authorized this".
+ *  - State transitions are separate authorized endpoints, so they are methods here
+ *    (`acceptOffer`, `rejectQuote`, `requestRevision`) rather than a `putQuote` of a
+ *    mutated quote.
+ *
+ * Idempotency has no plugin endpoint, so it stays process-local here; that is a real
+ * limitation of this implementation and is noted in the evidence rather than hidden.
+ */
+export class WordPressRfqQuoteStore implements RfqQuoteStore {
+  private baseUrl: string;
+  private staffAuth?: string;
+  private idempotency = new Map<string, StoredIdempotencyEntry>();
+
+  constructor(baseUrl: string, staffAuth?: string) {
+    this.baseUrl = baseUrl.replace(/\/$/, '');
+    this.staffAuth = staffAuth;
+  }
+
+  private async call(path: string, token?: string, body?: unknown): Promise<Record<string, unknown> | null> {
+    const headers: Record<string, string> = { 'Cache-Control': 'no-store' };
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (token) headers['x-quote-token'] = token;
+    if (this.staffAuth) headers['Authorization'] = `Basic ${this.staffAuth}`;
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      method: body === undefined ? 'GET' : 'POST',
+      headers,
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      cache: 'no-store',
+    });
+    if (!response.ok) return null;
+    return (await response.json().catch(() => null)) as Record<string, unknown> | null;
+  }
+
+  private map(raw: Record<string, unknown> | null): RfqQuote | undefined {
+    if (!raw || typeof raw.id !== 'string') return undefined;
+    const parse = (value: unknown): unknown => {
+      if (typeof value !== 'string') return value;
+      try {
+        return JSON.parse(value);
+      } catch {
+        return undefined;
+      }
+    };
+    const state = STATE_FROM_WORDPRESS[String(raw.state)] ?? String(raw.state);
+    const createdAt = String(raw.created_at ?? '');
+    return {
+      id: raw.id,
+      quoteNumber: String(raw.quote_number ?? ''),
+      state: state as RfqQuote['state'],
+      contact: (parse(raw.contact_data) as RfqQuote['contact']) ?? {
+        name: String(raw.customer_name ?? ''),
+        email: String(raw.customer_email ?? ''),
+      },
+      consents: Array.isArray(raw.consents) ? (raw.consents as RfqQuote['consents']) : [],
+      items: (parse(raw.items_data) as RfqQuote['items']) ?? [],
+      revisions: Array.isArray(raw.revisions) ? (raw.revisions as RfqQuote['revisions']) : [],
+      ...(raw.current_revision_id ? { currentRevisionId: String(raw.current_revision_id) } : {}),
+      // WordPress does not transmit the hash; see the class comment.
+      accessSecretHash: '',
+      guestChallengeEmail: String(raw.customer_email ?? ''),
+      isContactVerified: Boolean(raw.is_contact_verified),
+      createdAt,
+      updatedAt: String(raw.updated_at ?? createdAt),
+      ...(raw.expires_at ? { expiresAt: String(raw.expires_at) } : {}),
+      ...(raw.converted_order_id ? { convertedOrderId: raw.converted_order_id as string | number } : {}),
+      ...(raw.rejection_reason ? { rejectionReason: String(raw.rejection_reason) } : {}),
+      ...(raw.customer_revision_notes ? { customerRevisionNotes: String(raw.customer_revision_notes) } : {}),
+      customerName: String(raw.customer_name ?? ''),
+      customerEmail: String(raw.customer_email ?? ''),
+    };
+  }
+
+  async getQuote(id: string, accessToken?: string): Promise<RfqQuote | undefined> {
+    return this.map(await this.call(`/quotes/${encodeURIComponent(id)}`, accessToken));
+  }
+
+  async putQuote(quote: RfqQuote): Promise<void> {
+    // Creation only: the caller-issued identity is what WordPress now accepts, so the
+    // quote the guest holds is the quote WordPress stores.
+    await this.call('/quotes', undefined, {
+      id: quote.id,
+      quoteNumber: quote.quoteNumber,
+      accessSecretHash: quote.accessSecretHash,
+      contact: quote.contact,
+      items: quote.items,
+    });
+  }
+
+  private async guestAction(path: string, id: string, token: string | undefined, body: unknown): Promise<RfqQuote | undefined> {
+    await this.call(`/quotes/${encodeURIComponent(id)}${path}`, token, body);
+    return this.getQuote(id, token);
+  }
+
+  async acceptOffer(id: string, revisionId: string, accessToken?: string): Promise<RfqQuote | undefined> {
+    return this.guestAction('/accept', id, accessToken, { revisionId });
+  }
+
+  async rejectQuote(id: string, reason: string, accessToken?: string): Promise<RfqQuote | undefined> {
+    return this.guestAction('/reject', id, accessToken, { reason });
+  }
+
+  async requestRevision(id: string, notes: string, accessToken?: string): Promise<RfqQuote | undefined> {
+    return this.guestAction('/revise', id, accessToken, { notes });
+  }
+
+  /** The plugin exposes no list endpoint, so this is only meaningful for local stores. */
+  async listQuoteIds(): Promise<string[]> {
+    return [];
+  }
+
+  async getIdempotency(key: string): Promise<StoredIdempotencyEntry | undefined> {
+    return this.idempotency.get(key);
+  }
+
+  async putIdempotency(key: string, entry: StoredIdempotencyEntry): Promise<void> {
+    this.idempotency.set(key, entry);
+  }
+
+  async clear(): Promise<void> {
+    this.idempotency.clear();
+  }
+}
+
 export function createDefaultRfqQuoteStore(): RfqQuoteStore {
+  // WordPress is the production persistence layer; the file store is the single-host
+  // fallback for development and for installations without the companion plugin.
+  const wpUrl = process.env.ECOM_RFQ_WP_URL;
+  if (wpUrl) {
+    const user = process.env.ECOM_RFQ_WP_USER;
+    const password = process.env.ECOM_RFQ_WP_APP_PASSWORD;
+    const staffAuth = user && password ? Buffer.from(`${user}:${password}`).toString('base64') : undefined;
+    return new WordPressRfqQuoteStore(wpUrl, staffAuth);
+  }
   const filePath = process.env.ECOM_RFQ_STORE_PATH;
   return filePath ? new JsonFileRfqQuoteStore(filePath) : new InMemoryRfqQuoteStore();
 }

@@ -41,7 +41,7 @@ export async function GET(req: Request) {
     );
   }
 
-  const quote = await getRfqQuoteStore().getQuote(quoteId);
+  const quote = await getRfqQuoteStore().getQuote(quoteId, token);
   if (!quote) {
     return new Response(
       JSON.stringify({ success: false, error: 'Quote not found' }),
@@ -57,8 +57,10 @@ export async function GET(req: Request) {
     );
   }
 
+  // As in POST: a quote with no stored hash comes from a store that authorized the read
+  // itself (WordPress never transmits access_secret_hash), so there is nothing to compare.
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-  if (tokenHash !== quote.accessSecretHash) {
+  if (quote.accessSecretHash && tokenHash !== quote.accessSecretHash) {
     return new Response(
       JSON.stringify({ success: false, error: 'Access denied: invalid token' }),
       { status: 403, headers: { 'Content-Type': 'application/json' } }
@@ -125,9 +127,16 @@ export async function POST(req: Request) {
     );
   }
 
-  // Cryptographic token verification
+  // Cryptographic token verification.
+  //
+  // A local store returns the quote with its stored hash and this comparison is the
+  // authorization. A WordPress-backed store cannot: the plugin never transmits
+  // access_secret_hash, it authorizes the read itself from the token, and the mapped
+  // quote carries no hash. An absent hash therefore means "the store already decided",
+  // and re-checking it here would reject every legitimate guest.
+  const storeAuthorized = !quote.accessSecretHash;
   const computedHash = crypto.createHash('sha256').update(String(accessSecret).trim()).digest('hex');
-  if (computedHash !== quote.accessSecretHash) {
+  if (!storeAuthorized && computedHash !== quote.accessSecretHash) {
     return new Response(
       JSON.stringify({ success: false, code: 'FORBIDDEN', error: 'Access denied: invalid quotation token' }),
       { status: 403, headers: { 'Content-Type': 'application/json' } }

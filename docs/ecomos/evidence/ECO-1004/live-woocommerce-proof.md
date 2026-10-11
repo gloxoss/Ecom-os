@@ -507,3 +507,70 @@ picking this up should start from `RfqClient` above, not from a `WordPressRfqQuo
 Not started, and this is the last thing I will record on it: implementing the client without
 the budget to verify the accept/reject/revise paths against WordPress would leave a quoting
 workflow that looks wired and is not.
+
+## Finding 3 — CLOSED: the storefront's RFQ routes now persist through WordPress
+
+Executed against the live instance, not asserted. The storefront's own routes were pointed
+at the plugin with `ECOM_RFQ_WP_URL=http://localhost:8080/wp-json/ecomos/v1/rfq`:
+
+```
+POST /api/rfq  (the storefront route)
+  -> 201 {"success":true,"quoteId":"quote_mv3s9shz_3215","quoteNumber":"DEV-2026-3215",
+          "accessSecret":"07b6ce10...","state":"submitted"}
+
+wp_ecomos_rfq_quotes, before 5 rows -> after 6 rows:
+  quote_mv3s9shz_3215 | DEV-2026-3215 | submitted | Salma Tazi | salma@riad-design.ma
+```
+
+The row carries the id the **storefront** issued and the contact that was **submitted**, so
+the quote the guest holds is the quote WordPress stores.
+
+```
+GET /api/rfq/offers?quoteId=quote_mv3s9shz_3215   x-quote-token: <the guest's secret>
+  -> 200 {"success":true,"quote":{"id":"quote_mv3s9shz_3215","quoteNumber":"DEV-2026-3215",
+          "state":"submitted","contact":{...},"items":[{"productId":50,...}]}}
+
+GET ...  x-quote-token: wrong
+  -> 404 Quote not found
+```
+
+The read is the storefront's route, the data comes from WordPress, WordPress performs the
+authorization, and a wrong secret fails closed.
+
+### What this required, and why it was a refactor
+
+Four changes, each found by doing the work rather than reasoning about it:
+
+1. **The store interface was synchronous** (commit `25b6679`). A store that makes HTTP
+   calls cannot implement it without blocking the event loop, so the interface and every
+   call site became asynchronous.
+2. **The plugin generated the quote identity itself** (commit `5ed681c`). It now accepts a
+   caller-supplied id, number and hash, validated with fallbacks, and no longer returns a
+   generated secret when the caller supplied the hash — that value would have authorized
+   nothing. Verified live: the supplied identity lands in the table and the guest's own
+   plaintext authorizes the read (200) while a wrong one is refused (403).
+3. **Guest actions are named operations, not a whole-quote write** (commit `3f5fb3a`).
+   WordPress exposes `/accept`, `/reject` and `/revise` as separate authorized endpoints,
+   so `putQuote(mutatedQuote)` could not express them. A test caught that the domain state
+   machine enforces `actor.id === quote.accessSecretHash`, so the actor is built from the
+   loaded quote.
+4. **Authorization had to move into the store.** `ecomos_rfq_rest_get_quote` never
+   transmits `access_secret_hash`, so the routes' local hash comparison can never succeed
+   against WordPress. `getQuote` now carries the guest's token and a quote with no stored
+   hash is read as "the store already authorized this".
+
+### Limits of this implementation, stated plainly
+
+- **Idempotency has no plugin endpoint**, so `WordPressRfqQuoteStore` keeps it in a
+  process-local map. A multi-worker deployment would need it in WordPress.
+- **`listQuoteIds()` returns empty** for the WordPress store; the plugin exposes no list
+  endpoint.
+- **Staff access is implemented but not exercised.** `ECOM_RFQ_WP_USER` and
+  `ECOM_RFQ_WP_APP_PASSWORD` are sent as Basic auth when set, which is what the plugin's
+  staff endpoints expect; no authenticated session was used.
+- **Restart survival** is inherent — WordPress owns the data — but was not separately
+  re-tested after this change.
+
+Remaining from the audit overall is unchanged: the product-page path (needs
+`wp-graphql-woocommerce`), production CSP/TLS (needs a certificate), a completed
+second-client order, and the owner's merchant facts.
