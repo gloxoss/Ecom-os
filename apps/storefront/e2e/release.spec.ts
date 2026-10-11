@@ -1,7 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { paralocaProfile } from '../../../clients/paraloca/profile';
-import { runPerformanceMeasurement } from '../../../scripts/measure-storefront';
+import {
+  evaluateStorefrontBudgets,
+  runPerformanceMeasurement,
+  type StorefrontMeasurements,
+} from '../../../scripts/measure-storefront';
 
 describe('Cross-Profile Release Regression & Budgets (ECO-901)', () => {
   describe('1. Profile Integrity & Invariants Gate', () => {
@@ -49,31 +53,161 @@ describe('Cross-Profile Release Regression & Budgets (ECO-901)', () => {
     });
   });
 
-  describe('3. Automated Performance & Accessibility Budgets', () => {
-    it('evaluates all performance, accessibility, and security budgets against strict thresholds', () => {
+  describe('3. Measurement Honesty & Budget Evaluation (ECO-1009)', () => {
+    /**
+     * The earlier version of this suite asserted that contrast, touch targets,
+     * keyboard support and security headers all PASS. Those values were
+     * constants inside scripts/measure-storefront.ts, not measurements. The
+     * checks below now enforce the opposite contract: anything that was not
+     * actually measured must be reported as NOT_MEASURED, never as PASS.
+     */
+
+    const fullMeasurement: StorefrontMeasurements = {
+      target: '/',
+      capturedAt: '2026-10-11T00:00:00.000Z',
+      contrast: {
+        scope: 'test fixture',
+        samples: 141,
+        indeterminate: 0,
+        worstRatio: 7.1,
+        minimumRequired: 4.5,
+        worst: null,
+      },
+      touchTargets: {
+        scope: 'test fixture',
+        samples: 30,
+        smallestPx: 48,
+        minimumRequired: 44,
+        belowMinimum: 0,
+        smallestTargets: [],
+      },
+      keyboard: {
+        scope: 'test fixture',
+        tabPresses: 12,
+        focusMoves: 12,
+        visibleFocusIndicators: 12,
+        focusedElements: [],
+      },
+      headers: {
+        url: 'http://localhost:3100/',
+        status: 200,
+        contentSecurityPolicy: "default-src 'self'",
+        xFrameOptions: 'DENY',
+        xContentTypeOptions: 'nosniff',
+        referrerPolicy: 'strict-origin-when-cross-origin',
+        permissionsPolicy: 'camera=()',
+        hstsMaxAgeSeconds: 15552000,
+      },
+      timings: {
+        url: 'http://localhost:3100/',
+        domContentLoadedMs: 250,
+        loadMs: 440,
+        responseStartMs: 120,
+        transferSizeBytes: 26559,
+        resourceCount: 29,
+      },
+    };
+
+    it('reports NOT_MEASURED, never PASS, when no browser measurement exists', () => {
       const report = runPerformanceMeasurement();
-      assert.equal(report.overallStatus, 'PASS');
 
-      // Check specific performance budgets
-      for (const budget of report.budgets) {
-        assert.ok(
-          budget.actualDurationMs <= budget.maxDurationMs,
-          `Budget "${budget.name}" exceeded: ${budget.actualDurationMs}ms > ${budget.maxDurationMs}ms`
-        );
-        assert.equal(budget.status, 'PASS');
+      assert.equal(report.overallStatus, 'NOT_MEASURED');
+      assert.equal(report.source, 'in-process');
+      assert.equal(report.failedCount, 0);
+
+      for (const id of [
+        'contrast',
+        'touchTargets',
+        'touchTargetsAA',
+        'keyboard',
+        'csp',
+        'antiFraming',
+        'nosniff',
+        'hsts',
+        'timings',
+      ]) {
+        const property = report.properties.find((candidate) => candidate.id === id);
+        assert.ok(property, `expected a property with id "${id}"`);
+        assert.equal(property.status, 'NOT_MEASURED', `${id} must not claim a status it did not measure`);
       }
+    });
 
-      // Check accessibility thresholds (WCAG AA/AAA)
-      assert.ok(report.accessibility.achievedContrastRatio >= report.accessibility.minimumContrastRatio);
-      assert.ok(report.accessibility.touchTargetMinPx >= 44);
-      assert.equal(report.accessibility.keyboardTraversable, true);
-      assert.equal(report.accessibility.status, 'PASS');
+    it('labels the in-process micro-benchmark as in-process, not as a page metric', () => {
+      const report = runPerformanceMeasurement();
+      const property = report.properties.find((candidate) => candidate.id === 'profileResolution');
 
-      // Check security headers
-      assert.equal(report.security.cspEnforced, true);
-      assert.equal(report.security.antiFraming, true);
-      assert.ok(report.security.hstsMaxAge >= 15552000);
-      assert.equal(report.security.status, 'PASS');
+      assert.ok(property);
+      assert.equal(property.scope, 'in-process; not a rendered-page measurement');
+      assert.ok(['PASS', 'FAIL'].includes(property.status));
+      assert.equal(report.measuredCount, 1);
+    });
+
+    it('passes only when every supplied measurement meets its budget', () => {
+      const report = evaluateStorefrontBudgets(fullMeasurement, { target: '/' });
+
+      assert.equal(report.overallStatus, 'PASS');
+      assert.equal(report.failedCount, 0);
+      assert.equal(report.notMeasuredCount, 0);
+    });
+
+    it('fails when a real measurement violates its budget', () => {
+      const report = evaluateStorefrontBudgets(
+        {
+          ...fullMeasurement,
+          contrast: { ...fullMeasurement.contrast!, worstRatio: 2.1 },
+        },
+        { target: '/' },
+      );
+
+      assert.equal(report.overallStatus, 'FAIL');
+      const contrast = report.properties.find((candidate) => candidate.id === '/ contrast');
+      assert.ok(contrast);
+      assert.equal(contrast.status, 'FAIL');
+      assert.match(contrast.observed, /2\.10:1/);
+    });
+
+    it('fails when the response carried no Content-Security-Policy header', () => {
+      const report = evaluateStorefrontBudgets(
+        {
+          ...fullMeasurement,
+          headers: { ...fullMeasurement.headers!, contentSecurityPolicy: null },
+        },
+        { target: '/' },
+      );
+
+      const csp = report.properties.find((candidate) => candidate.id === '/ csp');
+      assert.ok(csp);
+      assert.equal(csp.status, 'FAIL');
+      assert.match(csp.observed, /absent/);
+    });
+
+    it('never reaches PASS while a required property is unmeasured', () => {
+      const withoutHeaders: Partial<StorefrontMeasurements> = {
+        target: fullMeasurement.target,
+        capturedAt: fullMeasurement.capturedAt,
+        contrast: fullMeasurement.contrast,
+        touchTargets: fullMeasurement.touchTargets,
+        keyboard: fullMeasurement.keyboard,
+        timings: fullMeasurement.timings,
+      };
+      const report = evaluateStorefrontBudgets(withoutHeaders, { target: '/' });
+
+      assert.equal(report.overallStatus, 'NOT_MEASURED');
+      assert.ok(report.notMeasuredCount > 0);
+      for (const id of ['/ csp', '/ antiFraming', '/ nosniff', '/ hsts']) {
+        const property = report.properties.find((candidate) => candidate.id === id);
+        assert.ok(property, `expected a property with id "${id}"`);
+        assert.equal(property.status, 'NOT_MEASURED');
+      }
+    });
+
+    it('reports every property as NOT_MEASURED when nothing was measured at all', () => {
+      const report = evaluateStorefrontBudgets({}, { target: '/' });
+
+      assert.equal(report.overallStatus, 'NOT_MEASURED');
+      assert.equal(report.measuredCount, 0);
+      assert.equal(report.notMeasuredCount, report.properties.length);
+      assert.ok(report.properties.length >= 9);
     });
   });
 });

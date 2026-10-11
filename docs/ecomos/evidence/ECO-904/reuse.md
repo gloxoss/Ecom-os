@@ -5,6 +5,20 @@
 - **Date**: 2026-10-10
 - **Auditor**: `tooling-cleanup`
 
+> ## STATUS CORRECTION (2026-10-11, ECO-1009)
+>
+> Read "reuse" here as **source-level reuse only**. Both clients import the same
+> `packages/ecom-engine` modules and both profiles declare the same commerce settings,
+> which is what `apps/storefront/e2e/profile-reuse.spec.ts` asserts — against TypeScript
+> objects, with no browser and no second installation.
+>
+> Nothing below was observed at runtime. In particular item 1's claim that both profiles
+> "invoke standard `ecom-engine` services (`useCart`, order calculation, payment gateway
+> mapping)" was never executed for `demo-2`: no `demo-2` deployment exists, and the only
+> storefront that runs on this machine runs the `angelina` theme with `ECOM_ENGINE=fake`.
+> The synthetic order in the spec is a literal with `customerId: 0`, not a WooCommerce
+> response. Order creation, COD certification and guest-first behaviour remain unproven.
+
 ---
 
 ## 1. Engine Reuse Proof

@@ -11,6 +11,24 @@
 
 ---
 
+> ## STATUS CORRECTION (2026-10-11, ECO-1009)
+>
+> The "French Client Staging Acceptance & Visual UAT Suite" result below is a
+> `node:test` run over **constructed objects**, not a browser UAT and not a staging
+> acceptance. It launches no browser and contacts no host. The 8 "tests passed" line
+> records assertions against literals in `apps/storefront/e2e/paraloca-uat.spec.ts`.
+>
+> The real browser measurement added by ECO-1009 lives in
+> `docs/ecomos/evidence/ECO-807/browser-measurement.md`; it measures rendered contrast,
+> real `boundingBox()` touch targets, real Tab traversal and observed response headers on
+> the locally served storefront, and it found a touch-target defect the earlier `PASS`
+> had hidden.
+>
+> Still unproven: WooCommerce orders, stock and totals; the `paraloca.ma` Coming Soon
+> invariant; French/Arabic locale behaviour on a rendered page; client sign-off.
+
+---
+
 ## 1. Scope & Claimed Paths Verification
 
 The following paths were claimed and created strictly within the approved boundary:

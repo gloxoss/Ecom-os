@@ -1,3 +1,9 @@
+/**
+ * ECO-1009 honesty note: this suite proves profile/configuration separation in
+ * source, not independent provisioning. No second deployment, WordPress, site
+ * database or secret store is contacted, and the "syntheticOrder" below is a
+ * literal. A genuinely independent client installation is still required.
+ */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { paralocaProfile } from '../../../clients/paraloca/profile';

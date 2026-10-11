@@ -5,6 +5,13 @@
 - **Date**: 2026-10-10
 - **Status**: Tracked & Controlled
 
+> **Note (2026-10-11, ECO-1009)**: the rows below describe intended controls, not
+> verified ones. No staging environment, WooCommerce instance or load test exists on
+> this machine, so RSK-803 (concurrent guest checkout / HPOS / atomic stock) is an
+> unverified design claim. RSK-804's Coming Soon page was never observed being served.
+> Real browser measurements and the outstanding proofs are listed in
+> `docs/ecomos/evidence/ECO-807/browser-measurement.md`.
+
 ---
 
 ## 1. Identified Risks & Boundary Mitigations

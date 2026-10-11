@@ -11,6 +11,25 @@
 
 ---
 
+> ## STATUS CORRECTION (2026-10-11, ECO-1009)
+>
+> The task title says "Independent Commerce Proof" and the report claims "Zero Core Source
+> Duplication" and "Independent Commerce". Neither was proven.
+>
+> - No second client installation exists. `provision.md` has been corrected from
+>   `PROVISIONED & ISOLATED` to `NOT PROVISIONED`.
+> - `apps/storefront/e2e/profile-reuse.spec.ts:32` builds a `syntheticOrder` literal for
+>   each profile and asserts its own fields. It does not place an order and cannot
+>   demonstrate "identical core guest purchase and order calculation contracts".
+> - No WordPress, WooCommerce, database or secret store was contacted for this task.
+>
+> What the suite does prove: two TypeScript profile objects differ in branding and slots
+> and agree on declared capability flags. That is a source-level contract test.
+> Independent provisioning and real order behaviour remain **unproven**; see
+> `docs/ecomos/evidence/ECO-807/browser-measurement.md` for the list of outstanding proofs.
+
+---
+
 ## 1. Scope & Claimed Paths Verification
 
 The following paths were claimed and updated strictly within the approved boundary:

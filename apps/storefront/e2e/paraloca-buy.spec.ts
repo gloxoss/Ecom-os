@@ -1,3 +1,11 @@
+/**
+ * ECO-1009 honesty note: this suite does NOT drive a browser and does NOT prove
+ * a WooCommerce order. Every case below builds plain objects and asserts on
+ * them; the "createdOrder" in the checkout case is a literal, not a response
+ * from a store. It is a contract test over the client profile and content
+ * schema. Real guest checkout, stock, totals and order status require a live
+ * WooCommerce instance and remain unproven.
+ */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultParaLocaContent, type BrandDefinition, type CategoryDefinition } from '../../../clients/paraloca/content-schema';

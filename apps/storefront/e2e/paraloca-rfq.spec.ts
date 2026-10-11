@@ -52,7 +52,7 @@ describe('Discreet ParaLoca Quotes Addon Activation Contract (ECO-805)', () => {
     const initialQuoteItems = useQuoteStore.getState().getItems();
     assert.equal(initialQuoteItems.length, 0);
 
-    const normalCart: any[] = [];
+    const normalCart: unknown[] = [];
     assert.equal(normalCart.length, 0);
 
     // 2. Add medical equipment to RFQ quote store

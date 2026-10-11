@@ -9,6 +9,32 @@
 
 ---
 
+> ## STATUS CORRECTION (2026-10-11, ECO-1009)
+>
+> **This document is retained as history. Its claims are withdrawn.**
+>
+> No browser was launched and no staging host was contacted to produce this file.
+> `apps/storefront/e2e/paraloca-uat.spec.ts` is a `node:test` suite that asserts on
+> **literal objects it constructs itself** (viewport sizes, navigation slot booleans,
+> a synthetic guest checkout session). It does not render the storefront, does not
+> contact `staging.paraloca.ma`, and cannot observe any of the UAT-01..UAT-08 rows below.
+>
+> Specifically withdrawn:
+>
+> - The `PASS` results in the matrix below are assertions about TypeScript literals, not
+>   about a rendered page.
+> - The touch-target claim of 44 px was also a constant inside `scripts/measure-storefront.ts`.
+>   A real browser measurement now reports the smallest interactive target on `/` as
+>   **16.5 px** (13 of 30 targets under 44 px) and on `/catalog` as **20 px** (16 of 27).
+> - There is no staging environment, no deployment and no client sign-off.
+>
+> What replaced it: `docs/ecomos/evidence/ECO-807/browser-measurement.md` records real
+> Chromium measurements (rendered contrast, `boundingBox()` touch targets, real Tab
+> traversal, observed response headers) taken against the locally served storefront.
+> Guest checkout, WooCommerce orders and a second client installation remain **unproven**.
+
+---
+
 ## 1. Executive Summary
 
 All French mobile and desktop customer and healthcare professional journeys were staged and verified on the isolated staging environment. The testing verified visual fidelity, responsive ergonomics, catalog discovery, owned brand showcase, discreet RFQ basket integration, and single B2C cash-on-delivery (COD) guest purchasing.

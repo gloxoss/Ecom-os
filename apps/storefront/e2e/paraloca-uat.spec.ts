@@ -1,3 +1,10 @@
+/**
+ * ECO-1009 honesty note: despite the name, this is NOT browser UAT. No browser
+ * is launched and no page is rendered. Viewports, navigation slots, touch
+ * target sizes and checkout sessions below are literal objects asserted against
+ * themselves; the real rendered equivalents are measured in
+ * measure-storefront.pw.spec.ts and cart-flow.pw.spec.ts.
+ */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { paralocaProfile } from '../../../clients/paraloca/profile';

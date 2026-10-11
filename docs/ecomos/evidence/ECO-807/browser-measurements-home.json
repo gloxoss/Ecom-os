@@ -1,0 +1,103 @@
+{
+  "generatedAt": "2026-10-11T00:21:39.391Z",
+  "source": "playwright chromium via playwright.config.ts against the locally served storefront (next dev, ECOM_ENGINE=fake)",
+  "targets": {
+    "/": {
+      "target": "/",
+      "capturedAt": "2026-10-11T00:21:38.235Z",
+      "contrast": {
+        "scope": "computed styles of rendered text on / (playwright chromium -> chromium)",
+        "samples": 141,
+        "indeterminate": 223,
+        "worstRatio": 16.28,
+        "minimumRequired": 4.5,
+        "worst": {
+          "tag": "p",
+          "text": "Nos Produits",
+          "ratio": 16.28,
+          "color": "rgb(63, 16, 10)",
+          "background": "rgb(255, 255, 255)"
+        }
+      },
+      "touchTargets": {
+        "scope": "boundingBox() of interactive elements on / (playwright chromium -> chromium)",
+        "samples": 30,
+        "smallestPx": 16.5,
+        "minimumRequired": 44,
+        "belowMinimum": 13,
+        "smallestTargets": [
+          {
+            "label": "a \"Pâtisseries\" .hero-category-link.group.flex",
+            "widthPx": 190,
+            "heightPx": 16.5,
+            "shortestPx": 16.5
+          },
+          {
+            "label": "a \"Épicerie Fine\" .hero-category-link.group.flex",
+            "widthPx": 190,
+            "heightPx": 16.5,
+            "shortestPx": 16.5
+          },
+          {
+            "label": "a \"InstagramInstagram\" .group.inline-flex.overflow-hidden",
+            "widthPx": 104.28,
+            "heightPx": 32,
+            "shortestPx": 32
+          },
+          {
+            "label": "a \"Twitter/XTwitter/X\" .group.inline-flex.overflow-hidden",
+            "widthPx": 104.28,
+            "heightPx": 32,
+            "shortestPx": 32
+          },
+          {
+            "label": "a \"LinkedInLinkedIn\" .group.inline-flex.overflow-hidden",
+            "widthPx": 104.28,
+            "heightPx": 32,
+            "shortestPx": 32
+          },
+          {
+            "label": "",
+            "widthPx": 32,
+            "heightPx": 32,
+            "shortestPx": 32
+          }
+        ]
+      },
+      "keyboard": {
+        "scope": "real Tab key presses on / (playwright chromium -> chromium)",
+        "tabPresses": 12,
+        "focusMoves": 12,
+        "visibleFocusIndicators": 12,
+        "focusedElements": [
+          "a",
+          "a:CatalogCatalog",
+          "a:MenuMenu",
+          "a:AboutUsAboutUs",
+          "a:ContactContact",
+          "a:SearchSearch",
+          "a:Cart(0)Cart(0)",
+          "a:Pâtisseries"
+        ]
+      },
+      "headers": {
+        "url": "http://localhost:3100/",
+        "status": 200,
+        "contentSecurityPolicy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://* http://*; connect-src 'self' ws://localhost:* wss://localhost:* https://*; frame-src 'self' https://js.stripe.com; font-src 'self' data: https://*; worker-src 'self' blob:",
+        "xFrameOptions": "DENY",
+        "xContentTypeOptions": "nosniff",
+        "referrerPolicy": "strict-origin-when-cross-origin",
+        "permissionsPolicy": "camera=(), microphone=(), geolocation=()",
+        "hstsMaxAgeSeconds": 15552000
+      },
+      "timings": {
+        "url": "http://localhost:3100/",
+        "domContentLoadedMs": 862,
+        "loadMs": 1338.9000000357628,
+        "responseStartMs": 775.7000000476837,
+        "transferSizeBytes": 26561,
+        "resourceCount": 29
+      }
+    }
+  }
+}

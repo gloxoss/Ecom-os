@@ -51,8 +51,9 @@ describe('ParaLoca Client Profile & Theme Selection Contract (ECO-801)', () => {
     const publicProfile = getActivePublicClientProfile();
     assert.equal(publicProfile.id, 'paraloca');
     assert.equal(publicProfile.name, 'ParaLoca');
-    assert.equal((publicProfile.environment as any).wooCommerceUrl, undefined);
-    assert.equal((publicProfile.environment as any).wordpressUrl, undefined);
+    // Backend topology must be scrubbed from the public projection.
+    assert.equal('wooCommerceUrl' in publicProfile.environment, false);
+    assert.equal('wordpressUrl' in publicProfile.environment, false);
     assert.equal(publicProfile.environment.storefrontUrl, 'https://paraloca.ma');
   });
 
