@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { BrandConfigSchema, ConfigurationValidationError, type BrandConfig } from './schema';
 
+export { ConfigurationValidationError };
+
 /**
  * Capability flags defining what features this client deployment enables.
  * Disallows unknown fields to prevent unauthorized capability injection.

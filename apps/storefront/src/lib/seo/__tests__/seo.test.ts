@@ -4,7 +4,9 @@ import {
   buildCanonicalUrl,
   hasFacetOrFilterParams,
   resolveRobotsPolicy,
+  isStagingEnvironment,
 } from '../config';
+
 import {
   buildProductMetadata,
   buildProductJsonLd,
@@ -215,7 +217,24 @@ describe('Product & Category Schema.org Structured Data (ECO-405)', () => {
       },
     ]);
   });
+
+  it('omits Schema.org offers when product has no price rather than advertising fake zero price', () => {
+    const unpricedProduct: Product = {
+      ...sampleProduct,
+      price: undefined as unknown as typeof sampleProduct.price,
+    };
+
+    const jsonLd = buildProductJsonLd(unpricedProduct, {
+      canonicalUrl: 'https://paraloca.ma/product/macaron-vanille',
+    });
+
+    expect(jsonLd['@context']).toBe('https://schema.org');
+    expect(jsonLd['@type']).toBe('Product');
+    expect(jsonLd.name).toBe('Macaron Vanille de Madagascar');
+    expect(jsonLd.offers).toBeUndefined();
+  });
 });
+
 
 describe('Robots and Sitemap routes (ECO-405)', () => {
   it('generates robots.txt rules protecting private endpoints and specifying sitemap URL', () => {
@@ -260,4 +279,43 @@ describe('Robots and Sitemap routes (ECO-405)', () => {
     expect(urls.some((u) => u.includes('/quote'))).toBe(false);
     expect(urls.some((u) => u.includes('/api/'))).toBe(false);
   });
+
+  it('detects staging environments reliably across URLs and explicit environment flags', () => {
+    expect(isStagingEnvironment('https://staging.paraloca.ma')).toBe(true);
+    expect(isStagingEnvironment('https://preview-123.paraloca.ma')).toBe(true);
+    expect(isStagingEnvironment('https://paraloca.ma')).toBe(false);
+
+    process.env.NEXT_PUBLIC_IS_STAGING = 'true';
+    expect(isStagingEnvironment('https://paraloca.ma')).toBe(true);
+    delete process.env.NEXT_PUBLIC_IS_STAGING;
+
+    process.env.NEXT_PUBLIC_INDEXING_POLICY = 'noindex';
+    expect(isStagingEnvironment('https://paraloca.ma')).toBe(true);
+    delete process.env.NEXT_PUBLIC_INDEXING_POLICY;
+  });
+
+  it('enforces strict noindex on staging robots policy and disallows all crawler indexing', () => {
+    // Explicit isStaging option
+    expect(resolveRobotsPolicy({ isStaging: true })).toEqual({ index: false, follow: false });
+
+    // Environment flag active
+    process.env.NEXT_PUBLIC_IS_STAGING = 'true';
+    expect(resolveRobotsPolicy()).toEqual({ index: false, follow: false });
+    delete process.env.NEXT_PUBLIC_IS_STAGING;
+
+    // robots() on staging URL produces disallow: /
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://staging.paraloca.ma';
+    const stagingRobots = robots();
+    const rule = Array.isArray(stagingRobots.rules) ? stagingRobots.rules[0] : stagingRobots.rules;
+    expect(rule.disallow).toBe('/');
+    expect(rule.allow).toBeUndefined();
+  });
+
+  it('returns empty sitemap on staging environments to prevent pre-release indexing', async () => {
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://staging.paraloca.ma';
+    const entries = await sitemap();
+    expect(entries).toEqual([]);
+  });
 });
+
+

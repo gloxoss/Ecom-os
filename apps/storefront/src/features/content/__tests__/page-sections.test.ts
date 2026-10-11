@@ -116,4 +116,40 @@ describe('Storefront CMS PageSections Resolution (ECO-403)', () => {
     expect(resolved.story.paragraphs[0]).toBe('Nouveau paragraphe géré depuis WordPress.');
     expect(resolved.quote.text).toBe('Le meilleur chocolat chaud de Paris.');
   });
+
+  it('honestly falls back to defaults when CMS values are whitespace or empty strings', () => {
+    const emptyCms: PageSectionsData = {
+      hero: {
+        title: '   ',
+        description: '',
+        image: { src: '', alt: '   ' },
+        categories: [],
+        cta: { label: '  ', href: '' },
+      },
+      collection: {
+        label: ' ',
+        title: '',
+        tabs: [],
+        cta: { label: '', href: '' },
+      },
+      story: {
+        label: '  ',
+        title: '',
+        paragraphs: ['   ', ''],
+        cta: { label: '', href: '' },
+      },
+    };
+
+    const resolved = resolvePageContent(emptyCms, sampleFallbackData);
+    expect(resolved.hero.title).toBe(sampleFallbackData.hero.title);
+    expect(resolved.hero.description).toBe(sampleFallbackData.hero.description);
+    expect(resolved.hero.image.src).toBe(sampleFallbackData.hero.image.src);
+    expect(resolved.hero.image.alt).toBe(sampleFallbackData.hero.image.alt);
+    expect(resolved.hero.categories).toEqual(sampleFallbackData.hero.categories);
+    expect(resolved.collection.title).toBe(sampleFallbackData.collection.title);
+    expect(resolved.collection.tabs).toEqual(sampleFallbackData.collection.tabs);
+    expect(resolved.story.title).toBe(sampleFallbackData.story.title);
+    expect(resolved.story.paragraphs).toEqual(sampleFallbackData.story.paragraphs);
+  });
 });
+

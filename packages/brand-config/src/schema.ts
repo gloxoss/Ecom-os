@@ -18,6 +18,13 @@ export const LayoutSlotsSchema = z.object({
   variantSelector: z.enum(['pills', 'dropdown', 'swatches']).default('pills'),
 });
 
+export const NavigationItemSchema = z.object({
+  label: z.string().min(1, 'Navigation item label is required'),
+  href: z.string().min(1, 'Navigation item href is required'),
+  badge: z.string().optional(),
+  isExternal: z.boolean().default(false),
+});
+
 export const CommerceConfigSchema = z.object({
   defaultLocale: z.string().min(2).default('fr'),
   supportedLocales: z.array(z.string().min(2)).min(1).default(['fr']),
@@ -29,6 +36,8 @@ export const BrandConfigSchema = z.object({
   name: z.string().min(1, 'Brand name is required and cannot be empty'),
   slug: z.string().min(1).optional(),
   theme: z.string().default('default'),
+  navigation: z.array(NavigationItemSchema).optional(),
+
   logos: z.object({
     light: z.string().min(1, 'Light logo path is required'),
     dark: z.string().min(1, 'Dark logo path is required'),
@@ -84,6 +93,7 @@ export const BrandConfigSchema = z.object({
 export type BrandConfig = z.infer<typeof BrandConfigSchema>;
 export type LayoutSlots = z.infer<typeof LayoutSlotsSchema>;
 export type CommerceConfig = z.infer<typeof CommerceConfigSchema>;
+export type NavigationItem = z.infer<typeof NavigationItemSchema>;
 
 /**
  * Validates brand configuration data at build or runtime.

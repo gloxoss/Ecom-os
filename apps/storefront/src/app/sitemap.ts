@@ -1,15 +1,21 @@
 import type { MetadataRoute } from 'next';
 import { getEngine } from '@/lib/engine';
-import { resolveSiteUrl, buildCanonicalUrl } from '@/lib/seo/config';
+import { resolveSiteUrl, buildCanonicalUrl, isStagingEnvironment } from '@/lib/seo/config';
 import { routing, i18nEnabled } from '@/i18n/routing';
 
 /**
  * Generates sitemap.xml for EcomOS storefront.
  * Includes published public catalog, category, and informational pages.
  * Excludes private transactions, checkout, order grants, RFQ quotes, and draft items.
+ * Returns empty sitemap in staging environments to prevent unintended crawling.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = resolveSiteUrl();
+
+  if (isStagingEnvironment(siteUrl)) {
+    return [];
+  }
+
   const engine = await getEngine();
   const entries: MetadataRoute.Sitemap = [];
 

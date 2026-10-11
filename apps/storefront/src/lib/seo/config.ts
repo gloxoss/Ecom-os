@@ -111,11 +111,32 @@ export function hasFacetOrFilterParams(
 export interface RobotsPolicyOptions {
   isPrivate?: boolean;
   hasFacetFilters?: boolean;
+  isStaging?: boolean;
+}
+
+/**
+ * Detects whether the current deployment or given site URL is a staging/preview environment.
+ */
+export function isStagingEnvironment(siteUrl?: string): boolean {
+  if (
+    process.env.NEXT_PUBLIC_IS_STAGING === 'true' ||
+    process.env.IS_STAGING === 'true' ||
+    process.env.NEXT_PUBLIC_INDEXING_POLICY === 'noindex'
+  ) {
+    return true;
+  }
+  const resolved = siteUrl || process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || '';
+  if (!resolved) return false;
+  return (
+    resolved.includes('staging') ||
+    resolved.includes('preview') ||
+    resolved.includes('dev.')
+  );
 }
 
 /**
  * Determines search engine indexing policy.
- * - Private paths: noindex, nofollow
+ * - Staging / Coming-soon / Private paths: noindex, nofollow
  * - Filtered / faceted / search pages: noindex, follow (allow spidering product links without duplicate facet indexing)
  * - Standard public content: index, follow
  */
@@ -123,7 +144,12 @@ export function resolveRobotsPolicy(options?: RobotsPolicyOptions): {
   index: boolean;
   follow: boolean;
 } {
-  if (options?.isPrivate) {
+  if (
+    options?.isStaging ||
+    options?.isPrivate ||
+    process.env.NEXT_PUBLIC_IS_STAGING === 'true' ||
+    process.env.NEXT_PUBLIC_INDEXING_POLICY === 'noindex'
+  ) {
     return { index: false, follow: false };
   }
   if (options?.hasFacetFilters) {
@@ -131,3 +157,4 @@ export function resolveRobotsPolicy(options?: RobotsPolicyOptions): {
   }
   return { index: true, follow: true };
 }
+

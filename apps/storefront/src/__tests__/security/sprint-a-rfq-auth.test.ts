@@ -447,7 +447,7 @@ describe('ECO-1103: RFQ Security & Guest/Staff Credential Decoupling', () => {
             expiresAt: '2020-01-01T00:00:00Z', // Expired in past
             createdAt: '2020-01-01T00:00:00Z',
             updatedAt: '2020-01-01T00:00:00Z',
-          };
+          } as unknown as RfqQuote;
         },
         async putQuote() {},
         async acceptOffer() { return undefined; },
@@ -496,7 +496,7 @@ describe('ECO-1103: RFQ Security & Guest/Staff Credential Decoupling', () => {
             expiresAt: futureDate, // Active unexpired
             createdAt: '2026-09-01T00:00:00Z',
             updatedAt: '2026-09-01T00:00:00Z',
-          };
+          } as unknown as RfqQuote;
         },
         async putQuote() {},
         async acceptOffer() {
