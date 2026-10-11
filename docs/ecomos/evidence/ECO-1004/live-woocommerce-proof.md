@@ -769,3 +769,20 @@ Finishing it needs the selector read off the real DOM rather than guessed — on
 
 Everything else in the round stands: WordPress persistence for RFQ end to end, concurrent
 conversion, the real restore, the accessibility budget, and the six closed findings.
+
+### Addendum: the variable page in a browser differs from curl
+
+Two browser runs could not drive the variation purchase. The selector was fixed to target
+`button[aria-checked]` (the real control in `variation-selector.tsx`) after the first
+attempt matched nothing by text — and it still matched nothing, **and the variation prices
+that curl sees did not appear in the browser run's page text at all**.
+
+So the variable product page returns 200 with variation prices to `curl` but does not show
+that price to a browser in the same session. That discrepancy is unexplained: it is either
+a hydration error the harness did not surface (its `pageerror` listener recorded nothing),
+or the page rendering differently for a browser request than for a plain fetch. Both point
+at a real difference worth chasing, and neither is a claim I can make.
+
+Recorded as unresolved rather than as working. The next investigation is small and
+specific: run the browser with its console and page errors captured to the dev server log,
+and compare what the browser receives with what curl receives for the same URL.
