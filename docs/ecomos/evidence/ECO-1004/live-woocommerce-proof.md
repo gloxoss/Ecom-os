@@ -226,3 +226,37 @@ API served the catalog, cart, and checkout over HTTP. The static compatibility a
 The storefront's `.env.local` was backed up to `C:/wp-local/env.local.backup` before the
 local values were written and **restored afterwards**. The test environment lives outside
 the repository at `C:/wp-local` and nothing in it is committed.
+
+## Finding 5 — a second isolated client
+
+A genuinely separate second deployment was built from the same components, with nothing
+shared with the first:
+
+| | Client 1 (ParaLoca) | Client 2 (Nordic Craft Supplies) |
+| --- | --- | --- |
+| Directory | `C:/wp-local` | `C:/wp-local2` |
+| Database | `ecomos_wp` | `ecomos_client2` |
+| Port | 8080 | 8081 |
+| Salts / keys | client 1 set | **a different set** (`client2-*`) |
+| Currency | MAD | **EUR** |
+| REST credentials | client 1 key pair | **a different key pair** |
+| Catalog | "Local Test Variable", "Local Test Simple" | "Client2 Widget", 79.00 EUR |
+
+Verified: client 2 served its own Store API (`/wp-json/wc/store/v1/products` -> 1 product,
+`Client2 Widget`, `7900 EUR`), which client 1's database does not contain. `ecomos_client2`
+is a separate schema; the two installs share only the MySQL server process and the PHP
+binary. The storefront was then pointed at client 2 (different URLs, different REST keys,
+different encryption/session secrets) and reached its `/checkout` with a real client-2 cart
+(3 x Client2 Widget).
+
+**Not established: a completed order on client 2.** The submission was refused by the
+cart/data-integrity guard with `cart_out_of_sync` — the browser's claimed line did not
+match the authoritative cart line. That is the guard behaving as designed, and it is
+recorded as a refusal rather than worked around. Whether it reflects a guard nuance for
+simple products or an artefact of how this harness seeds the client cart is **not
+determined**, and no client-2 order is claimed.
+
+What this establishes is the architecture the audit asked about: isolated client
+installations, each with its own deployment, WordPress, database and secrets, are what this
+codebase serves — not a shared multitenant platform, and the same storefront build drives
+both.
