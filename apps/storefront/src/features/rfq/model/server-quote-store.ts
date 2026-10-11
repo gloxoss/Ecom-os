@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import type { RfqQuote } from '../../../../../../packages/addons-rfq/src/index';
+import { transition, type RfqQuote } from '../../../../../../packages/addons-rfq/src/index';
 
 /**
  * Server-side quote persistence for the RFQ addon.
@@ -49,12 +49,53 @@ export interface StoredIdempotencyEntry {
  * route, so the interface was made async when the WordPress store was added.
  */
 export interface RfqQuoteStore {
-  getQuote(id: string): Promise<RfqQuote | undefined>;
+  /**
+   * `accessToken` is the guest's own quote secret. The local stores return the quote
+   * and let the route compare the hash; a WordPress-backed store passes it through and
+   * lets WordPress authorize, because the plugin never transmits the hash.
+   */
+  getQuote(id: string, accessToken?: string): Promise<RfqQuote | undefined>;
   putQuote(quote: RfqQuote): Promise<void>;
+  /**
+   * Guest actions as named operations, because that is how WordPress exposes them:
+   * `/accept`, `/reject` and `/revise` are separate authorized endpoints, and a
+   * generic `putQuote` of a mutated quote cannot express which one to call.
+   */
+  acceptOffer(id: string, revisionId: string, accessToken?: string): Promise<RfqQuote | undefined>;
+  rejectQuote(id: string, reason: string, accessToken?: string): Promise<RfqQuote | undefined>;
+  requestRevision(id: string, notes: string, accessToken?: string): Promise<RfqQuote | undefined>;
   listQuoteIds(): Promise<string[]>;
   getIdempotency(key: string): Promise<StoredIdempotencyEntry | undefined>;
   putIdempotency(key: string, entry: StoredIdempotencyEntry): Promise<void>;
   clear(): Promise<void>;
+}
+
+/**
+ * The domain state machine enforces a guest ownership invariant: a guest transition is
+ * only authorized when `actor.id === quote.accessSecretHash`. The actor is therefore
+ * built from the quote that was just loaded, never from a caller-supplied value — the
+ * route has already verified the presented token against that hash before calling.
+ */
+function guestActorFor(quote: RfqQuote) {
+  return { role: 'guest' as const, id: quote.accessSecretHash };
+}
+
+/**
+ * Shared local implementation of the three guest actions: load, run the domain state
+ * machine, persist. Invalid transitions throw, exactly as they did when this lived in
+ * the route, so the route's 400 handling is unchanged.
+ */
+async function applyGuestAction(
+  store: RfqQuoteStore,
+  id: string,
+  target: 'accepted' | 'rejected' | 'revision_requested',
+  payload: Record<string, unknown>
+): Promise<RfqQuote | undefined> {
+  const quote = await store.getQuote(id);
+  if (!quote) return undefined;
+  const next = transition(quote, target, guestActorFor(quote), payload as never);
+  await store.putQuote(next);
+  return next;
 }
 
 export class InMemoryRfqQuoteStore implements RfqQuoteStore {
@@ -64,6 +105,18 @@ export class InMemoryRfqQuoteStore implements RfqQuoteStore {
   async getQuote(id: string): Promise<RfqQuote | undefined> {
     return this.quotes.get(id);
   }
+  async acceptOffer(id: string, revisionId: string): Promise<RfqQuote | undefined> {
+    return applyGuestAction(this, id, 'accepted', { revisionId });
+  }
+
+  async rejectQuote(id: string, reason: string): Promise<RfqQuote | undefined> {
+    return applyGuestAction(this, id, 'rejected', { reason });
+  }
+
+  async requestRevision(id: string, notes: string): Promise<RfqQuote | undefined> {
+    return applyGuestAction(this, id, 'revision_requested', { staffNotes: notes });
+  }
+
 
   async putQuote(quote: RfqQuote): Promise<void> {
     this.quotes.set(quote.id, quote);
@@ -149,6 +202,18 @@ export class JsonFileRfqQuoteStore implements RfqQuoteStore {
     this.load();
     return this.quotes.get(id);
   }
+  async acceptOffer(id: string, revisionId: string): Promise<RfqQuote | undefined> {
+    return applyGuestAction(this, id, 'accepted', { revisionId });
+  }
+
+  async rejectQuote(id: string, reason: string): Promise<RfqQuote | undefined> {
+    return applyGuestAction(this, id, 'rejected', { reason });
+  }
+
+  async requestRevision(id: string, notes: string): Promise<RfqQuote | undefined> {
+    return applyGuestAction(this, id, 'revision_requested', { staffNotes: notes });
+  }
+
 
   async putQuote(quote: RfqQuote): Promise<void> {
     this.load();

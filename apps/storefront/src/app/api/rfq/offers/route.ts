@@ -173,10 +173,10 @@ export async function POST(req: Request) {
 
     // State machine check
     try {
-      const nextQuote = transition(quote, 'accepted', guestActor, { revisionId });
-      quote.state = nextQuote.state;
-      quote.updatedAt = nextQuote.updatedAt;
-      await store.putQuote(quote);
+      const updated = await store.acceptOffer(quoteId, revisionId, String(accessSecret).trim());
+      if (!updated) throw new Error('Quote not found');
+      quote.state = updated.state;
+      quote.updatedAt = updated.updatedAt;
       return new Response(
         JSON.stringify({
           success: true,
@@ -197,11 +197,11 @@ export async function POST(req: Request) {
 
   if (action === 'reject') {
     try {
-      const nextQuote = transition(quote, 'rejected', guestActor, { reason: reason || 'Declined by customer' });
-      quote.state = nextQuote.state;
-      quote.rejectionReason = nextQuote.rejectionReason;
-      quote.updatedAt = nextQuote.updatedAt;
-      await store.putQuote(quote);
+      const updated = await store.rejectQuote(quoteId, reason || 'Declined by customer', String(accessSecret).trim());
+      if (!updated) throw new Error('Quote not found');
+      quote.state = updated.state;
+      quote.rejectionReason = updated.rejectionReason;
+      quote.updatedAt = updated.updatedAt;
       return new Response(
         JSON.stringify({
           success: true,
@@ -222,11 +222,11 @@ export async function POST(req: Request) {
 
   if (action === 'revise') {
     try {
-      const nextQuote = transition(quote, 'revision_requested', guestActor, { staffNotes: notes });
-      quote.state = nextQuote.state;
-      quote.customerRevisionNotes = nextQuote.customerRevisionNotes;
-      quote.updatedAt = nextQuote.updatedAt;
-      await store.putQuote(quote);
+      const updated = await store.requestRevision(quoteId, notes ?? '', String(accessSecret).trim());
+      if (!updated) throw new Error('Quote not found');
+      quote.state = updated.state;
+      quote.customerRevisionNotes = updated.customerRevisionNotes;
+      quote.updatedAt = updated.updatedAt;
       return new Response(
         JSON.stringify({
           success: true,
