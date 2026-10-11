@@ -1,3 +1,4 @@
+import { getStoreApiUrl } from './cart';
 import { gqlClient } from './graphql';
 import { gql } from 'graphql-request';
 import { ProductSort } from '@ecom-os/engine';
@@ -322,5 +323,25 @@ export async function fetchProductBySlug(slug: string): Promise<any | null> {
     return data?.product || null;
   } catch (err) {
     throw new Error(`Failed to fetch product '${slug}' from WooCommerce: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+/**
+ * Reads a product from WooCommerce's Store API — the plugin-free route to the catalog,
+ * used when the GraphQL route is unavailable because the WPGraphQL for WooCommerce
+ * bridge is not installed. Returns the raw Store API product, or null.
+ */
+export async function fetchStoreApiProductBySlug(slug: string): Promise<any | null> {
+  if (!slug || typeof slug !== 'string') return null;
+  try {
+    const response = await fetch(
+      `${getStoreApiUrl()}/products?slug=${encodeURIComponent(slug)}`,
+      { cache: 'no-store' }
+    );
+    if (!response.ok) return null;
+    const list = await response.json();
+    return Array.isArray(list) && list.length > 0 ? list[0] : null;
+  } catch {
+    return null;
   }
 }

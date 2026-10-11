@@ -393,3 +393,63 @@ export function mapStoreCart(raw: any, cartToken: string, defaultCurrency: strin
   };
 }
 
+
+/**
+ * Maps a WooCommerce **Store API** product to the domain `Product`.
+ *
+ * The Store API is a second, plugin-free route to the catalog — the same endpoint the
+ * cart and checkout already use — which matters because the GraphQL route needs the
+ * WPGraphQL for WooCommerce bridge installed.
+ *
+ * Only simple products are mapped here. A variable product's variations are listed by
+ * the Store API as ids and attribute pairs with no price, so mapping them faithfully
+ * needs one read per variation; returning a variable product with prices taken from the
+ * parent range would render a variation selector that lies about price. Until those
+ * reads are added, this returns `null` for anything but a simple product and the caller
+ * keeps using GraphQL.
+ */
+export function mapStoreSimpleProduct(raw: any, defaultCurrency: string = 'MAD'): Product | null {
+  if (!raw || typeof raw !== 'object' || raw.id === undefined) return null;
+  if (raw.type !== undefined && raw.type !== 'simple') return null;
+  if (Array.isArray(raw.variations) && raw.variations.length > 0) return null;
+
+  const currency = raw.prices?.currency_code || defaultCurrency;
+  const amountMinor = parseInt(raw.prices?.price || '0', 10);
+  const regularMinor = parseInt(raw.prices?.regular_price || '0', 10);
+  const saleMinor = parseInt(raw.prices?.sale_price || '0', 10);
+
+  const images: Media[] = Array.isArray(raw.images)
+    ? raw.images
+        .map((image: any) => ({ url: String(image?.src ?? ''), altText: String(image?.alt ?? '') }))
+        .filter((image: Media) => image.url !== '')
+    : [];
+
+  const categories: string[] = Array.isArray(raw.categories)
+    ? raw.categories.map((category: any) => String(category?.slug ?? '')).filter(Boolean)
+    : [];
+
+  return {
+    id: String(raw.id),
+    slug: String(raw.slug ?? ''),
+    name: String(raw.name ?? ''),
+    ...(raw.sku ? { sku: String(raw.sku) } : {}),
+    type: 'simple',
+    description: String(raw.description ?? ''),
+    ...(raw.short_description ? { shortDescription: String(raw.short_description) } : {}),
+    price: { amount_minor: isNaN(amountMinor) ? 0 : amountMinor, currency },
+    ...(regularMinor
+      ? { regularPrice: { amount_minor: regularMinor, currency } }
+      : {}),
+    ...(saleMinor ? { salePrice: { amount_minor: saleMinor, currency } } : {}),
+    inventory: {
+      status: raw.is_in_stock === false ? 'OUT_OF_STOCK' : 'IN_STOCK',
+      quantity:
+        typeof raw.low_stock_remaining === 'number' ? raw.low_stock_remaining : null,
+      backordersAllowed: Boolean(raw.backorders_allowed),
+      isPurchasable: raw.is_purchasable !== false && raw.is_in_stock !== false,
+    },
+    images,
+    categories,
+    isPurchasable: raw.is_purchasable !== false && raw.is_in_stock !== false,
+  };
+}

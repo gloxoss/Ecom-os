@@ -29,11 +29,11 @@ import {
   LoyaltyRedemption,
   PageSectionsData,
 } from '@ecom-os/engine';
-import { fetchProducts, fetchCategories, fetchProductBySlug } from './products';
+import { fetchProducts, fetchCategories, fetchProductBySlug, fetchStoreApiProductBySlug } from './products';
 import { fetchBrands, fetchBrandBySlug } from './brands';
 import { loginGql, registerRest, getCustomerByToken, getCustomerOrdersRest, requestPasswordResetGql, resetPasswordGql, requireCustomerAccounts } from './auth';
 import { restFetch } from './rest';
-import { mapProduct, mapCategory, mapBrand, buildCategoryTree } from './mappers';
+import { mapProduct, mapCategory, mapBrand, buildCategoryTree, mapStoreSimpleProduct } from './mappers';
 import { fetchCurrency } from './currency';
 import {
   fetchStoreCart,
@@ -97,8 +97,20 @@ export class WooCommerceEngine implements EcomEngine {
   }
 
   async getProduct(slug: string, locale?: Locale): Promise<Product | null> {
-    const rawProduct = await fetchProductBySlug(slug);
-    return rawProduct ? mapProduct(rawProduct, await fetchCurrency()) : null;
+    // GraphQL first: it carries variations with their prices, which the Store API does
+    // not. It needs the WPGraphQL for WooCommerce bridge, so when that is absent (or
+    // errors) fall back to the Store API — the same endpoint the cart uses — for simple
+    // products. Without the fallback a storefront with no bridge renders no product
+    // page at all, which is the difference between a browsable shop and a 404.
+    const currency = await fetchCurrency();
+    try {
+      const rawProduct = await fetchProductBySlug(slug);
+      if (rawProduct) return mapProduct(rawProduct, currency);
+    } catch {
+      // Bridge absent or GraphQL unavailable; fall through to the Store API.
+    }
+    const storeProduct = await fetchStoreApiProductBySlug(slug);
+    return storeProduct ? mapStoreSimpleProduct(storeProduct, currency) : null;
   }
 
   async listCategories(locale?: Locale): Promise<Category[]> {

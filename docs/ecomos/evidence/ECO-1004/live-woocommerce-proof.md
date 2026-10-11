@@ -613,3 +613,25 @@ What it needs from whoever picks it up:
 Not started: the remaining budget in this session cannot implement *and* verify a mapper
 plus variation handling, and an unverified mapper would be the same class of failure this
 audit was written about.
+
+## Store-API product path — added, and what it proved
+
+`getProduct` no longer depends solely on GraphQL. It tries GraphQL first (which carries
+variations with their prices), and when that is unavailable — no WPGraphQL for WooCommerce
+bridge — falls back to the Store API and a new `mapStoreSimpleProduct` mapper.
+
+Verified live: `GET /wp-json/wc/store/v1/products?slug=local-test-simple` returns the
+product (`Local Test Simple`, `simple`, 50000 minor units), the fallback fetched it, and
+the product name rendered in the page HTML. **The Store API is a working, plugin-free route
+to a product.**
+
+The product **page** still returns 500, for a reason this exposed rather than caused: the
+page also calls `listCategories()` and `listProducts()` for its category list and related
+products, and both are still GraphQL-only, so they throw with the bridge absent. Closing
+the product-page entry point needs those two mapped from the Store API as well
+(`/products` and `/products/categories`), and — deliberately — not by swallowing the
+errors, which would render a silently half-empty page.
+
+So finding 1's remaining piece is now precisely scoped: three Store-API reads
+(product, product list, categories) instead of a plugin install, with `getProduct` already
+done and proven.
