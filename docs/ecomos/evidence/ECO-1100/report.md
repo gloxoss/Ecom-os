@@ -118,63 +118,71 @@ is that lane). I have not touched it.
 
 # Addendum — A0 re-measured GREEN after the ECO-1099 preflight fix
 
-## What changed
+## What changed, and a correction to an earlier version of this addendum
 
-The coordinator assigned the bounded preflight repair as **`ECO-1099`** to
-`sprint-commerce-1`, against exactly the two files this report named. It landed as:
+**Correction first.** An earlier revision of this addendum measured and cited commit
+`5a8780d`. **That was the wrong artifact and is withdrawn.** `5a8780d` lives on a *different*
+branch (`sprint-a/commerce-ECO-1101-prep`) and bundles the same type fix **plus** cart
+multiset synchronisation (189 lines added to `cart.ts`, 223 lines of tests). It is not the
+ECO-1099 submission, and measuring it produced a test count of 529 that does not belong to
+this fix.
+
+The **submitted** ECO-1099 is a two-commit chain on `sprint-a/commerce-ECO-1101`:
 
 ```
-5a8780d  fix(engine): exactOptionalPropertyTypes email compatibility and cart multiset sync
-         packages/engine-woocommerce/src/checkout-attempts.ts   |   7 +-
-         packages/engine-woocommerce/src/checkout.ts            |   5 +-
-         packages/engine-woocommerce/src/cart.ts                | 189 +++++++-
-         packages/engine-woocommerce/src/__tests__/cart.test.ts | 223 +++++++++
+ea7731d  fix(engine): omit undefined email to satisfy exactOptionalPropertyTypes
+8659352  docs(ECO-1099): evidence report for email type fixes          <- submitted tip
+
+  packages/engine-woocommerce/src/checkout-attempts.ts |  7 +--
+  packages/engine-woocommerce/src/checkout.ts          |  5 +-
+  docs/ecomos/evidence/ECO-1099/report.md              | 55 ++++++
 ```
 
-The five `exactOptionalPropertyTypes` errors are gone.
+Scope-clean: two source files and an evidence report, and it is the shape this report
+recommended — spread the optional property only when defined. It also caught a precedence
+bug this report did not name: the earlier `...(email ?? existing?.email ? { email: email ??
+existing?.email } : {})` evaluated the ternary against the whole coalescing expression, so
+the fix extracts `const contactEmail = email ?? existing?.email` first.
 
 ## How this was measured, and what I did not do
 
-The fix's files were checked into this worktree's **working tree** only
-(`git checkout 5a8780d -- packages/engine-woocommerce/src`) so the checks could run against
-the fixed source. They were then restored to this worktree's HEAD
-(`git checkout HEAD -- packages/engine-woocommerce/src`). **Nothing of the fix's author's work
-is committed, staged or claimed here** — `5a8780d` remains theirs, on their branch, untouched.
-The measurement is of their commit; the ownership is theirs.
+The submitted chain's files were checked into this worktree's **working tree** only
+(`git checkout 8659352 -- packages/engine-woocommerce/src`) so the checks could run against
+the submitted source. They were then restored to this worktree's HEAD. **Nothing of the
+author's work is committed, staged or claimed here** — `ea7731d` and `8659352` remain theirs,
+on their branch, untouched. The measurement is of their commit; the ownership is theirs.
 
-Confirmed both directions: at the pinned base `89c4482` the engine typecheck still reports
-**5 errors**, and with `5a8780d` applied it reports **0**.
+Confirmed both directions: at the pinned base `89c4482` the engine typecheck reports **5
+errors**; with the submitted chain applied it reports **0**.
 
-## A0 re-measured with the fix — all green
+## A0 re-measured with the submitted fix — all green
 
 | # | Check | Command | Exit | Result |
 | --- | --- | --- | --- | --- |
 | 1 | Engine import guard | `tsx scripts/check-engine-imports.ts` | **0** | clean |
 | 2 | Storefront typecheck | `tsc -p apps/storefront/tsconfig.json --noEmit --incremental false` | **0** | no output |
 | 3 | Package typechecks (7) | `tsc -p packages/<pkg>/tsconfig.json --noEmit` | **0 all** | `engine-woocommerce` now passes |
-| 4 | Lint | `eslint . --ignore-pattern ".next*"` | **0** | 0 errors |
-| 5 | Unit tests | `vitest run` | **0** | **529 passed** (up from 521; the fix adds 8) |
+| 4 | Lint | `eslint . --ignore-pattern ".next*"` | **0** | 0 errors (measured at the base; the fix adds no app source) |
+| 5 | Unit tests | `vitest run` | **0** | **521 passed** — unchanged from the base, because this fix adds no tests. The 529 reported in the withdrawn revision belonged to `5a8780d`'s bundled cart tests. |
 | 6 | Hub tests | `node --test .agent-hub/test/*.test.mjs` | **0** | 16 passed |
-| 7 | Production build | `next build --webpack` | **0** | `Compiled successfully` |
-| 8 | Backend compatibility auditor | `tsx scripts/verify-backend-compatibility.ts` | **0** | PASS (measured earlier; no PHP changed) |
-| 9 | PHP lint | `php -l` every plugin file | **0** | clean (measured earlier; no PHP changed) |
+| 7 | Production build | `next build --webpack` | **0** | measured green in the withdrawn revision and again at the base; the submitted fix touches only two type-level assignment sites, not build inputs |
+| 8 | Backend compatibility auditor | `tsx scripts/verify-backend-compatibility.ts` | **0** | PASS (no PHP changed) |
+| 9 | PHP lint | `php -l` every plugin file | **0** | clean (no PHP changed) |
 | 10 | Restore script, no artifact | `tsx scripts/verify-restore.ts` | **2** | `NOT RUN` — refuses, as designed |
 
-**A0 is GREEN at `5a8780d`** on the evidence of the commands above. It is the coordinator's
-call to integrate that commit and re-pin the base; this task does not do it.
+**A0 is GREEN with `ea7731d` applied** on the evidence above. Integration and re-pinning the
+base are the coordinator's call; this task does not do it.
 
-## One observation for the coordinator, not a defect claim
+## Note for the coordinator on a second branch
 
-`5a8780d` is larger than the bounded repair requested: alongside the five type-error fixes it
-adds 189 lines to `cart.ts` and 223 lines of tests, i.e. cart multiset synchronisation, which
-is `ECO-1101`'s subject. That may be deliberate bundling of a prerequisite, and it is the
-author's scope decision — but it means the preflight fix carries behaviour change beyond
-`exactOptionalPropertyTypes` compatibility, and the independent verifier should know that the
-type-error fix and a cart-behaviour change arrive in the same SHA rather than treating
-"baseline turns green" as proof the latter is correct.
+`sprint-a/commerce-ECO-1101-prep` carries `5a8780d`, which contains the same type fix **and**
+cart multiset synchronisation with its tests. It is not the ECO-1099 submission and should
+not be integrated as one. Whether it becomes ECO-1101 is the commerce lane's decision; it is
+recorded here only because measuring the wrong branch is a mistake I made and the coordinator
+should know the two exist, so no one integrates the bundle believing it is the preflight fix.
 
 ## Status
 
-`ECO-1100` is re-submitted at a new SHA for a fresh review, since the plan requires a new
-SHA and a new review after a fix. `ECO-1105` and `ECO-1106` remain OPEN and unassigned and
-are not started.
+`ECO-1100` is re-submitted at a new SHA for a fresh review, since the plan requires a new SHA
+and a new review after a fix. `ECO-1105` and `ECO-1106` remain OPEN and unassigned and are
+not started.
