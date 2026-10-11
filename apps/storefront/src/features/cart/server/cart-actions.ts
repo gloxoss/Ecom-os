@@ -61,8 +61,17 @@ export async function getOrCreateCartId(): Promise<string> {
 }
 
 /**
- * Server Action: Retrieves the authoritative server-side cart.
- * If a fresh Cart-Token is issued by WooCommerce, it automatically persists to the cookie.
+ * Reads the authoritative server-side cart.
+ *
+ * Safe to call from a Server Component render. WooCommerce issues a Cart-Token on
+ * every cart response, so this read often sees a token that differs from the
+ * cookie. Persisting it here is illegal during render — Next throws "Cookies can
+ * only be modified in a Server Action or Route Handler" — and that throw used to
+ * take the whole page down, leaving the checkout showing an empty cart for a
+ * shopper who had items. Persisting is therefore best-effort: whenever a write is
+ * not allowed, the read still succeeds and the next Server Action
+ * (`addToCartAction`, `updateCartItemAction`, checkout submission) persists the
+ * token, since all of them call `setCartTokenCookie`.
  */
 export async function fetchCartAction(): Promise<Cart | null> {
   try {
@@ -70,12 +79,21 @@ export async function fetchCartAction(): Promise<Cart | null> {
     const token = await getCartToken();
     const cart = await engine.getCart(token || '');
     if (cart.id && cart.id !== token) {
-      await setCartTokenCookie(cart.id);
+      await persistCartTokenQuietly(cart.id);
     }
     return cart;
   } catch (error) {
     console.error('[fetchCartAction] Error fetching cart from engine:', error);
     return null;
+  }
+}
+
+async function persistCartTokenQuietly(token: string): Promise<void> {
+  try {
+    await setCartTokenCookie(token);
+  } catch (error) {
+    // Expected during RSC render; the next Server Action persists it.
+    console.warn('[fetchCartAction] Cart-Token not persisted in this phase:', (error as Error).message);
   }
 }
 

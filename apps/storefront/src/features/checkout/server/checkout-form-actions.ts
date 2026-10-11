@@ -1,5 +1,7 @@
 'use server';
 
+import { redirect } from 'next/navigation';
+
 import { fetchCartAction, getCartToken } from '@/features/cart/server/cart-actions';
 import {
   submitCheckoutAction,
@@ -14,6 +16,12 @@ export interface CheckoutFormState {
   ok: boolean;
   orderId?: string | number;
   status?: string;
+  /**
+   * HMAC-signed guest grant for the order just placed. The confirmation page takes
+   * it in the URL fragment so it is never sent to a server, and exchanges it for
+   * the order through the ownership-checked status endpoint.
+   */
+  orderToken?: string;
   error?: string;
   errors?: Record<string, string>;
 }
@@ -126,9 +134,14 @@ export async function submitCheckoutFormAction(
     };
   }
 
-  return {
-    ok: true,
-    ...(result.orderId !== undefined ? { orderId: result.orderId } : {}),
-    ...(result.status ? { status: result.status } : {}),
-  };
+  // Redirect rather than returning a success state. Placing the order clears the
+  // Cart-Token cookie, so this route re-renders with no cart and its empty-cart branch
+  // would replace the form (and the confirmation) before any client effect ran. A
+  // server redirect cannot be raced that way. The guest grant travels in the URL
+  // fragment, which a browser never sends to a server.
+  const query = new URLSearchParams();
+  if (result.orderId !== undefined) query.set('order', String(result.orderId));
+  if (result.status) query.set('status', result.status);
+  const fragment = result.orderToken ? `#token=${encodeURIComponent(result.orderToken)}` : '';
+  redirect(`/checkout/success?${query.toString()}${fragment}`);
 }

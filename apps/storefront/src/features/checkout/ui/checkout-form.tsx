@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import type { ShippingMethod, StoreCapabilities } from '@ecom-os/engine';
 import { serializeCartItems } from '../model/cart-payload';
+import { CHECKOUT_STATES } from '../model/checkout-states';
 import type { CheckoutFormState } from '../server/checkout-form-actions';
 
 interface CheckoutFormProps {
@@ -22,11 +23,15 @@ const CHECKOUT_COUNTRIES = [
 ];
 
 export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabilities }: CheckoutFormProps) {
-  const { items, getCartTotal, coupon, applyCoupon, removeCoupon, shippingMethod, setShippingMethod, clearCart } = useCartStore();
+  const { items, getCartTotal, coupon, applyCoupon, removeCoupon, shippingMethod, setShippingMethod } = useCartStore();
   const cartItemsRef = useRef<HTMLInputElement>(null);
   const t = useTranslations('checkout');
   const [selectedGateway, setSelectedGateway] = useState(gateways[0]?.id ?? 'cod');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  // Country decides whether State/County is required: WooCommerce rejects a checkout
+  // with "State / County is required" for any country that ships a state list.
+  const [country, setCountry] = useState('MA');
+  const stateOptions = CHECKOUT_STATES[country] ?? {};
   const [state, formAction, isPending] = useActionState(action, null);
 
   // Initialize shipping method if not set
@@ -45,12 +50,11 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
     cartItemsRef.current.value = serializeCartItems(items);
   }, [items]);
 
-  // The authoritative order succeeded, so the local optimistic projection is spent.
-  useEffect(() => {
-    if (state?.ok) {
-      clearCart();
-    }
-  }, [state?.ok, clearCart]);
+  // On success the server action redirects to /checkout/success, which verifies the
+  // order and then clears this optimistic cart. There is deliberately no inline
+  // success state here: placing an order clears the Cart-Token cookie, so this route
+  // re-renders with no cart and its empty-cart branch would replace any confirmation
+  // rendered here before the shopper could read their order number.
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     const form = e.currentTarget;
@@ -91,27 +95,6 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
 
     setFormErrors({});
   };
-
-  if (state?.ok) {
-    return (
-      <main className="max-w-3xl mx-auto px-4 py-24 text-center" role="status" aria-live="polite">
-        <h1 className="text-3xl font-bold mb-4">Commande enregistrée</h1>
-        <p className="text-secondary mb-2 text-lg">
-          Votre commande{state.orderId ? ` n° ${state.orderId}` : ''} a été créée.
-        </p>
-        <p className="text-secondary mb-2">Statut WooCommerce : {state.status ?? 'processing'}</p>
-        <p className="text-sm text-muted-foreground mb-8">
-          Paiement à la livraison : le règlement reste dû au moment de la réception.
-        </p>
-        <Link
-          href="/catalog"
-          className="inline-flex items-center justify-center min-h-[44px] px-6 py-2.5 bg-foreground text-background font-medium rounded-md hover:opacity-90 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none transition motion-reduce:transition-none"
-        >
-          {t('browse')}
-        </Link>
-      </main>
-    );
-  }
 
   if (items.length === 0) {
     return (
@@ -362,7 +345,8 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
               <select
                 id="checkout-country"
                 name="country"
-                defaultValue="MA"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
                 aria-required="true"
                 aria-invalid={Boolean(fieldError('country'))}
                 className={`w-full min-h-[44px] border p-3 rounded-md bg-background text-sm focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none transition motion-reduce:transition-none ${
@@ -381,6 +365,40 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
                 </p>
               )}
             </div>
+
+            {Object.keys(stateOptions).length > 0 && (
+              <div>
+                <label htmlFor="checkout-state" className="block text-sm font-medium mb-1">
+                  Région / Province <span className="text-destructive" aria-hidden="true">*</span>
+                </label>
+                <select
+                  id="checkout-state"
+                  name="state"
+                  required
+                  aria-required="true"
+                  aria-invalid={Boolean(fieldError('state'))}
+                  aria-describedby={fieldError('state') ? 'state-error' : undefined}
+                  defaultValue=""
+                  className={`w-full min-h-[44px] border p-3 rounded-md bg-background text-sm focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none transition motion-reduce:transition-none ${
+                    fieldError('state') ? 'border-destructive' : 'border-foreground/20'
+                  }`}
+                >
+                  <option value="" disabled>
+                    Sélectionnez une région
+                  </option>
+                  {Object.entries(stateOptions).map(([code, label]) => (
+                    <option key={code} value={code}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                {fieldError('state') && (
+                  <p id="state-error" role="alert" className="text-xs text-destructive mt-1 font-medium">
+                    {fieldError('state')}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
