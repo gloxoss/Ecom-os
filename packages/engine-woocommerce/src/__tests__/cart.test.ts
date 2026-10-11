@@ -6,6 +6,9 @@ import {
   addItemToStoreCart,
   updateStoreCartItem,
   removeStoreCartItem,
+  reconcileStoreCart,
+  cartLineKey,
+  type IntendedCartLine,
 } from '../cart';
 import { mapStoreCart, mapStoreCartItem } from '../mappers';
 import { WooCommerceEngine } from '../client';
@@ -423,6 +426,226 @@ describe('WooCommerce Store API Cart & Session Adapter', () => {
       const engine = new WooCommerceEngine();
       const removed = await engine.removeCoupon('tok-del', 'DISCOUNT20');
       expect(removed).toBe(true);
+    });
+  });
+
+  describe('Authoritative cart multiset reconciliation (ECO-1101)', () => {
+    interface FakeLine {
+      key: string;
+      id: number;
+      type: 'simple' | 'variation';
+      quantity: number;
+      price: string;
+    }
+
+    interface RecordedRequest {
+      endpoint: string;
+      method: string;
+      nonce: string | null;
+      token: string | null;
+      expectedNonce: string | null;
+      body: any;
+    }
+
+    /**
+     * Stateful fake of the WooCommerce Store API cart endpoints. Issues a fresh
+     * Nonce on every response so tests can prove the client threads the rotated
+     * value instead of reusing a stale one or omitting it.
+     */
+    function createFakeWoo(initial: FakeLine[], variationIds: number[] = [14]) {
+      let lines = initial.map((l) => ({ ...l }));
+      let nonceCounter = 0;
+      let seq = 100;
+      let lastIssuedNonce: string | null = null;
+      const requests: RecordedRequest[] = [];
+
+      const payload = () => {
+        const sum = lines.reduce((acc, l) => acc + parseInt(l.price, 10) * l.quantity, 0);
+        return {
+          items: lines.map((l) => ({
+            key: l.key,
+            id: l.id,
+            type: l.type,
+            quantity: l.quantity,
+            ...(l.type === 'variation' ? { variation: [{ attribute: 'pa_size', value: 'standard' }] } : {}),
+            prices: { price: l.price, currency_code: 'MAD' },
+          })),
+          totals: { currency_code: 'MAD', total_items: String(sum), total_price: String(sum) },
+        };
+      };
+
+      const respond = (data: any, status = 200, ok = true) => {
+        lastIssuedNonce = `nonce-${++nonceCounter}`;
+        return {
+          ok,
+          status,
+          statusText: ok ? 'OK' : 'Bad Request',
+          headers: new Headers({ 'Cart-Token': 'tok-reconcile', Nonce: lastIssuedNonce }),
+          json: async () => data,
+        };
+      };
+
+      const fakeFetch = vi.fn().mockImplementation(async (url: string, init: RequestInit = {}) => {
+        const headers = new Headers(init.headers as HeadersInit);
+        const method = (init.method || 'GET').toUpperCase();
+        const endpoint = String(url).replace(/.*\/wp-json\/wc\/store\/v1/, '');
+        const body = init.body ? JSON.parse(String(init.body)) : undefined;
+        if (method === 'POST') {
+          requests.push({
+            endpoint,
+            method,
+            nonce: headers.get('Nonce'),
+            token: headers.get('Cart-Token'),
+            expectedNonce: lastIssuedNonce,
+            body,
+          });
+        }
+        if (method === 'GET' && endpoint === '/cart') return respond(payload());
+        if (endpoint === '/cart/add-item') {
+          if (body.id === 999) {
+            return respond(
+              { code: 'woocommerce_rest_cart_item_out_of_stock', message: 'Item 999 is out of stock.' },
+              400,
+              false
+            );
+          }
+          seq += 1;
+          lines.push({
+            key: `w-${seq}`,
+            id: body.id,
+            type: variationIds.includes(body.id) ? 'variation' : 'simple',
+            quantity: body.quantity,
+            price: '1000',
+          });
+          return respond(payload(), 201);
+        }
+        if (endpoint === '/cart/update-item') {
+          const line = lines.find((l) => l.key === body.key);
+          if (!line) return respond({ code: 'not_found', message: 'Line not found.' }, 404, false);
+          line.quantity = body.quantity;
+          return respond(payload());
+        }
+        if (endpoint === '/cart/remove-item') {
+          lines = lines.filter((l) => l.key !== body.key);
+          return respond(payload());
+        }
+        return respond({ code: 'unknown', message: `Unexpected ${method} ${endpoint}` }, 500, false);
+      });
+
+      return { fakeFetch, requests };
+    }
+
+    const multisetOf = (items: Array<{ productId: string; variantId?: string; quantity: number }>) =>
+      items.map((i) => `${cartLineKey(i.productId, i.variantId)}x${i.quantity}`).sort();
+
+    it('adds a missing simple product and verifies the exact final multiset', async () => {
+      const woo = createFakeWoo([{ key: 'w-1', id: 12, type: 'simple', quantity: 1, price: '3995' }]);
+      vi.stubGlobal('fetch', woo.fakeFetch);
+
+      const intended: IntendedCartLine[] = [
+        { productId: '12', quantity: 1 },
+        { productId: '13', quantity: 2 },
+      ];
+      const result = await reconcileStoreCart('tok-reconcile', intended);
+
+      const add = woo.requests.find((r) => r.endpoint === '/cart/add-item');
+      expect(add?.body).toEqual({ id: 13, quantity: 2 });
+      expect(result.diff).toMatchObject({ added: 1, updated: 0, removed: 0, variationMismatches: 0 });
+      expect(multisetOf(result.cart.items)).toEqual(['p:12x1', 'p:13x2']);
+    });
+
+    it('removes an unexpected surplus line present in Woo but not intended', async () => {
+      const woo = createFakeWoo([
+        { key: 'w-1', id: 12, type: 'simple', quantity: 1, price: '3995' },
+        { key: 'w-2', id: 99, type: 'simple', quantity: 1, price: '500' },
+      ]);
+      vi.stubGlobal('fetch', woo.fakeFetch);
+
+      const result = await reconcileStoreCart('tok-reconcile', [{ productId: '12', quantity: 1 }]);
+
+      const remove = woo.requests.find((r) => r.endpoint === '/cart/remove-item');
+      expect(remove?.body).toEqual({ key: 'w-2' });
+      expect(result.diff).toMatchObject({ added: 0, updated: 0, removed: 1 });
+      expect(multisetOf(result.cart.items)).toEqual(['p:12x1']);
+    });
+
+    it('reconciles quantity drift through update-item', async () => {
+      const woo = createFakeWoo([{ key: 'w-1', id: 12, type: 'simple', quantity: 1, price: '3995' }]);
+      vi.stubGlobal('fetch', woo.fakeFetch);
+
+      const result = await reconcileStoreCart('tok-reconcile', [{ productId: '12', quantity: 3 }]);
+
+      const update = woo.requests.find((r) => r.endpoint === '/cart/update-item');
+      expect(update?.body).toEqual({ key: 'w-1', quantity: 3 });
+      expect(result.diff).toMatchObject({ added: 0, updated: 1, removed: 0 });
+      expect(multisetOf(result.cart.items)).toEqual(['p:12x3']);
+    });
+
+    it('atomically swaps a simple line for a different variation of the same product', async () => {
+      const woo = createFakeWoo([{ key: 'w-9', id: 13, type: 'simple', quantity: 1, price: '2000' }]);
+      vi.stubGlobal('fetch', woo.fakeFetch);
+
+      const result = await reconcileStoreCart('tok-reconcile', [
+        { productId: '13', variationId: '14', quantity: 1 },
+      ]);
+
+      expect(woo.requests.find((r) => r.endpoint === '/cart/remove-item')?.body).toEqual({ key: 'w-9' });
+      expect(woo.requests.find((r) => r.endpoint === '/cart/add-item')?.body).toEqual({ id: 14, quantity: 1 });
+      expect(result.diff).toMatchObject({ added: 1, removed: 1, variationMismatches: 1 });
+      expect(multisetOf(result.cart.items)).toEqual(['v:14x1']);
+    });
+
+    it('threads the rotated Nonce and Cart-Token through every sequential mutation', async () => {
+      const woo = createFakeWoo([
+        { key: 'w-1', id: 12, type: 'simple', quantity: 1, price: '3995' },
+        { key: 'w-2', id: 99, type: 'simple', quantity: 1, price: '500' },
+      ]);
+      vi.stubGlobal('fetch', woo.fakeFetch);
+
+      await reconcileStoreCart('tok-reconcile', [{ productId: '12', quantity: 3 }]);
+
+      expect(woo.requests.length).toBeGreaterThanOrEqual(2);
+      for (const req of woo.requests) {
+        expect(req.token).toBe('tok-reconcile');
+        expect(req.nonce).toBeTruthy();
+        // Each mutation carries the nonce issued by the immediately preceding
+        // response: no stale reuse, no fabricated value.
+        expect(req.nonce).toBe(req.expectedNonce);
+      }
+    });
+
+    it('issues no mutations when Woo already matches the intended multiset', async () => {
+      const woo = createFakeWoo([{ key: 'w-1', id: 12, type: 'simple', quantity: 2, price: '3995' }]);
+      vi.stubGlobal('fetch', woo.fakeFetch);
+
+      const result = await reconcileStoreCart('tok-reconcile', [{ productId: '12', quantity: 2 }]);
+
+      expect(woo.requests).toHaveLength(0);
+      expect(result.diff).toMatchObject({ added: 0, updated: 0, removed: 0 });
+      expect(multisetOf(result.cart.items)).toEqual(['p:12x2']);
+    });
+
+    it('fails closed with the authoritative stock error and stops further mutations', async () => {
+      const woo = createFakeWoo([{ key: 'w-1', id: 12, type: 'simple', quantity: 1, price: '3995' }]);
+      vi.stubGlobal('fetch', woo.fakeFetch);
+
+      await expect(
+        reconcileStoreCart('tok-reconcile', [
+          { productId: '12', quantity: 1 },
+          { productId: '999', quantity: 1 },
+        ])
+      ).rejects.toThrow('Store API request failed [400]: Item 999 is out of stock.');
+      expect(woo.requests).toHaveLength(1);
+    });
+
+    it('rejects an invalid intended quantity without calling Woo mutations', async () => {
+      const woo = createFakeWoo([{ key: 'w-1', id: 12, type: 'simple', quantity: 1, price: '3995' }]);
+      vi.stubGlobal('fetch', woo.fakeFetch);
+
+      await expect(reconcileStoreCart('tok-reconcile', [{ productId: '12', quantity: 0 }])).rejects.toThrow(
+        /Invalid intended quantity/
+      );
+      expect(woo.requests).toHaveLength(0);
     });
   });
 });

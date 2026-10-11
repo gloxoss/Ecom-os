@@ -1,19 +1,30 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { pathToFileURL } from 'node:url';
 import {
   CheckoutAttemptManager,
   InMemoryAttemptStore,
   JsonFileAttemptStore,
+  FileClaimAttemptStore,
+  CorruptAttemptStoreError,
+  attemptPayloadHash,
+  createDefaultAttemptStore,
   globalAttemptManager,
 } from '../checkout-attempts';
 import {
   submitStoreCheckout,
   executeIdempotentCheckout,
+  correlationMarker,
+  findOrderByAttemptCorrelation,
   type StoreCheckoutInput,
 } from '../checkout';
 import { WooCommerceEngine } from '../client';
+
+const execFileAsync = promisify(execFile);
 
 describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => {
   const originalFetch = global.fetch;
@@ -80,15 +91,49 @@ describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => 
       }
     });
 
-    it('sweeps expired attempts past TTL', async () => {
+    // Sweep policy (ECO-1102): pending attempts have an unknown outcome and
+    // must never be swept — sweeping one would let a retry duplicate an order
+    // WooCommerce may already own. Failed attempts are retryable anyway, and
+    // confirmed attempts persist for a long replay window.
+    it('never sweeps pending attempts but sweeps failed ones past TTL', async () => {
       const manager = new CheckoutAttemptManager(10); // 10ms TTL
-      await manager.startAttempt('att-expire', 'cart-expire');
-      await manager.confirmAttempt('att-expire', 999);
+      await manager.startAttempt('att-pending', 'cart-1');
+      await manager.startAttempt('att-fail', 'cart-2');
+      await manager.failAttempt('att-fail', 'boom', 'cart-2');
 
-      // Advance time past TTL
+      // Advance time past TTL, then trigger a sweep with another claim.
+      await new Promise((r) => setTimeout(r, 20));
+      await manager.startAttempt('att-other', 'cart-3');
+
+      expect((await manager.getAttempt('att-pending'))?.status).toBe('PENDING');
+      expect(await manager.getAttempt('att-fail')).toBeUndefined();
+    });
+
+    it('retains confirmed attempts past the short TTL for idempotent replay', async () => {
+      const manager = new CheckoutAttemptManager(10); // 10ms TTL
+      await manager.startAttempt('att-conf', 'cart-1');
+      await manager.confirmAttempt('att-conf', 999, 'wc_order_999', 'cart-1');
+
       await new Promise((r) => setTimeout(r, 20));
 
-      const fresh = await manager.startAttempt('att-expire', 'cart-expire');
+      const replay = await manager.startAttempt('att-conf', 'cart-1');
+      expect(replay.ok).toBe(true);
+      if (replay.ok && !replay.isNew) {
+        expect(replay.orderId).toBe(999);
+        expect(replay.orderKey).toBe('wc_order_999');
+      } else {
+        expect.unreachable('confirmed attempt must replay, not reset');
+      }
+    });
+
+    it('sweeps confirmed attempts only past the long confirmed TTL', async () => {
+      const manager = new CheckoutAttemptManager(1000 * 60 * 60, new InMemoryAttemptStore(), 'checkout', 10);
+      await manager.startAttempt('att-conf-old', 'cart-1');
+      await manager.confirmAttempt('att-conf-old', 111, 'wc_order_111', 'cart-1');
+
+      await new Promise((r) => setTimeout(r, 20));
+
+      const fresh = await manager.startAttempt('att-conf-old', 'cart-1');
       expect(fresh.ok).toBe(true);
       if (fresh.ok) {
         expect(fresh.isNew).toBe(true);
@@ -361,6 +406,389 @@ describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => 
       expect(res.orderKey).toBe('wc_order_999');
       expect(res.customerId).toBe(0); // Guest customer ID
       expect(res.status).toBe('processing');
+    });
+  });
+
+  describe('Atomic file claims across processes and restarts (ECO-1102)', () => {
+    const childClaimScript = (storeUrl: string): string =>
+      [
+        'import { FileClaimAttemptStore } from ' + JSON.stringify(storeUrl) + ';',
+        'const parts = process.argv.slice(2);',
+        'const store = new FileClaimAttemptStore(parts[0]);',
+        'const stamp = Date.now();',
+        'const sep = String.fromCharCode(0);',
+        'const record = { attemptKey: parts[1], operation: String(parts[3]), ownerKey: parts[2], status: \'PENDING\', createdAt: stamp, updatedAt: stamp };',
+        "store.claimPending('checkout' + sep + parts[1], record).then((o) => console.log('OUTCOME:' + o));",
+      ].join(String.fromCharCode(10));
+
+    it('lets exactly one of many parallel claimants win on one shared store', async () => {
+      const dir = mkdtempSync(path.join(tmpdir(), 'ecomos-claim-race-'));
+      try {
+        const store = new FileClaimAttemptStore(dir);
+        const managers = Array.from({ length: 8 }, () => new CheckoutAttemptManager(3600000, store));
+        const results = await Promise.all(
+          managers.flatMap((manager) =>
+            Array.from({ length: 8 }, () => manager.startAttempt('race-key', 'cart-race'))
+          )
+        );
+        const winners = results.filter((r) => r.ok);
+        expect(winners).toHaveLength(1);
+        if (winners[0] && winners[0].ok) expect(winners[0].isNew).toBe(true);
+        for (const loser of results.filter((r) => !r.ok)) {
+          if (!loser.ok) expect(loser.status).toBe('PENDING');
+        }
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('lets exactly one of two simultaneous OS processes win the same claim', async () => {
+      const dir = mkdtempSync(path.join(tmpdir(), 'ecomos-claim-proc-'));
+      try {
+        const storePath = new URL('../checkout-attempts.ts', import.meta.url);
+        const script = childClaimScript(storePath.href);
+        const scriptPath = path.join(dir, 'claim-child.mts');
+        writeFileSync(scriptPath, script, 'utf8');
+        const run = (owner: string) =>
+          execFileAsync(process.execPath, [scriptPath, dir, 'proc-key', owner, 'checkout']);
+        const settled = await Promise.all([run('cart-a'), run('cart-b')]);
+        const outcomes = settled
+          .flatMap((r) => String(r.stdout).split(String.fromCharCode(10)))
+          .map((line) => line.trim())
+          .filter((line) => line.startsWith('OUTCOME:'))
+          .map((line) => line.slice('OUTCOME:'.length));
+        expect(outcomes.sort()).toEqual(['claimed', 'exists']);
+        // The durable record belongs to exactly one owner.
+        const managers = [
+          new CheckoutAttemptManager(3600000, new FileClaimAttemptStore(dir)),
+          new CheckoutAttemptManager(3600000, new FileClaimAttemptStore(dir)),
+        ];
+        const first = managers[0];
+        const second = managers[1];
+        if (!first || !second) throw new Error('test setup failed');
+        const replayA = await first.startAttempt('proc-key', 'cart-a');
+        const replayB = await second.startAttempt('proc-key', 'cart-b');
+        const okCount = [replayA.ok, replayB.ok].filter(Boolean).length;
+        expect(okCount).toBe(0);
+        if (!replayA.ok) expect(replayA.status).toBe('PENDING');
+        if (!replayB.ok) expect(['PENDING', 'OWNER_MISMATCH'].includes(replayB.status)).toBe(true);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('replays a confirmation on a new manager after a restart', async () => {
+      const dir = mkdtempSync(path.join(tmpdir(), 'ecomos-claim-restart-'));
+      try {
+        const before = new CheckoutAttemptManager(3600000, new FileClaimAttemptStore(dir));
+        await before.startAttempt('restart-key', 'cart-restart');
+        await before.confirmAttempt('restart-key', 6061, 'wc_order_restart', 'cart-restart');
+
+        const after = new CheckoutAttemptManager(3600000, new FileClaimAttemptStore(dir));
+        const replay = await after.startAttempt('restart-key', 'cart-restart');
+        expect(replay.ok).toBe(true);
+        if (replay.ok && !replay.isNew) {
+          expect(replay.orderId).toBe(6061);
+          expect(replay.orderKey).toBe('wc_order_restart');
+        } else {
+          expect.unreachable('confirmed attempt must replay after restart');
+        }
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('fails closed on a corrupt record and never resets it', async () => {
+      const dir = mkdtempSync(path.join(tmpdir(), 'ecomos-claim-corrupt-'));
+      try {
+        const sep = 'checkout' + String.fromCharCode(0) + 'bad-key';
+        const fileName = Buffer.from(sep, 'utf8').toString('base64url') + '.pending.json';
+        const target = path.join(dir, fileName);
+        writeFileSync(target, '{not-json', 'utf8');
+        const manager = new CheckoutAttemptManager(3600000, new FileClaimAttemptStore(dir));
+
+        await expect(manager.startAttempt('bad-key', 'cart-x')).rejects.toThrow(CorruptAttemptStoreError);
+        expect(existsSync(target)).toBe(true);
+        await expect(manager.startAttempt('bad-key', 'cart-x')).rejects.toThrow(CorruptAttemptStoreError);
+        expect(existsSync(target)).toBe(true);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('fails closed on unavailable storage without an in-memory fallback', async () => {
+      const dir = mkdtempSync(path.join(tmpdir(), 'ecomos-claim-blocked-'));
+      try {
+        const blocker = path.join(dir, 'blocker');
+        writeFileSync(blocker, 'occupied', 'utf8');
+        const first = new CheckoutAttemptManager(3600000, new FileClaimAttemptStore(path.join(blocker, 'sub')));
+        const second = new CheckoutAttemptManager(3600000, new FileClaimAttemptStore(path.join(blocker, 'sub')));
+        await expect(first.startAttempt('k', 'cart-1')).rejects.toThrow();
+        await expect(second.startAttempt('k', 'cart-1')).rejects.toThrow();
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('Payload-bound attempts (ECO-1102)', () => {
+    const inputFor = (email: string): StoreCheckoutInput => ({
+      billing_address: { first_name: 'A', last_name: 'B', address_1: 'C', city: 'D', country: 'MA', email },
+      shipping_address: { first_name: 'A', last_name: 'B', address_1: 'C', city: 'D', country: 'MA' },
+      payment_method: 'cod',
+    });
+
+    it('computes a stable hash independent of key order', () => {
+      const a = attemptPayloadHash('cart-1', inputFor('a@example.com'));
+      const shuffled: StoreCheckoutInput = {
+        payment_method: 'cod',
+        shipping_address: { first_name: 'A', last_name: 'B', address_1: 'C', city: 'D', country: 'MA' },
+        billing_address: { email: 'a@example.com', country: 'MA', city: 'D', address_1: 'C', last_name: 'B', first_name: 'A' },
+      };
+      expect(attemptPayloadHash('cart-1', shuffled)).toBe(a);
+      expect(attemptPayloadHash('cart-1', inputFor('b@example.com'))).not.toBe(a);
+      expect(attemptPayloadHash('cart-2', inputFor('a@example.com'))).not.toBe(a);
+    });
+
+    it('refuses a retry that changes the order details under one attempt', async () => {
+      const manager = new CheckoutAttemptManager();
+      const first = await manager.startAttempt('k', 'cart-1', attemptPayloadHash('cart-1', inputFor('a@example.com')));
+      expect(first.ok).toBe(true);
+      const changed = await manager.startAttempt('k', 'cart-1', attemptPayloadHash('cart-1', inputFor('evil@example.com')));
+      expect(changed.ok).toBe(false);
+      if (!changed.ok) expect(changed.status).toBe('PAYLOAD_MISMATCH');
+      expect((await manager.getAttempt('k'))?.status).toBe('PENDING');
+    });
+
+    it('refuses a replay that changes the contact of a confirmed order', async () => {
+      const manager = new CheckoutAttemptManager();
+      await manager.startAttempt('k', 'cart-1', attemptPayloadHash('cart-1', inputFor('a@example.com')));
+      await manager.confirmAttempt('k', 42, 'wc_42', 'cart-1', 'a@example.com');
+      const replay = await manager.startAttempt('k', 'cart-1', attemptPayloadHash('cart-1', inputFor('evil@example.com')));
+      expect(replay.ok).toBe(false);
+      if (!replay.ok) expect(replay.status).toBe('PAYLOAD_MISMATCH');
+    });
+
+    it('allows a fresh legitimate repeat purchase under a new attempt key', async () => {
+      const dir = mkdtempSync(path.join(tmpdir(), 'ecomos-claim-repeat-'));
+      try {
+        const manager = new CheckoutAttemptManager(3600000, new FileClaimAttemptStore(dir));
+        const hash = attemptPayloadHash('cart-1', inputFor('a@example.com'));
+        await manager.startAttempt('buy-1', 'cart-1', hash);
+        await manager.confirmAttempt('buy-1', 101, 'wc_101', 'cart-1', 'a@example.com');
+        const second = await manager.startAttempt('buy-2', 'cart-1', hash);
+        expect(second.ok).toBe(true);
+        if (second.ok) expect(second.isNew).toBe(true);
+        await manager.confirmAttempt('buy-2', 102, 'wc_102', 'cart-1', 'a@example.com');
+        expect((await manager.getAttempt('buy-1'))?.orderId).toBe(101);
+        expect((await manager.getAttempt('buy-2'))?.orderId).toBe(102);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('Response-loss recovery without blind retries (ECO-1102)', () => {
+    const checkoutInput: StoreCheckoutInput = {
+      billing_address: { first_name: 'A', last_name: 'B', address_1: 'C', city: 'D', country: 'MA', email: 'buyer@example.com' },
+      shipping_address: { first_name: 'A', last_name: 'B', address_1: 'C', city: 'D', country: 'MA' },
+      payment_method: 'cod',
+    };
+
+    const checkoutSuccess = (orderId: number, orderKey: string) => ({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      json: async () => ({ order_id: orderId, order_key: orderKey, status: 'processing', customer_id: 0 }),
+    });
+
+    it('retries once after a timeout before creation and creates exactly one order', async () => {
+      const manager = new CheckoutAttemptManager();
+      let posts = 0;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+          const method = (init?.method || 'GET').toUpperCase();
+          if (method === 'GET') {
+            return {
+              ok: true,
+              status: 200,
+              headers: new Headers({ Nonce: 'n-seed' }),
+              json: async () => ({ items: [], totals: { currency_code: 'MAD', total_items: '0', total_price: '0' } }),
+            };
+          }
+          posts += 1;
+          if (posts === 1) throw new Error('network timeout');
+          return checkoutSuccess(555, 'wc_order_555');
+        })
+      );
+
+      await expect(executeIdempotentCheckout('to-key', 'cart-to', checkoutInput, manager)).rejects.toThrow(
+        'network timeout'
+      );
+      const retry = await executeIdempotentCheckout('to-key', 'cart-to', checkoutInput, manager);
+      expect(retry.orderId).toBe(555);
+      expect(posts).toBe(2);
+      expect((await manager.getAttempt('to-key'))?.status).toBe('CONFIRMED');
+    });
+
+    it('recovers a lost success from Woo correlation with zero new orders', async () => {
+      const dir = mkdtempSync(path.join(tmpdir(), 'ecomos-claim-loss-'));
+      try {
+        const store = new FileClaimAttemptStore(dir);
+        const before = new CheckoutAttemptManager(3600000, store);
+        await before.startAttempt('rl-key', 'cart-rl', attemptPayloadHash('cart-rl', checkoutInput));
+
+        let posts = 0;
+        vi.stubGlobal(
+          'fetch',
+          vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+            if ((init?.method || 'GET').toUpperCase() === 'POST') posts += 1;
+            return {
+              ok: true,
+              status: 200,
+              headers: new Headers(),
+              json: async () => ({ items: [], totals: { currency_code: 'MAD', total_items: '0', total_price: '0' } }),
+            };
+          })
+        );
+
+        const after = new CheckoutAttemptManager(3600000, new FileClaimAttemptStore(dir));
+        const recovered = await executeIdempotentCheckout('rl-key', 'cart-rl', checkoutInput, after, {
+          lookupOrder: async () => ({ orderId: 777, orderKey: 'wc_order_777' }),
+        });
+        expect(recovered.orderId).toBe(777);
+        expect(recovered.orderKey).toBe('wc_order_777');
+        expect(posts).toBe(0);
+        expect((await after.getAttempt('rl-key'))?.status).toBe('CONFIRMED');
+
+        // A restart still replays the recovered order instead of re-submitting.
+        const restarted = new CheckoutAttemptManager(3600000, new FileClaimAttemptStore(dir));
+        const replay = await restarted.startAttempt('rl-key', 'cart-rl', attemptPayloadHash('cart-rl', checkoutInput));
+        expect(replay.ok).toBe(true);
+        if (replay.ok && !replay.isNew) expect(replay.orderId).toBe(777);
+        else expect.unreachable('recovered order must replay');
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('submits exactly once when the lookup proves no order exists', async () => {
+      const manager = new CheckoutAttemptManager();
+      await manager.startAttempt('miss-key', 'cart-miss', attemptPayloadHash('cart-miss', checkoutInput));
+      let posts = 0;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+          if ((init?.method || 'GET').toUpperCase() !== 'POST') {
+            return {
+              ok: true,
+              status: 200,
+              headers: new Headers({ Nonce: 'n-seed' }),
+              json: async () => ({ items: [], totals: { currency_code: 'MAD', total_items: '0', total_price: '0' } }),
+            };
+          }
+          posts += 1;
+          return checkoutSuccess(888, 'wc_order_888');
+        })
+      );
+
+      const result = await executeIdempotentCheckout('miss-key', 'cart-miss', checkoutInput, manager, {
+        lookupOrder: async () => null,
+      });
+      expect(result.orderId).toBe(888);
+      expect(posts).toBe(1);
+    });
+
+    it('reports an honest unknown when recovery lookup itself fails', async () => {
+      const manager = new CheckoutAttemptManager();
+      await manager.startAttempt('unk-key', 'cart-unk', attemptPayloadHash('cart-unk', checkoutInput));
+      let posts = 0;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+          if ((init?.method || 'GET').toUpperCase() === 'POST') posts += 1;
+          return {
+            ok: true,
+            status: 200,
+            headers: new Headers(),
+            json: async () => ({ items: [], totals: { currency_code: 'MAD', total_items: '0', total_price: '0' } }),
+          };
+        })
+      );
+
+      await expect(
+        executeIdempotentCheckout('unk-key', 'cart-unk', checkoutInput, manager, {
+          lookupOrder: async () => {
+            throw new Error('staging database unreachable');
+          },
+        })
+      ).rejects.toThrow(/unknown.*recovery failed/i);
+      expect(posts).toBe(0);
+      expect((await manager.getAttempt('unk-key'))?.status).toBe('PENDING');
+    });
+
+    it('embeds the correlation marker in the customer note only when keyed', async () => {
+      const bodies: unknown[] = [];
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+          if ((init?.method || 'GET').toUpperCase() === 'POST' && init?.body) {
+            bodies.push(JSON.parse(String(init.body)));
+          }
+          return checkoutSuccess(1001, 'wc_order_1001');
+        })
+      );
+
+      await submitStoreCheckout('tok', { ...checkoutInput, customer_note: 'Leave at door' }, 'att-1');
+      const keyed = bodies[bodies.length - 1] as Record<string, unknown>;
+      expect(String(keyed.customer_note)).toContain('Leave at door');
+      expect(String(keyed.customer_note)).toContain(correlationMarker('att-1'));
+
+      await submitStoreCheckout('tok', checkoutInput);
+      const plain = bodies[bodies.length - 1] as Record<string, unknown>;
+      expect(String(plain.customer_note ?? '')).not.toContain('ecomos-attempt');
+    });
+
+    it('matches the correlated order by marker and email through the REST lookup', async () => {
+      vi.stubEnv('WC_REST_URL', 'http://woo.test/wp-json/wc/v3');
+      vi.stubEnv('WC_REST_KEY', 'ck_test');
+      vi.stubEnv('WC_REST_SECRET', 'cs_test');
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: async () => [
+            { id: 1, customer_note: 'nothing here', billing: { email: 'buyer@example.com' }, order_key: 'wc_1' },
+            {
+              id: 2,
+              customer_note: 'gift ' + correlationMarker('att-9'),
+              billing: { email: 'other@example.com' },
+              order_key: 'wc_2',
+            },
+            {
+              id: 3,
+              customer_note: 'note ' + correlationMarker('att-9'),
+              billing: { email: 'buyer@example.com' },
+              order_key: 'wc_3',
+            },
+          ],
+        })
+      );
+
+      const found = await findOrderByAttemptCorrelation('att-9', { email: 'buyer@example.com' });
+      expect(found).toEqual({ orderId: 3, orderKey: 'wc_3', email: 'buyer@example.com' });
+      expect(await findOrderByAttemptCorrelation('att-missing', { email: 'buyer@example.com' })).toBeNull();
+    });
+  });
+
+  describe('Default attempt store policy (ECO-1102)', () => {
+    it('stays hermetic under test runners and durable when configured', () => {
+      expect(createDefaultAttemptStore()).toBeInstanceOf(InMemoryAttemptStore);
+      vi.stubEnv('ECOM_ATTEMPT_STORE_PATH', path.join(tmpdir(), 'ecomos-claim-configured'));
+      expect(createDefaultAttemptStore()).toBeInstanceOf(FileClaimAttemptStore);
     });
   });
 });
