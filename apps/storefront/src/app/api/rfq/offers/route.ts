@@ -83,7 +83,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: any;
+  let body: Record<string, unknown> = {};
   try {
     body = await req.json();
   } catch {
@@ -93,7 +93,14 @@ export async function POST(req: Request) {
     );
   }
 
-  const { action, quoteId, accessSecret, revisionId, reason, notes } = body || {};
+  // The client body is untrusted JSON: read each field by its expected type
+  // rather than trusting a caller-controlled shape.
+  const action = typeof body.action === 'string' ? body.action : '';
+  const quoteId = typeof body.quoteId === 'string' ? body.quoteId : '';
+  const accessSecret = typeof body.accessSecret === 'string' ? body.accessSecret : '';
+  const revisionId = typeof body.revisionId === 'string' ? body.revisionId : undefined;
+  const reason = typeof body.reason === 'string' ? body.reason : undefined;
+  const notes = typeof body.notes === 'string' ? body.notes : undefined;
 
   if (!action || !['accept', 'reject', 'revise'].includes(action)) {
     return new Response(
@@ -179,9 +186,10 @@ export async function POST(req: Request) {
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
       return new Response(
-        JSON.stringify({ success: false, error: err.message || 'Invalid state transition' }),
+        JSON.stringify({ success: false, error: message || 'Invalid state transition' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -203,9 +211,10 @@ export async function POST(req: Request) {
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
       return new Response(
-        JSON.stringify({ success: false, error: err.message || 'Invalid state transition' }),
+        JSON.stringify({ success: false, error: message || 'Invalid state transition' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -227,9 +236,10 @@ export async function POST(req: Request) {
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '';
       return new Response(
-        JSON.stringify({ success: false, error: err.message || 'Invalid state transition' }),
+        JSON.stringify({ success: false, error: message || 'Invalid state transition' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }

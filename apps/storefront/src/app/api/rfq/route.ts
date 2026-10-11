@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   }
 
   // 2. Parse request
-  let body: any;
+  let body: Record<string, unknown> = {};
   try {
     body = await req.json();
   } catch {
@@ -63,7 +63,9 @@ export async function POST(req: Request) {
   }
 
   const headerIdempKey = req.headers.get('idempotency-key') || req.headers.get('x-idempotency-key');
-  const idempotencyKey = (headerIdempKey || body?.idempotencyKey || '').trim();
+  // The body is untrusted JSON, so only accept a string idempotency key.
+  const bodyIdempKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey : '';
+  const idempotencyKey = (headerIdempKey || bodyIdempKey || '').trim();
   const store = getRfqQuoteStore();
   const ownerKey = resolveOwnerKey(body);
 

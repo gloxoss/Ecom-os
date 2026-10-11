@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useSyncExternalStore } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -9,6 +9,22 @@ import { ProductCard } from './product-card';
 import { ProductCardSkeleton } from './product-card-skeleton';
 
 gsap.registerPlugin(ScrollTrigger);
+
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+// prefers-reduced-motion is an external store: read it during render and
+// subscribe to changes, rather than mirroring it into state from an effect.
+function subscribeReducedMotion(onChange: () => void): () => void {
+  const mediaQuery = window.matchMedia(REDUCED_MOTION_QUERY);
+  mediaQuery.addEventListener('change', onChange);
+  return () => mediaQuery.removeEventListener('change', onChange);
+}
+
+function getReducedMotionSnapshot(): boolean {
+  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
+const getReducedMotionServerSnapshot = (): boolean => false;
 
 export interface ProductGridProps {
   products: Product[];
@@ -28,19 +44,11 @@ export function ProductGridAnimated({
   onRetry,
 }: ProductGridProps) {
   const container = useRef<HTMLDivElement>(null);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-
-    const listener = (event: MediaQueryListEvent) => {
-      setPrefersReducedMotion(event.matches);
-    };
-
-    mediaQuery.addEventListener('change', listener);
-    return () => mediaQuery.removeEventListener('change', listener);
-  }, []);
+  const prefersReducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    getReducedMotionSnapshot,
+    getReducedMotionServerSnapshot,
+  );
 
   useGSAP(() => {
     if (!container.current || prefersReducedMotion) return;
@@ -114,7 +122,7 @@ export function ProductGridAnimated({
         </div>
         <p className="text-foreground font-medium text-lg mb-1">{emptyText}</p>
         <p className="text-muted-foreground text-sm max-w-sm">
-          Essayez d'ajuster vos filtres de recherche ou consultez notre collection complète.
+          Essayez d&apos;ajuster vos filtres de recherche ou consultez notre collection complète.
         </p>
       </div>
     );

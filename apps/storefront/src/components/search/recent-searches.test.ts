@@ -32,13 +32,18 @@ class MockStorage {
   }
 }
 
+// jsdom's `window` already exists; tests swap in a stub with the storage under
+// test. This alias lets us assign and delete it without an `any` cast.
+type TestGlobal = { window?: { localStorage: MockStorage } };
+const testGlobal = globalThis as unknown as TestGlobal;
+
 describe('recent searches storage and text normalization', () => {
   const originalWindow = globalThis.window;
   let mockStorage: MockStorage;
 
   beforeEach(() => {
     mockStorage = new MockStorage();
-    (globalThis as any).window = {
+    testGlobal.window = {
       localStorage: mockStorage,
     };
   });
@@ -47,12 +52,12 @@ describe('recent searches storage and text normalization', () => {
     if (originalWindow !== undefined) {
       globalThis.window = originalWindow;
     } else {
-      delete (globalThis as any).window;
+      delete testGlobal.window;
     }
   });
 
   it('returns an empty array when window is undefined (SSR)', () => {
-    delete (globalThis as any).window;
+    delete testGlobal.window;
     expect(getRecentSearches()).toEqual([]);
   });
 

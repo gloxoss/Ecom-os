@@ -11,9 +11,18 @@ import type { PageSectionsData } from '@ecom-os/engine';
 import { sanitizeCmsMarkup } from '@ecom-os/engine';
 import type { Product } from '@ecom-os/engine';
 
+// CMS + landing fallback content is a genuinely dynamic JSON boundary: the same
+// blob is shaped for the engine (PageSectionsData) inside the CMS branches and
+// for the landing components in the fallback/defaults, and the CMS branches
+// return engine-shaped sections while the landing components read a different
+// shape. No single precise type describes both, so this is a scoped escape hatch
+// rather than a blanket weakening; every internal read below stays explicit.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic CMS/landing content boundary
+type FallbackContentData = any;
+
 export interface PageSectionsProps {
   cmsSections: PageSectionsData | null;
-  fallbackData: any;
+  fallbackData: FallbackContentData;
   products: Product[];
 }
 
@@ -22,7 +31,7 @@ export interface PageSectionsProps {
  * Guarantees that even if CMS data is partially configured or unavailable,
  * the storefront renders completely and safely.
  */
-export function resolvePageContent(cmsSections: PageSectionsData | null, fallbackData: any) {
+export function resolvePageContent(cmsSections: PageSectionsData | null, fallbackData: FallbackContentData) {
   if (!cmsSections) {
     return fallbackData;
   }

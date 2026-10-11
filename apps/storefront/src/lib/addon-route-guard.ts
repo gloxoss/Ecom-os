@@ -47,12 +47,12 @@ export function guardAddonRoute(
  * Higher-order function wrapping route handlers with the authoritative addon guard.
  * If disabled, returns a standard Next.js Response with 404 status without executing handler.
  */
-export function withAddonGuard<T extends (...args: any[]) => any>(
+export function withAddonGuard<A extends unknown[], R>(
   addonId: string,
-  handler: T,
+  handler: (...args: A) => R,
   requiredCapability?: string
-): (...args: Parameters<T>) => Promise<Response | ReturnType<T>> {
-  return async (...args: Parameters<T>) => {
+): (...args: A) => Promise<Response | R> {
+  return async (...args: A) => {
     const check = guardAddonRoute(addonId, requiredCapability);
     if (!check.allowed) {
       return new Response(JSON.stringify(check.body), {

@@ -71,8 +71,8 @@ export function QuoteReview() {
 
       setSubmissionResult(response);
       clearBasket();
-    } catch (err: any) {
-      setErrors([err.message || 'Une erreur inattendue est survenue']);
+    } catch (err) {
+      setErrors([err instanceof Error && err.message ? err.message : 'Une erreur inattendue est survenue']);
     } finally {
       setLoading(false);
     }

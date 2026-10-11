@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import React, { useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useDebouncedSuggestions } from "./use-debounced-suggestions";
 import {
   countSuggestions,
@@ -14,11 +14,53 @@ import {
 import { moveActiveIndex } from "./keyboard-nav";
 import {
   clearRecentSearches,
+  DEFAULT_MAX_RECENT_SEARCHES,
   DEFAULT_POPULAR_SEARCHES,
-  getRecentSearches,
+  RECENT_SEARCHES_STORAGE_KEY,
   removeRecentSearch,
   saveRecentSearch,
 } from "./recent-searches";
+
+// Recent searches live in localStorage, an external store. Read them during
+// render via useSyncExternalStore and re-read when this tab or another changes
+// them, instead of copying them into state from a mount effect.
+const RECENT_SEARCHES_CHANGE_EVENT = "ecom-recent-searches-change";
+
+function subscribeRecentSearches(onChange: () => void): () => void {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(RECENT_SEARCHES_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(RECENT_SEARCHES_CHANGE_EVENT, onChange);
+  };
+}
+
+function getRecentSearchesSnapshot(): string | null {
+  if (typeof window === "undefined" || !window.localStorage) return null;
+  return window.localStorage.getItem(RECENT_SEARCHES_STORAGE_KEY);
+}
+
+const getRecentSearchesServerSnapshot = (): string | null => null;
+
+function notifyRecentSearchesChanged(): void {
+  window.dispatchEvent(new Event(RECENT_SEARCHES_CHANGE_EVENT));
+}
+
+// Online/offline status is likewise an external store.
+function subscribeOnlineStatus(onChange: () => void): () => void {
+  window.addEventListener("online", onChange);
+  window.addEventListener("offline", onChange);
+  return () => {
+    window.removeEventListener("online", onChange);
+    window.removeEventListener("offline", onChange);
+  };
+}
+
+function getOnlineStatusSnapshot(): boolean {
+  return navigator.onLine;
+}
+
+const getOnlineStatusServerSnapshot = (): boolean => true;
 
 export interface SearchAutocompleteProps {
   fetchSuggestions: SuggestionFetcher;
@@ -172,36 +214,35 @@ export function SearchAutocomplete({
   const [activeIndex, setActiveIndex] = useState(-1);
   const [open, setOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [clientOffline, setClientOffline] = useState(false);
+  const recentSearchesRaw = useSyncExternalStore(
+    subscribeRecentSearches,
+    getRecentSearchesSnapshot,
+    getRecentSearchesServerSnapshot,
+  );
+  const recentSearches = useMemo<string[]>(() => {
+    try {
+      const parsed: unknown = JSON.parse(recentSearchesRaw ?? "[]");
+      return Array.isArray(parsed)
+        ? parsed
+            .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+            .slice(0, DEFAULT_MAX_RECENT_SEARCHES)
+        : [];
+    } catch {
+      return [];
+    }
+  }, [recentSearchesRaw]);
+  const clientOnline = useSyncExternalStore(
+    subscribeOnlineStatus,
+    getOnlineStatusSnapshot,
+    getOnlineStatusServerSnapshot,
+  );
 
   const baseId = useId().replace(/[^a-zA-Z0-9]/g, "");
   const listId = `search-suggestions-${baseId}`;
   const mobileListId = `search-suggestions-mobile-${baseId}`;
   const mobileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setRecentSearches(getRecentSearches());
-
-    function handleOnline() {
-      setClientOffline(false);
-    }
-    function handleOffline() {
-      setClientOffline(true);
-    }
-
-    if (typeof window !== "undefined") {
-      setClientOffline(!navigator.onLine);
-      window.addEventListener("online", handleOnline);
-      window.addEventListener("offline", handleOffline);
-      return () => {
-        window.removeEventListener("online", handleOnline);
-        window.removeEventListener("offline", handleOffline);
-      };
-    }
-  }, []);
-
-  const isOffline = isOfflineProp ?? clientOffline;
+  const isOffline = isOfflineProp ?? !clientOnline;
 
   const flat = useMemo(() => flattenSuggestions(snapshot.groups), [snapshot.groups]);
   const total = flat.length;
@@ -211,7 +252,7 @@ export function SearchAutocomplete({
 
   function pick(suggestion: Suggestion): void {
     saveRecentSearch(suggestion.label);
-    setRecentSearches(getRecentSearches());
+    notifyRecentSearchesChanged();
     setOpen(false);
     setMobileOpen(false);
     if (onSelect) {
@@ -227,7 +268,7 @@ export function SearchAutocomplete({
     const term = (termToSearch ?? query).trim();
     if (term.length === 0) return;
     saveRecentSearch(term);
-    setRecentSearches(getRecentSearches());
+    notifyRecentSearchesChanged();
     setOpen(false);
     setMobileOpen(false);
     if (typeof window !== "undefined") {
@@ -244,14 +285,14 @@ export function SearchAutocomplete({
     event.stopPropagation();
     event.preventDefault();
     removeRecentSearch(item);
-    setRecentSearches(getRecentSearches());
+    notifyRecentSearchesChanged();
   }
 
   function handleClearRecent(event: React.MouseEvent): void {
     event.stopPropagation();
     event.preventDefault();
     clearRecentSearches();
-    setRecentSearches([]);
+    notifyRecentSearchesChanged();
   }
 
   function handleInputKeyDown(
@@ -485,7 +526,6 @@ export function SearchAutocomplete({
               }}
               onFocus={() => {
                 setOpen(true);
-                setRecentSearches(getRecentSearches());
               }}
               onBlur={() => {
                 window.setTimeout(() => setOpen(false), 150);
@@ -554,7 +594,6 @@ export function SearchAutocomplete({
           onClick={() => {
             setMobileOpen(true);
             setOpen(true);
-            setRecentSearches(getRecentSearches());
             window.setTimeout(() => mobileInputRef.current?.focus(), 30);
           }}
           className="flex h-10 w-10 items-center justify-center rounded-full border border-current"

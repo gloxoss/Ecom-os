@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { RfqQuote, OfferRevision } from '../../../../../../packages/addons-rfq/src/index';
+
+// Expiry is evaluated against wall-clock time; re-check on this interval.
+const EXPIRY_CLOCK_INTERVAL_MS = 30_000;
 
 export interface OfferReviewProps {
   quote: RfqQuote;
@@ -17,6 +20,15 @@ export function OfferReview({ quote, accessSecret, onStatusChange }: OfferReview
   const [showReviseModal, setShowReviseModal] = useState(false);
   const [revisionNotes, setRevisionNotes] = useState('');
 
+  // Date.now() is impure and must not run during render (react-hooks/purity), so
+  // seed the clock once and refresh it from the interval callback. The effect only
+  // calls setState from that callback, never synchronously in its body.
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), EXPIRY_CLOCK_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []);
+
   const currentRevision: OfferRevision | undefined =
     currentQuote.revisions?.find((r) => r.isCurrent) ||
     (currentQuote.revisions && currentQuote.revisions.length > 0
@@ -24,19 +36,19 @@ export function OfferReview({ quote, accessSecret, onStatusChange }: OfferReview
       : undefined);
 
   const isExpired = Boolean(
-    currentQuote.expiresAt && new Date(currentQuote.expiresAt).getTime() <= Date.now()
+    currentQuote.expiresAt && new Date(currentQuote.expiresAt).getTime() <= nowMs
   );
 
   const canRespond =
     (currentQuote.state === 'offer_created' || currentQuote.state === 'revised') && !isExpired;
 
-  async function handleAction(action: 'accept' | 'reject' | 'revise', extraData: Record<string, any> = {}) {
+  async function handleAction(action: 'accept' | 'reject' | 'revise', extraData: Record<string, unknown> = {}) {
     setIsSubmitting(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, unknown> = {
         action,
         quoteId: currentQuote.id,
         accessSecret,
@@ -141,7 +153,7 @@ export function OfferReview({ quote, accessSecret, onStatusChange }: OfferReview
           Politique de tarification et de stock EcomOS :
         </p>
         <p>
-          Ce devis constitue un engagement ferme sur les tarifs indiqués jusqu'à la date d'échéance. Conformément aux règles d'exploitation, l'émission du devis ne réserve aucun inventaire physique avant validation finale et conversion en commande ferme.
+          Ce devis constitue un engagement ferme sur les tarifs indiqués jusqu&apos;à la date d&apos;échéance. Conformément aux règles d&apos;exploitation, l&apos;émission du devis ne réserve aucun inventaire physique avant validation finale et conversion en commande ferme.
         </p>
       </div>
 
@@ -227,7 +239,7 @@ export function OfferReview({ quote, accessSecret, onStatusChange }: OfferReview
             disabled={isSubmitting}
             className="px-4 py-2 border border-rose-300 text-rose-700 hover:bg-rose-50 rounded-lg text-sm font-medium transition disabled:opacity-50"
           >
-            Décliner l'offre
+            Décliner l&apos;offre
           </button>
           <button
             type="button"
@@ -252,7 +264,7 @@ export function OfferReview({ quote, accessSecret, onStatusChange }: OfferReview
       {showReviseModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 space-y-4 shadow-xl">
-            <h3 className="text-lg font-bold text-neutral-900">Demande d'ajustement</h3>
+            <h3 className="text-lg font-bold text-neutral-900">Demande d&apos;ajustement</h3>
             <p className="text-xs text-neutral-600">
               Précisez les modifications souhaitées (quantités, délais, conditions de livraison).
             </p>

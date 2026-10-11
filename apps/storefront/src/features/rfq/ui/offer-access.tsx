@@ -1,9 +1,23 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import type { RfqQuote } from '../../../../../../packages/addons-rfq/src/index';
 import { OfferReview } from './offer-review';
+
+// The access token arrives in the URL fragment/query, which only exists in the
+// browser. Read it as an external store: the server snapshot is `null`, so the
+// view renders a loading state until hydration. This replaces a mount effect
+// that called setState synchronously (react-hooks/set-state-in-effect).
+const subscribeOfferToken = (): (() => void) => () => {};
+
+function readOfferToken(): string {
+  const fromHash = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('token');
+  const fromQuery = new URLSearchParams(window.location.search).get('token');
+  return fromHash || fromQuery || '';
+}
+
+const readOfferTokenServerSnapshot = (): string | null => null;
 
 export interface OfferAccessProps {
   /** Quote id taken from the guest's offer link, e.g. `/devis/offer?quoteId=quote_...`. */
@@ -21,24 +35,22 @@ export interface OfferAccessProps {
  * The token travels to the API in a request header, never in the request URL.
  */
 export function OfferAccess({ quoteId }: OfferAccessProps) {
-  const [token, setToken] = useState('');
-  const [tokenResolved, setTokenResolved] = useState(false);
+  const tokenFromUrl = useSyncExternalStore<string | null>(
+    subscribeOfferToken,
+    readOfferToken,
+    readOfferTokenServerSnapshot,
+  );
+  const tokenResolved = tokenFromUrl !== null;
+  const token = tokenFromUrl ?? '';
   const [quote, setQuote] = useState<RfqQuote | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fromHash = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('token');
-    const fromQuery = new URLSearchParams(window.location.search).get('token');
-    setToken(fromHash || fromQuery || '');
-    setTokenResolved(true);
-  }, []);
-
-  useEffect(() => {
     if (!tokenResolved || !quoteId || !token) return;
     let cancelled = false;
-    setError(null);
 
     (async () => {
+      setError(null);
       try {
         const res = await fetch(`/api/rfq/offers?quoteId=${encodeURIComponent(quoteId)}`, {
           headers: { 'x-quote-token': token },
