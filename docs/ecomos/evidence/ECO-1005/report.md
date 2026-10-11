@@ -45,6 +45,19 @@
 | Cross-owner replay of the same key | 409, body contains neither the secret nor the quote id |
 | Quote read back from a fresh store instance over the same file | proven (simulated restart) |
 
+## Served-page evidence (executed)
+
+Against the Next dev server over HTTP, with the quotes addon **off**:
+
+| Route | Status | Meaning |
+| --- | --- | --- |
+| `/devis` | 404 | addon-off isolation holds at the route level |
+| `/devis/review` | 404 | the new page honours the same gate |
+
+With `ADDONS` not containing `quotes`, both new pages are unreachable, which is the
+required off-state. The on-state render is covered by the page test (server component
+invoked directly) and is **not** a browser render; see below.
+
 ## Not proven
 
 - **Real WordPress persistence, staff access and restart survival on a live site were

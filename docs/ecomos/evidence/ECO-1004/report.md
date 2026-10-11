@@ -40,6 +40,21 @@
 | `tsx scripts/check-engine-imports.ts` | exit 0 |
 | `vitest run` (whole suite) | exit 0 — 521 passed |
 
+## Served-page evidence (executed)
+
+Against the Next dev server (`ECOM_ENGINE=fake`, port 3100), requested over HTTP:
+
+| Route | Status | Notes |
+| --- | --- | --- |
+| `/` | 200 | 228,702 bytes |
+| `/checkout` | 200 | 48,365 bytes; the string "Checkout is currently unavailable" occurs **0** times; the page renders the real `CheckoutForm` ("Place Order", empty-cart state) |
+| `/cart` | 200 | 54,075 bytes |
+
+This is the mounted route serving real markup, not the placeholder. It is **not** a
+purchase: the fake engine resolves no WooCommerce order and no browser placed one.
+Production mode refuses `ECOM_ENGINE=fake` by design ("Production requires
+ECOM_ENGINE=woocommerce"), so a served-page purchase check needs a live Woo instance.
+
 ## Not proven — the audit's core complaint stands until this is done
 
 **No real browser placed a real order against real WooCommerce.** There is no live
