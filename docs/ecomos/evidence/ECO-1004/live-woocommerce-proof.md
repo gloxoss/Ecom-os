@@ -334,3 +334,45 @@ validated rather than assumed. The development-mode headers observed earlier (CS
 `X-Frame-Options: DENY`, `nosniff`, `HSTS`, `Referrer-Policy`, `Permissions-Policy`) remain
 the only headers measured, and the development CSP policy is the permissive one, **not** the
 production nonce policy.
+
+## The Next.js → WordPress RFQ rewiring: why it is a refactor, not an adapter
+
+Investigated to start it. The plugin's REST contract is clean:
+
+```
+POST   /wp-json/ecomos/v1/rfq/quotes        create            (active check)
+GET    /wp-json/ecomos/v1/rfq/quotes/{id}   read              (guest token or staff)
+POST   .../offers  .../accept  .../reject  .../revise  .../convert  .../document
+```
+
+The blocker is **who owns the quote's identity**. `ecomos_rfq_rest_create_quote` generates
+the id, the quote number and the access secret itself:
+
+```php
+$secret_hash = hash('sha256', $secret);
+$quote_id = 'quote_' . wp_generate_uuid4();
+$quote_num = 'DEV-' . gmdate('Y') . '-' . wp_rand(1000, 9999);
+```
+
+whereas `apps/storefront/src/app/api/rfq/route.ts` generates its own id, number and
+`accessSecret` locally and returns *those* to the guest. A WordPress-backed store therefore
+cannot be dropped in behind the existing route: the route would create a quote in WordPress,
+receive a different id and secret back, and still hand the guest its own. The guest's secret
+would not be the one WordPress has hashed, so no subsequent read, accept or reject would
+authorize.
+
+Doing this properly means moving identity ownership from the Next.js route to WordPress:
+the route takes the id, number and secret from the create response, the owner-binding for
+idempotent replay keys off what WordPress returns, the offer/accept/reject paths use the
+WordPress id, and the route's own tests change with it. That is a designed refactor of the
+RFQ submission path, not an adapter behind the existing store interface.
+
+**Not started, deliberately.** It is ordinary work with no authorization blocker, and it is
+the honest next task — but it is a multi-file change to the identity of a workflow whose
+guest-secret handling is security-relevant, and it should be done with room to implement,
+test and verify rather than started and abandoned.
+
+Everything else about finding 3 stands as recorded above: the storefront's shared store,
+mounted routes, owner-bound replay and addon-off isolation are real, and WordPress
+persistence is proven at the plugin level (quotes and revisions in `wp_ecomos_rfq_*`, the
+state machine exercised, conversion producing one linked order under concurrency).
