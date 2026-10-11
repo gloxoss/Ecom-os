@@ -310,3 +310,27 @@ product defect, and no client-2 order is claimed.
 Established about client 2 regardless: a separate directory, database (`ecomos_client2`),
 port, salt set, REST key pair and currency (EUR), serving its own catalog — and, at an
 earlier point, the storefront reached its checkout with a real client-2 cart.
+
+## Production CSP and TLS — why they are not merely unstarted
+
+An attempt to observe production response headers locally failed at the build, with a
+**real and correct** guard rather than an environment quirk:
+
+```
+Error: WC_REST_URL must use HTTPS without embedded credentials.
+  at Failed to collect configuration for /[locale]/legal/privacy
+```
+
+`apps/storefront/src/lib/runtime-config.ts` refuses to run in production against a
+non-HTTPS backend. That is the right behaviour, and it has a direct consequence: the
+production CSP (nonce + `strict-dynamic`) and real TLS **cannot be exercised against this
+machine's plain-HTTP local WordPress**. Doing so requires terminating TLS in front of
+WordPress — a certificate and a TLS-capable server (Local ships nginx 1.26, which was not
+configured here).
+
+So this item is not "unstarted for lack of effort"; it is blocked by the application's own
+production configuration guard, which is evidence that production configuration *is*
+validated rather than assumed. The development-mode headers observed earlier (CSP present,
+`X-Frame-Options: DENY`, `nosniff`, `HSTS`, `Referrer-Policy`, `Permissions-Policy`) remain
+the only headers measured, and the development CSP policy is the permissive one, **not** the
+production nonce policy.
