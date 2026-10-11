@@ -156,11 +156,23 @@ function ecomos_rfq_rest_create_quote($request) {
         $params = $request->get_params();
     }
 
-    $secret = wp_generate_password(32, false);
-    $secret_hash = hash('sha256', $secret);
+    // A caller that has already issued a quote identity to a guest (the storefront
+    // does) may supply it, so the quote it stores is the quote the guest can read
+    // back. Anything supplied is validated and falls back to generation, so a
+    // malformed or absent value can never produce an unusable quote.
+    $supplied_id = isset($params['id']) ? sanitize_text_field((string) $params['id']) : '';
+    $supplied_num = isset($params['quoteNumber']) ? sanitize_text_field((string) $params['quoteNumber']) : '';
+    $supplied_hash = isset($params['accessSecretHash']) ? strtolower(trim((string) $params['accessSecretHash'])) : '';
 
-    $quote_id = 'quote_' . wp_generate_uuid4();
-    $quote_num = 'DEV-' . gmdate('Y') . '-' . wp_rand(1000, 9999);
+    $secret = wp_generate_password(32, false);
+    $secret_hash = preg_match('/^[a-f0-9]{64}$/', $supplied_hash) ? $supplied_hash : hash('sha256', $secret);
+
+    $quote_id = preg_match('/^quote_[A-Za-z0-9_-]{1,60}$/', $supplied_id)
+        ? $supplied_id
+        : 'quote_' . wp_generate_uuid4();
+    $quote_num = preg_match('/^[A-Z0-9-]{3,32}$/', $supplied_num)
+        ? $supplied_num
+        : 'DEV-' . gmdate('Y') . '-' . wp_rand(1000, 9999);
 
     $quote_data = array(
         'id'                 => $quote_id,
@@ -184,9 +196,15 @@ function ecomos_rfq_rest_create_quote($request) {
         'success'      => true,
         'quoteId'      => $quote_id,
         'quoteNumber'  => $quote_num,
-        'accessSecret' => $secret,
         'state'        => 'submitted',
     );
+
+    // Only return a secret when this endpoint minted it. When the caller supplied the
+    // hash it already holds the plaintext, and returning the unrelated value that was
+    // generated above would hand the guest a secret that authorizes nothing.
+    if ($supplied_hash === '') {
+        $response_data['accessSecret'] = $secret;
+    }
 
     $response = rest_ensure_response($response_data);
     $response->set_status(201);
