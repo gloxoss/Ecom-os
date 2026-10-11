@@ -4,7 +4,7 @@
 **Date:** 2026-10-11  
 **Milestone:** Stage R — Final Release Packaging & Readiness Gate (`ECO-1302`)  
 **Auditor Reference:** `Sprint progress audit 2026-10-11 1730.md`  
-**Current Authoritative Commit:** `6121ed4209d1152ad0aeb5bc52d39e2acd15e6e5`  
+**Current Authoritative Commit:** `d6e61570779bf901b08b3e94b29bb8fe0cb20e3a`  
 **Release Verdict:** **LOCAL RELEASE CANDIDATE (v1.0.0-rc1) APPROVED · PRODUCTION CUTOVER BLOCKED**  
 
 ---

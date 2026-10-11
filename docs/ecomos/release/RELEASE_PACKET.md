@@ -3,7 +3,7 @@
 - **Document:** `RELEASE_PACKET.md`
 - **Application:** EcomOS Dual-Engine Modular Storefront
 - **Release Candidate Version:** `v1.0.0-rc1`
-- **Pinned Git Base:** `6121ed4209d1152ad0aeb5bc52d39e2acd15e6e5`
+- **Pinned Git Base:** `d6e6157` (authoritative integrated line)
 - **Target Domain:** `paraloca.ma` (DNS cutover gated)
 - **Staging Domain:** `staging.paraloca.ma`
 - **Merchant Entity:** ParaLoca SARL (Casablanca, Maroc)
@@ -45,6 +45,7 @@ Every deliverable across Sprint A and Sprint B is an ancestor of this release ca
 | **ECO-1213** | Platform | Scoped store manager roles & dynamic table prefix guard | `9e9af98` | ACCEPTED |
 | **ECO-1204** | Platform | Multi-client deployment isolation & Sprint B gate | `090bc00` | ACCEPTED |
 | **ECO-1301** | RFQ | ParaLoca merchant UAT dossier & Law 84-12 invariants | `6121ed4` | ACCEPTED |
+| **ECO-1302** | Platform | Pinned release candidate packet, readiness audit, launch decision | `cf23d18` | ACCEPTED |
 
 ---
 
