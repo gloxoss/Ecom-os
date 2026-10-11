@@ -910,3 +910,42 @@ What finding 5 asked for — "a second client with its own deployment, WordPress
 and secrets" — is otherwise established: separate directory, separate database, separate
 salt set, separate REST key pair, different currency, its own catalogue, serving its own
 Store API (when the server holds up). The one thing not obtained is an order placed on it.
+
+## Finding 5 — CLOSED: the second isolated client placed a real order
+
+The loopback deadlock was HTTP, not the deployment. Blocking WordPress's outbound HTTP on
+client 2 (`WP_HTTP_BLOCK_EXTERNAL` with `WP_ACCESSIBLE_HOSTS` for localhost) removed it:
+its Store API went from a 30-second timeout to 9.2 seconds and served its catalogue.
+
+Then the purchase, through the storefront pointed at client 2's own deployment:
+
+```
+/product/client2-widget -> 200        /checkout -> 200
+browser checkout      -> order 12, "n° 12", "Total : 158.00 EUR"   (79 x 2)
+
+ecomos_client2.wp_posts:  ID 12 | wc-processing | shop_order
+  _order_total 158.00 | _order_currency EUR | _payment_method cod
+  _customer_user 0 (guest) | _billing_email browser.buyer@example.test
+```
+
+**Isolation, verified in the databases:**
+
+```
+client1 (ecomos_wp):        18 orders in the HPOS tables, 0 legacy shop_order posts
+client2 (ecomos_client2):    0 HPOS orders,           1 legacy shop_order post
+client2 data present in client1: 0 rows
+```
+
+Two deployments, two databases, two salt sets, two REST key pairs, two currencies (MAD and
+EUR), two storage strategies — HPOS on one, legacy on the other — completing orders without
+sharing a row. That is the audit's "second client with its own deployment, WordPress,
+database and secrets", executed.
+
+## What remains of the audit
+
+- **Production CSP/TLS** (part of finding 5): the app refuses to build in production against
+  a non-HTTPS backend — `WC_REST_URL must use HTTPS without embedded credentials` — so
+  exercising production headers needs TLS terminated in front of WordPress. Local ships
+  nginx 1.26 and php-cgi, both present and unused here.
+- **Finding 8**: owner-supplied merchant facts and product-claim sources. Not producible by
+  any agent.
