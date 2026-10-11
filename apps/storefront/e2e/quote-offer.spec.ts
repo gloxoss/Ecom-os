@@ -6,12 +6,11 @@ import {
   setStorefrontRegistryForTesting,
   isAddonActive,
 } from '../src/lib/addon-capabilities';
+import { POST, GET } from '../src/app/api/rfq/offers/route';
 import {
-  POST,
-  GET,
   setOfferQuoteForTesting,
   clearOfferQuotesForTesting,
-} from '../src/app/api/rfq/offers/route';
+} from '../src/features/rfq/model/server-quote-store';
 import type { RfqQuote, OfferRevision } from '../../../packages/addons-rfq/src/index';
 
 describe('Storefront RFQ Private Revisioned Offers Contract (ECO-705)', () => {
