@@ -288,3 +288,25 @@ submission itself has been verified.
 
 Both product shapes now have executed purchases through the storefront: variable (orders
 17, 18, 20, 25, 29) and simple (order 30).
+
+## Client 2 — what happened on the second attempt
+
+Re-run after the harness fix. The earlier client-2 refusal (`cart_out_of_sync`) is now
+explained: it was the same driver bug that produced the false simple-product defect — the
+browser claimed variation 12 against a simple-product cart. **The guard was not at fault.**
+
+A completed client-2 order was still not obtained, for a different and unrelated reason:
+client 2's WordPress, served by PHP's built-in single-threaded server, began timing out
+after 30 seconds inside WooCommerce (`Maximum execution time of 30 seconds exceeded ...
+woocommerce/includes/abstracts/...`), consistent with a loopback request deadlocking
+against the same server that is handling it. `DISABLE_WP_CRON` was set and the server
+restarted; the timeout persisted. Client 1 on the same MySQL instance and the same PHP
+binary continued to serve normally.
+
+**Not proven either way** whether that is purely a single-threaded-server artefact or
+something in client 2's configuration. It is recorded as an environment failure, not as a
+product defect, and no client-2 order is claimed.
+
+Established about client 2 regardless: a separate directory, database (`ecomos_client2`),
+port, salt set, REST key pair and currency (EUR), serving its own catalog — and, at an
+earlier point, the storefront reached its checkout with a real client-2 cart.
