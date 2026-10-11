@@ -376,3 +376,41 @@ Everything else about finding 3 stands as recorded above: the storefront's share
 mounted routes, owner-bound replay and addon-off isolation are real, and WordPress
 persistence is proven at the plugin level (quotes and revisions in `wp_ecomos_rfq_*`, the
 state machine exercised, conversion producing one linked order under concurrency).
+
+### The concrete blocker: the store interface is synchronous
+
+A second investigation narrowed "it is a refactor" to a specific, technical reason that does
+not depend on judgement:
+
+```ts
+export interface RfqQuoteStore {
+  getQuote(id: string): RfqQuote | undefined;      // synchronous
+  putQuote(quote: RfqQuote): void;                 // synchronous
+  listQuoteIds(): string[];
+  getIdempotency(key: string): StoredIdempotencyEntry | undefined;
+  putIdempotency(key: string, entry: StoredIdempotencyEntry): void;
+  clear(): void;
+}
+```
+
+A WordPress-backed store must make an HTTP request per operation, and `fetch` is
+asynchronous. It therefore cannot implement this interface. The alternatives are:
+
+1. **Make the interface asynchronous** (`Promise<RfqQuote | undefined>`, …), which ripples
+   through `app/api/rfq/route.ts`, `app/api/rfq/offers/route.ts` and every test that drives
+   them through `setRfqQuoteStoreForTesting`.
+2. **Block on HTTP inside the store**, which would stall the event loop on every quote read
+   and is not acceptable in a Next.js route.
+
+Option 1 is the correct one and is the work. Combined with the identity question above
+(`ecomos_rfq_rest_create_quote` generates its own id and secret, or the plugin must accept
+caller-supplied ones), the task is: a plugin change, an async conversion of the store
+interface, updates to both routes, and updated tests — then verification that a quote
+submitted through `/api/rfq` appears in `wp_ecomos_rfq_quotes` and that a guest token read
+authorizes through WordPress.
+
+**Not started, and the reason is now specific**: it is a multi-file signature change to a
+security-relevant workflow, and the remaining budget in this session is not enough to
+implement *and verify* it. An unverified rewrite of the RFQ persistence layer left in the
+tree would be worse than a precisely documented gap — and the audit's own standard is that
+unverified work must not be presented as done.
