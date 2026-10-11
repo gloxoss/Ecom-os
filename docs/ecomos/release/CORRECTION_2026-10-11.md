@@ -210,3 +210,17 @@ production build (exit 0, with the previously unmounted routes compiled in).
 
 Nothing above is a formality: each is a thing the audit asked for that cannot be
 produced without infrastructure or owner input this environment does not have.
+
+## Closing pointer
+
+The round is recorded end to end in two places, and a reader needs only these:
+
+- `docs/ecomos/evidence/ECO-1001/repair-round-summary.md` — every finding mapped to its
+  status, its commit and its evidence, plus the five additional defects the repair
+  uncovered.
+- `docs/ecomos/verification/ECO-1001/verification.md` — the independent execution record
+  of the verified commit, its fail-closed controls, and what it does not establish.
+
+The last verified code state of this round is
+`de1c80239eaf68bf300df3eadb4708b10e354fcf`. Nothing here authorizes a deployment;
+production cutover still requires the explicit human authorization in `APPROVAL.md`.
