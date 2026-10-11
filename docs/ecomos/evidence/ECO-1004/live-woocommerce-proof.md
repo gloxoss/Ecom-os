@@ -451,3 +451,59 @@ WordPress — the store's read needs to carry the guest token and let
 Steps 2 and 3 were not started. Step 1 is a real, verified increment toward them; starting
 step 2 without the budget to reach step 3 would leave a WordPress store that cannot
 authorize a guest read, which is worse than the honest gap.
+
+### Final conclusion: the store interface is the wrong abstraction for WordPress
+
+A fourth investigation, and this one changes the shape of the remaining work rather than
+adding a step to it.
+
+`offers/route.ts` performs state transitions by mutating the whole quote and writing it
+back:
+
+```ts
+const nextQuote = transition(quote, 'accepted', guestActor, { revisionId });
+quote.state = nextQuote.state;
+await store.putQuote(quote);
+```
+
+repeated for `rejected` and `revision_requested`. WordPress does not model quoting that way.
+Each transition is its own endpoint with its own authorization and its own server-side state
+machine:
+
+```
+/quotes/{id}/offers   /quotes/{id}/accept   /quotes/{id}/reject
+/quotes/{id}/revise   /quotes/{id}/convert  /quotes/{id}/document
+```
+
+A generic `putQuote(quote)` cannot express "accept, with this revision" versus "reject, with
+this reason" to those endpoints. Combined with the three findings above — the interface was
+synchronous, the plugin generates its own quote identity, and the plugin never transmits
+`access_secret_hash` — the store abstraction is simply not the right shape for a
+WordPress-backed RFQ layer.
+
+**The correct design is an API client, not a store.** A WordPress-backed RFQ layer is a set
+of named operations:
+
+```ts
+interface RfqClient {
+  submitQuote(input): Promise<SubmittedQuote>;      // POST /quotes
+  getQuote(id, accessToken?): Promise<RfqQuote>;    // GET  /quotes/{id}, WP authorizes
+  acceptOffer(id, revisionId, token): Promise<void>; // POST /quotes/{id}/accept
+  rejectQuote(id, reason, token): Promise<void>;     // POST /quotes/{id}/reject
+  requestRevision(id, notes, token): Promise<void>;  // POST /quotes/{id}/revise
+  convert(id): Promise<ConvertedOrder>;              // POST /quotes/{id}/convert
+}
+```
+
+with the local in-memory and file implementations providing the same operations for tests
+and single-host runs. That is a change of abstraction across the two routes, the domain
+package and the tests — real, well-specified work, and the honest description of what
+"wire the RFQ routes to WordPress" means.
+
+**Step 1 (async store interface, commit `25b6679`) remains a genuine prerequisite** — the
+client's methods are asynchronous too — but it is a prerequisite, not the refactor. Anyone
+picking this up should start from `RfqClient` above, not from a `WordPressRfqQuoteStore`.
+
+Not started, and this is the last thing I will record on it: implementing the client without
+the budget to verify the accept/reject/revise paths against WordPress would leave a quoting
+workflow that looks wired and is not.
