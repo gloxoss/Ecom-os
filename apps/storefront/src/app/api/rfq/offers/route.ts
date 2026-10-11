@@ -41,7 +41,7 @@ export async function GET(req: Request) {
     );
   }
 
-  const quote = getRfqQuoteStore().getQuote(quoteId);
+  const quote = await getRfqQuoteStore().getQuote(quoteId);
   if (!quote) {
     return new Response(
       JSON.stringify({ success: false, error: 'Quote not found' }),
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
   }
 
   const store = getRfqQuoteStore();
-  const quote = store.getQuote(quoteId);
+  const quote = await store.getQuote(quoteId);
   if (!quote) {
     return new Response(
       JSON.stringify({ success: false, error: 'Quote not found' }),
@@ -176,7 +176,7 @@ export async function POST(req: Request) {
       const nextQuote = transition(quote, 'accepted', guestActor, { revisionId });
       quote.state = nextQuote.state;
       quote.updatedAt = nextQuote.updatedAt;
-      store.putQuote(quote);
+      await store.putQuote(quote);
       return new Response(
         JSON.stringify({
           success: true,
@@ -201,7 +201,7 @@ export async function POST(req: Request) {
       quote.state = nextQuote.state;
       quote.rejectionReason = nextQuote.rejectionReason;
       quote.updatedAt = nextQuote.updatedAt;
-      store.putQuote(quote);
+      await store.putQuote(quote);
       return new Response(
         JSON.stringify({
           success: true,
@@ -226,7 +226,7 @@ export async function POST(req: Request) {
       quote.state = nextQuote.state;
       quote.customerRevisionNotes = nextQuote.customerRevisionNotes;
       quote.updatedAt = nextQuote.updatedAt;
-      store.putQuote(quote);
+      await store.putQuote(quote);
       return new Response(
         JSON.stringify({
           success: true,

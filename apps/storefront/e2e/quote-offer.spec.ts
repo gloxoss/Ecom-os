@@ -104,8 +104,8 @@ describe('Storefront RFQ Private Revisioned Offers Contract (ECO-705)', () => {
     ],
   };
 
-  beforeEach(() => {
-    clearOfferQuotesForTesting();
+  beforeEach(async () => {
+    await clearOfferQuotesForTesting();
     registry = new AddonRegistry('1.0.0');
     registry.register({
       id: 'quotes',
@@ -134,7 +134,7 @@ describe('Storefront RFQ Private Revisioned Offers Contract (ECO-705)', () => {
 
   it('allows verified guest to view offer details and scrubs accessSecretHash', async () => {
     registry.enable('quotes');
-    setOfferQuoteForTesting(JSON.parse(JSON.stringify(baseQuote)));
+    await setOfferQuoteForTesting(JSON.parse(JSON.stringify(baseQuote)));
 
     const req = new Request('http://localhost:3000/api/rfq/offers?quoteId=quote_test_705', {
       method: 'GET',
@@ -153,7 +153,7 @@ describe('Storefront RFQ Private Revisioned Offers Contract (ECO-705)', () => {
 
   it('rejects wrong or tampered token with HTTP 403 FORBIDDEN', async () => {
     registry.enable('quotes');
-    setOfferQuoteForTesting(JSON.parse(JSON.stringify(baseQuote)));
+    await setOfferQuoteForTesting(JSON.parse(JSON.stringify(baseQuote)));
 
     const req = new Request('http://localhost:3000/api/rfq/offers', {
       method: 'POST',
@@ -174,7 +174,7 @@ describe('Storefront RFQ Private Revisioned Offers Contract (ECO-705)', () => {
 
   it('rejects acceptance of stale / superseded revision with HTTP 409 STALE_REVISION', async () => {
     registry.enable('quotes');
-    setOfferQuoteForTesting(JSON.parse(JSON.stringify(baseQuote)));
+    await setOfferQuoteForTesting(JSON.parse(JSON.stringify(baseQuote)));
 
     // Guest attempts to accept rev_1, but current is rev_2
     const req = new Request('http://localhost:3000/api/rfq/offers', {
@@ -198,7 +198,7 @@ describe('Storefront RFQ Private Revisioned Offers Contract (ECO-705)', () => {
     registry.enable('quotes');
     const expiredQuote = JSON.parse(JSON.stringify(baseQuote));
     expiredQuote.expiresAt = new Date(Date.now() - 3600000).toISOString(); // 1 hour ago
-    setOfferQuoteForTesting(expiredQuote);
+    await setOfferQuoteForTesting(expiredQuote);
 
     const req = new Request('http://localhost:3000/api/rfq/offers', {
       method: 'POST',
@@ -220,7 +220,7 @@ describe('Storefront RFQ Private Revisioned Offers Contract (ECO-705)', () => {
   it('successfully transitions offer to accepted when verified guest accepts current revision', async () => {
     registry.enable('quotes');
     const activeQuote = JSON.parse(JSON.stringify(baseQuote));
-    setOfferQuoteForTesting(activeQuote);
+    await setOfferQuoteForTesting(activeQuote);
 
     const req = new Request('http://localhost:3000/api/rfq/offers', {
       method: 'POST',
@@ -245,7 +245,7 @@ describe('Storefront RFQ Private Revisioned Offers Contract (ECO-705)', () => {
   it('allows verified guest to decline offer and transitions state to rejected', async () => {
     registry.enable('quotes');
     const activeQuote = JSON.parse(JSON.stringify(baseQuote));
-    setOfferQuoteForTesting(activeQuote);
+    await setOfferQuoteForTesting(activeQuote);
 
     const req = new Request('http://localhost:3000/api/rfq/offers', {
       method: 'POST',
@@ -269,7 +269,7 @@ describe('Storefront RFQ Private Revisioned Offers Contract (ECO-705)', () => {
   it('allows verified guest to request revision and transitions state to revision_requested', async () => {
     registry.enable('quotes');
     const activeQuote = JSON.parse(JSON.stringify(baseQuote));
-    setOfferQuoteForTesting(activeQuote);
+    await setOfferQuoteForTesting(activeQuote);
 
     const req = new Request('http://localhost:3000/api/rfq/offers', {
       method: 'POST',

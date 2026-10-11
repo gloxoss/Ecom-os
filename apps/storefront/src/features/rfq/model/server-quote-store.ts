@@ -40,40 +40,48 @@ export interface StoredIdempotencyEntry {
   };
 }
 
+/**
+ * Persistence for RFQ quotes.
+ *
+ * Every method is asynchronous because the production implementation is the
+ * WordPress companion plugin, reached over HTTP. A synchronous interface could
+ * only be satisfied by blocking the event loop on a network call inside a Next.js
+ * route, so the interface was made async when the WordPress store was added.
+ */
 export interface RfqQuoteStore {
-  getQuote(id: string): RfqQuote | undefined;
-  putQuote(quote: RfqQuote): void;
-  listQuoteIds(): string[];
-  getIdempotency(key: string): StoredIdempotencyEntry | undefined;
-  putIdempotency(key: string, entry: StoredIdempotencyEntry): void;
-  clear(): void;
+  getQuote(id: string): Promise<RfqQuote | undefined>;
+  putQuote(quote: RfqQuote): Promise<void>;
+  listQuoteIds(): Promise<string[]>;
+  getIdempotency(key: string): Promise<StoredIdempotencyEntry | undefined>;
+  putIdempotency(key: string, entry: StoredIdempotencyEntry): Promise<void>;
+  clear(): Promise<void>;
 }
 
 export class InMemoryRfqQuoteStore implements RfqQuoteStore {
   private quotes = new Map<string, RfqQuote>();
   private idempotency = new Map<string, StoredIdempotencyEntry>();
 
-  getQuote(id: string): RfqQuote | undefined {
+  async getQuote(id: string): Promise<RfqQuote | undefined> {
     return this.quotes.get(id);
   }
 
-  putQuote(quote: RfqQuote): void {
+  async putQuote(quote: RfqQuote): Promise<void> {
     this.quotes.set(quote.id, quote);
   }
 
-  listQuoteIds(): string[] {
+  async listQuoteIds(): Promise<string[]> {
     return [...this.quotes.keys()];
   }
 
-  getIdempotency(key: string): StoredIdempotencyEntry | undefined {
+  async getIdempotency(key: string): Promise<StoredIdempotencyEntry | undefined> {
     return this.idempotency.get(key);
   }
 
-  putIdempotency(key: string, entry: StoredIdempotencyEntry): void {
+  async putIdempotency(key: string, entry: StoredIdempotencyEntry): Promise<void> {
     this.idempotency.set(key, entry);
   }
 
-  clear(): void {
+  async clear(): Promise<void> {
     this.quotes.clear();
     this.idempotency.clear();
   }
@@ -137,34 +145,34 @@ export class JsonFileRfqQuoteStore implements RfqQuoteStore {
     renameSync(tmp, this.filePath);
   }
 
-  getQuote(id: string): RfqQuote | undefined {
+  async getQuote(id: string): Promise<RfqQuote | undefined> {
     this.load();
     return this.quotes.get(id);
   }
 
-  putQuote(quote: RfqQuote): void {
+  async putQuote(quote: RfqQuote): Promise<void> {
     this.load();
     this.quotes.set(quote.id, quote);
     this.persist();
   }
 
-  listQuoteIds(): string[] {
+  async listQuoteIds(): Promise<string[]> {
     this.load();
     return [...this.quotes.keys()];
   }
 
-  getIdempotency(key: string): StoredIdempotencyEntry | undefined {
+  async getIdempotency(key: string): Promise<StoredIdempotencyEntry | undefined> {
     this.load();
     return this.idempotency.get(key);
   }
 
-  putIdempotency(key: string, entry: StoredIdempotencyEntry): void {
+  async putIdempotency(key: string, entry: StoredIdempotencyEntry): Promise<void> {
     this.load();
     this.idempotency.set(key, entry);
     this.persist();
   }
 
-  clear(): void {
+  async clear(): Promise<void> {
     this.load();
     this.quotes.clear();
     this.idempotency.clear();
@@ -201,22 +209,22 @@ export function setRfqQuoteStoreForTesting(store: RfqQuoteStore | null): void {
  * route module may only export its HTTP handlers, and any extra export fails the
  * generated route type check during `next build`.
  */
-export function clearRfqStoresForTesting(): void {
-  getRfqQuoteStore().clear();
+export async function clearRfqStoresForTesting(): Promise<void> {
+  await getRfqQuoteStore().clear();
 }
 
-export function getQuoteForTesting(id: string): RfqQuote | undefined {
+export async function getQuoteForTesting(id: string): Promise<RfqQuote | undefined> {
   return getRfqQuoteStore().getQuote(id);
 }
 
-export function setOfferQuoteForTesting(quote: RfqQuote): void {
-  getRfqQuoteStore().putQuote(quote);
+export async function setOfferQuoteForTesting(quote: RfqQuote): Promise<void> {
+  await getRfqQuoteStore().putQuote(quote);
 }
 
-export function clearOfferQuotesForTesting(): void {
-  getRfqQuoteStore().clear();
+export async function clearOfferQuotesForTesting(): Promise<void> {
+  await getRfqQuoteStore().clear();
 }
 
-export function getOfferQuoteForTesting(id: string): RfqQuote | undefined {
+export async function getOfferQuoteForTesting(id: string): Promise<RfqQuote | undefined> {
   return getRfqQuoteStore().getQuote(id);
 }

@@ -43,12 +43,12 @@ afterEach(() => {
 });
 
 describe('RFQ server quote store durability (ECO-1005)', () => {
-  it('survives a simulated restart: a fresh instance over the same file reads the quote back', () => {
+  it('survives a simulated restart: a fresh instance over the same file reads the quote back', async () => {
     const filePath = makeTempStorePath();
 
     const before = new JsonFileRfqQuoteStore(filePath);
-    before.putQuote(sampleQuote);
-    before.putIdempotency('idemp-restart-key', {
+    await before.putQuote(sampleQuote);
+    await before.putIdempotency('idemp-restart-key', {
       ownerKey: 'salma@riad-design.ma',
       statusCode: 201,
       data: {
@@ -63,28 +63,28 @@ describe('RFQ server quote store durability (ECO-1005)', () => {
     // "Restart": a brand new instance, no shared memory, reading the same file.
     const afterRestart = new JsonFileRfqQuoteStore(filePath);
 
-    expect(afterRestart.listQuoteIds()).toEqual([sampleQuote.id]);
-    const reloaded = afterRestart.getQuote(sampleQuote.id);
+    expect(await afterRestart.listQuoteIds()).toEqual([sampleQuote.id]);
+    const reloaded = await afterRestart.getQuote(sampleQuote.id);
     expect(reloaded?.quoteNumber).toBe('DEV-2026-4242');
     expect(reloaded?.items[0]?.variationId).toBe(501);
     expect(reloaded?.accessSecretHash).toBe('hash_of_guest_grant');
 
-    const entry = afterRestart.getIdempotency('idemp-restart-key');
+    const entry = await afterRestart.getIdempotency('idemp-restart-key');
     expect(entry?.ownerKey).toBe('salma@riad-design.ma');
     expect(entry?.data.quoteId).toBe(sampleQuote.id);
   });
 
-  it('writes atomically: no leftover temp file and the target file is complete JSON', () => {
+  it('writes atomically: no leftover temp file and the target file is complete JSON', async () => {
     const filePath = makeTempStorePath();
     const store = new JsonFileRfqQuoteStore(filePath);
-    store.putQuote(sampleQuote);
+    await store.putQuote(sampleQuote);
 
     const dir = path.dirname(filePath);
     expect(readdirSync(dir).filter((name) => name.endsWith('.tmp'))).toEqual([]);
     expect(readdirSync(dir)).toEqual(['rfq-quotes.json']);
   });
 
-  it('selects the durable file store when ECOM_RFQ_STORE_PATH is configured', () => {
+  it('selects the durable file store when ECOM_RFQ_STORE_PATH is configured', async () => {
     process.env.ECOM_RFQ_STORE_PATH = makeTempStorePath();
     expect(createDefaultRfqQuoteStore()).toBeInstanceOf(JsonFileRfqQuoteStore);
 
@@ -92,33 +92,33 @@ describe('RFQ server quote store durability (ECO-1005)', () => {
     expect(createDefaultRfqQuoteStore()).toBeInstanceOf(InMemoryRfqQuoteStore);
   });
 
-  it('exposes one shared store so both RFQ routes resolve the same quotes', () => {
+  it('exposes one shared store so both RFQ routes resolve the same quotes', async () => {
     const inMemory = new InMemoryRfqQuoteStore();
     setRfqQuoteStoreForTesting(inMemory);
 
     expect(getRfqQuoteStore()).toBe(inMemory);
     expect(getRfqQuoteStore()).toBe(getRfqQuoteStore());
-    expect(getRfqQuoteStore().getQuote(sampleQuote.id)).toBeUndefined();
+    expect(await getRfqQuoteStore().getQuote(sampleQuote.id)).toBeUndefined();
 
-    getRfqQuoteStore().putQuote(sampleQuote);
-    expect(getRfqQuoteStore().getQuote(sampleQuote.id)).toBe(sampleQuote);
+    await getRfqQuoteStore().putQuote(sampleQuote);
+    expect(await getRfqQuoteStore().getQuote(sampleQuote.id)).toBe(sampleQuote);
   });
 
-  it('clear() removes quotes and idempotency entries but keeps the store usable', () => {
+  it('clear() removes quotes and idempotency entries but keeps the store usable', async () => {
     const store = new InMemoryRfqQuoteStore();
-    store.putQuote(sampleQuote);
-    store.putIdempotency('k', {
+    await store.putQuote(sampleQuote);
+    await store.putIdempotency('k', {
       ownerKey: 'a@b.ma',
       statusCode: 201,
       data: { success: true, quoteId: 'x', quoteNumber: 'y', accessSecret: 'z', state: 'submitted' },
     });
 
-    store.clear();
+    await store.clear();
 
-    expect(store.listQuoteIds()).toEqual([]);
-    expect(store.getIdempotency('k')).toBeUndefined();
+    expect(await store.listQuoteIds()).toEqual([]);
+    expect(await store.getIdempotency('k')).toBeUndefined();
 
-    store.putQuote(sampleQuote);
-    expect(store.getQuote(sampleQuote.id)).toBe(sampleQuote);
+    await store.putQuote(sampleQuote);
+    expect(await store.getQuote(sampleQuote.id)).toBe(sampleQuote);
   });
 });

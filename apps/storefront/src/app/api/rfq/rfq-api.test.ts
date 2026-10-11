@@ -36,8 +36,8 @@ function submitPayload(overrides: {
 describe('RFQ submit/offers workflow contract (ECO-1005)', () => {
   let registry: AddonRegistry;
 
-  beforeEach(() => {
-    getRfqQuoteStore().clear();
+  beforeEach(async () => {
+    await getRfqQuoteStore().clear();
     registry = new AddonRegistry('1.0.0');
     registry.register({
       id: 'quotes',
@@ -101,7 +101,7 @@ describe('RFQ submit/offers workflow contract (ECO-1005)', () => {
     expect(rejectRes.status).toBe(200);
     const rejectBody = await rejectRes.json();
     expect(rejectBody.state).toBe('rejected');
-    expect(getRfqQuoteStore().getQuote(submitted.quoteId)?.state).toBe('rejected');
+    expect((await getRfqQuoteStore().getQuote(submitted.quoteId))?.state).toBe('rejected');
   });
 
   it('rejects a cross-owner replay of an idempotency key and never leaks the accessSecret', async () => {
@@ -147,7 +147,7 @@ describe('RFQ submit/offers workflow contract (ECO-1005)', () => {
     expect(replay.idempotent).toBe(true);
     expect(replay.quoteId).toBe(first.quoteId);
     expect(replay.accessSecret).toBe(first.accessSecret);
-    expect(getRfqQuoteStore().listQuoteIds()).toEqual([first.quoteId]);
+    expect(await getRfqQuoteStore().listQuoteIds()).toEqual([first.quoteId]);
   });
 
   it('exposes no data and writes nothing while the quotes addon is off', async () => {
@@ -168,6 +168,6 @@ describe('RFQ submit/offers workflow contract (ECO-1005)', () => {
     expect((await offerRes.json()).code).toBe('ADDON_DISABLED');
 
     // Invariant: a blocked route performs no persistence side effect.
-    expect(getRfqQuoteStore().listQuoteIds()).toEqual([]);
+    expect(await getRfqQuoteStore().listQuoteIds()).toEqual([]);
   });
 });

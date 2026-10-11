@@ -71,7 +71,7 @@ export async function POST(req: Request) {
 
   // 3. Idempotency Check, bound to the submitting owner
   if (idempotencyKey) {
-    const cached = store.getIdempotency(idempotencyKey);
+    const cached = await store.getIdempotency(idempotencyKey);
     if (cached) {
       // A cached entry belongs to exactly one submitter. A different owner gets
       // no quote id and no accessSecret: fail closed instead of handing over
@@ -166,7 +166,7 @@ export async function POST(req: Request) {
   });
 
   // Store in the shared durable store: this is the same quote the offers route reads.
-  store.putQuote(submittedQuote);
+  await store.putQuote(submittedQuote);
 
   const responsePayload = {
     success: true,

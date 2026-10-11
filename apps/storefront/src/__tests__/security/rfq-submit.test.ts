@@ -30,8 +30,8 @@ describe('RFQ Idempotent Submission API & Security Barrier (ECO-703)', () => {
     ],
   };
 
-  beforeEach(() => {
-    clearRfqStoresForTesting();
+  beforeEach(async () => {
+    await clearRfqStoresForTesting();
     registry = new AddonRegistry('1.0.0');
     registry.register({
       id: 'quotes',
