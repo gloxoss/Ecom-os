@@ -378,3 +378,16 @@ export async function fetchStoreApiCategories(): Promise<any[]> {
     return [];
   }
 }
+
+/** Reads one variation as a product — the Store API lists variations without prices. */
+export async function fetchStoreApiVariation(id: string | number): Promise<any | null> {
+  try {
+    const response = await fetch(`${getStoreApiUrl()}/products/${encodeURIComponent(String(id))}`, {
+      cache: 'no-store',
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}

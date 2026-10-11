@@ -701,3 +701,34 @@ Woo-authoritative totals including tax and shipping, COD submitted, and a privat
 variations without prices, so those pages still need the GraphQL bridge or one read per
 variation. Order 26's variable-product purchases were proven with the cart seeded rather
 than clicked.
+
+## Variable product pages — variations fetched, page still 500s on a missing image
+
+Added the missing piece: the Store API lists a variable product's variations as ids with
+attributes and **no prices**, so `getProduct` now reads each variation individually
+(`fetchStoreApiVariation` + `mapStoreVariation`) and attaches them with a computed price
+range.
+
+**Verified live:** `GET /product/local-test-variable` renders the product name and a
+variation price (`1200.00`) — so the per-variation reads work.
+
+**Still 500, for a different and now-precise reason:**
+
+```
+⨯ TypeError: Cannot read properties of undefined (reading 'url')
+```
+
+A component on the product page reads `.url` on an image that does not exist. The test
+fixtures have **no product images**, so both `selectedVariation.image` and
+`product.images[0]` are undefined. This is a robustness bug in the page, not in the
+mapping: a product with no image crashes the page instead of rendering without one. The
+simple product page survives it, so the unguarded read is on the variable path — most
+likely the variation-selected image.
+
+Fixing it means guarding that read in the component (and, properly, letting a variation
+inherit its parent's image when it has none — WooCommerce's own behaviour). Not done: the
+budget for this session is spent, and guessing at the component without re-running it
+would be the same unverified-work failure the audit is about.
+
+So finding 1's remaining piece is now exactly this: one unguarded image read on the
+variable product page, plus a fixture with an image to prove it.

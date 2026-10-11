@@ -29,11 +29,11 @@ import {
   LoyaltyRedemption,
   PageSectionsData,
 } from '@ecom-os/engine';
-import { fetchProducts, fetchCategories, fetchProductBySlug, fetchStoreApiProductBySlug, fetchStoreApiProducts, fetchStoreApiCategories } from './products';
+import { fetchProducts, fetchCategories, fetchProductBySlug, fetchStoreApiProductBySlug, fetchStoreApiProducts, fetchStoreApiCategories, fetchStoreApiVariation } from './products';
 import { fetchBrands, fetchBrandBySlug } from './brands';
 import { loginGql, registerRest, getCustomerByToken, getCustomerOrdersRest, requestPasswordResetGql, resetPasswordGql, requireCustomerAccounts } from './auth';
 import { restFetch } from './rest';
-import { mapProduct, mapCategory, mapBrand, buildCategoryTree, mapStoreSimpleProduct, mapStoreCategory } from './mappers';
+import { mapProduct, mapCategory, mapBrand, buildCategoryTree, mapStoreSimpleProduct, mapStoreCategory, mapStoreVariation } from './mappers';
 import { fetchCurrency } from './currency';
 import {
   fetchStoreCart,
@@ -132,7 +132,31 @@ export class WooCommerceEngine implements EcomEngine {
       // Bridge absent or GraphQL unavailable; fall through to the Store API.
     }
     const storeProduct = await fetchStoreApiProductBySlug(slug);
-    return storeProduct ? mapStoreSimpleProduct(storeProduct, currency) : null;
+    if (!storeProduct) return null;
+    const mapped = mapStoreSimpleProduct(storeProduct, currency);
+    if (!mapped || mapped.type !== 'variable') return mapped;
+
+    // The Store API lists a variable product's variations as ids with attributes and no
+    // prices, so each is read individually. Without this the variation selector would
+    // have nothing to match a selection against.
+    const variationIds: Array<string | number> = Array.isArray(storeProduct.variations)
+      ? storeProduct.variations.map((variation: any) => variation?.id).filter((id: any) => id !== undefined)
+      : [];
+    const details = await Promise.all(variationIds.map((id) => fetchStoreApiVariation(id)));
+    const variations = details
+      .map((detail) => (detail ? mapStoreVariation(detail, currency, mapped.name) : null))
+      .filter((variation): variation is NonNullable<typeof variation> => variation !== null);
+    if (variations.length === 0) return null;
+    const amounts = variations.map((variation) => variation.price.amount_minor);
+    return {
+      ...mapped,
+      variations,
+      variants: variations,
+      priceRange: {
+        min: { amount_minor: Math.min(...amounts), currency },
+        max: { amount_minor: Math.max(...amounts), currency },
+      },
+    };
   }
 
   async listCategories(locale?: Locale): Promise<Category[]> {

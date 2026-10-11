@@ -2,6 +2,7 @@ import {
   Product,
   Category,
   Variation,
+  VariationAttributeValue,
   InventoryAvailability,
   StockStatus,
   Media,
@@ -410,8 +411,6 @@ export function mapStoreCart(raw: any, cartToken: string, defaultCurrency: strin
  */
 export function mapStoreSimpleProduct(raw: any, defaultCurrency: string = 'MAD'): Product | null {
   if (!raw || typeof raw !== 'object' || raw.id === undefined) return null;
-  if (raw.type !== undefined && raw.type !== 'simple') return null;
-  if (Array.isArray(raw.variations) && raw.variations.length > 0) return null;
 
   const currency = raw.prices?.currency_code || defaultCurrency;
   const amountMinor = parseInt(raw.prices?.price || '0', 10);
@@ -433,7 +432,7 @@ export function mapStoreSimpleProduct(raw: any, defaultCurrency: string = 'MAD')
     slug: String(raw.slug ?? ''),
     name: String(raw.name ?? ''),
     ...(raw.sku ? { sku: String(raw.sku) } : {}),
-    type: 'simple',
+    type: raw.type === 'variable' ? 'variable' : 'simple',
     description: String(raw.description ?? ''),
     ...(raw.short_description ? { shortDescription: String(raw.short_description) } : {}),
     price: { amount_minor: isNaN(amountMinor) ? 0 : amountMinor, currency },
@@ -473,4 +472,43 @@ export function mapStoreCategory(raw: any): Category | null {
     category.image = { url: String(raw.image.src), altText: String(raw.image.alt ?? '') };
   }
   return category;
+}
+
+/**
+ * Maps a single Store API **variation** product to the domain `Variation`.
+ *
+ * The Store API lists a variable product's variations as ids with attributes but no
+ * prices, so each one has to be read individually — which is what makes the variable
+ * product page need more than the simple case.
+ */
+export function mapStoreVariation(raw: any, currency: string, parentName: string): Variation | null {
+  if (!raw || typeof raw !== 'object' || raw.id === undefined) return null;
+  const amountMinor = parseInt(raw.prices?.price || '0', 10);
+  const regularMinor = parseInt(raw.prices?.regular_price || '0', 10);
+  const attributes: VariationAttributeValue[] = Array.isArray(raw.attributes)
+    ? raw.attributes
+        .filter((attribute: any) => attribute?.name !== undefined)
+        .map((attribute: any) => ({
+          name: String(attribute.name),
+          value: String(attribute.value ?? ''),
+          ...(attribute.label ? { label: String(attribute.label) } : {}),
+        }))
+    : [];
+  const label = attributes.map((attribute) => attribute.value).filter(Boolean).join(', ');
+
+  const variation: Variation = {
+    id: String(raw.id),
+    sku: String(raw.sku ?? ''),
+    name: label ? `${parentName} - ${label}` : parentName,
+    price: { amount_minor: isNaN(amountMinor) ? 0 : amountMinor, currency },
+    stock_quantity:
+      typeof raw.low_stock_remaining === 'number' ? raw.low_stock_remaining : null,
+    attributes,
+    isPurchasable: raw.is_purchasable !== false && raw.is_in_stock !== false,
+  };
+  if (regularMinor) variation.regularPrice = { amount_minor: regularMinor, currency };
+  if (raw.image?.src) {
+    variation.image = { url: String(raw.image.src), altText: String(raw.image.alt ?? '') };
+  }
+  return variation;
 }
