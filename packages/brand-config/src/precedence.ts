@@ -3,12 +3,14 @@ import {
   type BrandConfig,
   type CommerceConfig,
   type LayoutSlots,
+  type NavigationItem,
   validateBrandConfig,
 } from './schema';
 
 export interface ResolvedBrandConfiguration {
   name: string;
   themeName: string;
+  navigation: NavigationItem[];
   logos: {
     light: string;
     dark: string;
@@ -122,6 +124,12 @@ export const DEFAULT_LAYOUT_SLOTS: LayoutSlots = {
   footer: 'multi-column',
   variantSelector: 'pills',
 };
+
+export const DEFAULT_NAVIGATION_LINKS: NavigationItem[] = [
+  { label: 'Catalog', href: '/catalog', isExternal: false },
+  { label: 'About Us', href: '/about-us', isExternal: false },
+  { label: 'Contact', href: '/contact-us', isExternal: false },
+];
 
 /**
  * Resolves configuration precedence across layers:
@@ -258,6 +266,10 @@ export function resolveBrandConfiguration(
   return {
     name: profile.name,
     themeName,
+    navigation:
+      profile.navigation && profile.navigation.length > 0
+        ? profile.navigation
+        : DEFAULT_NAVIGATION_LINKS,
     logos: profile.logos,
     colors: resolvedColors,
     fonts: resolvedFonts,

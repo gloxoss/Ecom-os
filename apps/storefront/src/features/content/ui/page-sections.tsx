@@ -26,6 +26,12 @@ export interface PageSectionsProps {
   products: Product[];
 }
 
+function cleanText(cmsVal: string | undefined | null, fallbackVal: string): string {
+  if (!cmsVal || !cmsVal.trim()) return sanitizeCmsMarkup(fallbackVal);
+  const sanitized = sanitizeCmsMarkup(cmsVal).trim();
+  return sanitized.length > 0 ? sanitized : sanitizeCmsMarkup(fallbackVal);
+}
+
 /**
  * Merges WordPress CMS sections over local fallback defaults with strict sanitization.
  * Guarantees that even if CMS data is partially configured or unavailable,
@@ -38,41 +44,41 @@ export function resolvePageContent(cmsSections: PageSectionsData | null, fallbac
 
   const hero = cmsSections.hero
     ? {
-        title: sanitizeCmsMarkup(cmsSections.hero.title || fallbackData.hero.title),
-        description: sanitizeCmsMarkup(cmsSections.hero.description || fallbackData.hero.description),
+        title: cleanText(cmsSections.hero.title, fallbackData.hero.title),
+        description: cleanText(cmsSections.hero.description, fallbackData.hero.description),
         image: {
-          src: cmsSections.hero.image?.src || fallbackData.hero.image.src,
-          alt: sanitizeCmsMarkup(cmsSections.hero.image?.alt || fallbackData.hero.image.alt),
+          src: cmsSections.hero.image?.src?.trim() || fallbackData.hero.image.src,
+          alt: cleanText(cmsSections.hero.image?.alt, fallbackData.hero.image.alt),
         },
         categories:
           cmsSections.hero.categories && cmsSections.hero.categories.length > 0
             ? cmsSections.hero.categories.map((c) => ({
                 id: c.id,
-                label: sanitizeCmsMarkup(c.label),
-                href: c.href,
+                label: cleanText(c.label, ''),
+                href: c.href || '/catalog',
               }))
             : fallbackData.hero.categories,
         cta: {
-          label: sanitizeCmsMarkup(cmsSections.hero.cta?.label || fallbackData.hero.cta.label),
-          href: cmsSections.hero.cta?.href || fallbackData.hero.cta.href,
+          label: cleanText(cmsSections.hero.cta?.label, fallbackData.hero.cta.label),
+          href: cmsSections.hero.cta?.href?.trim() || fallbackData.hero.cta.href,
         },
       }
     : fallbackData.hero;
 
   const collection = cmsSections.collection
     ? {
-        label: sanitizeCmsMarkup(cmsSections.collection.label || fallbackData.collection.label),
-        title: sanitizeCmsMarkup(cmsSections.collection.title || fallbackData.collection.title),
+        label: cleanText(cmsSections.collection.label, fallbackData.collection.label),
+        title: cleanText(cmsSections.collection.title, fallbackData.collection.title),
         tabs:
           cmsSections.collection.tabs && cmsSections.collection.tabs.length > 0
             ? cmsSections.collection.tabs.map((t) => ({
                 id: t.id,
-                label: sanitizeCmsMarkup(t.label),
+                label: cleanText(t.label, ''),
               }))
             : fallbackData.collection.tabs,
         cta: {
-          label: sanitizeCmsMarkup(cmsSections.collection.cta?.label || fallbackData.collection.cta.label),
-          href: cmsSections.collection.cta?.href || fallbackData.collection.cta.href,
+          label: cleanText(cmsSections.collection.cta?.label, fallbackData.collection.cta.label),
+          href: cmsSections.collection.cta?.href?.trim() || fallbackData.collection.cta.href,
         },
       }
     : fallbackData.collection;
@@ -82,15 +88,15 @@ export function resolvePageContent(cmsSections: PageSectionsData | null, fallbac
       ? cmsSections.featureBlocks.map((fb, idx) => {
           const fallbackFb = fallbackData.featureBlocks?.[idx] || fallbackData.featureBlocks?.[0];
           return {
-            label: sanitizeCmsMarkup(fb.label || fallbackFb?.label || ''),
-            title: sanitizeCmsMarkup(fb.title || fallbackFb?.title || ''),
+            label: cleanText(fb.label, fallbackFb?.label || ''),
+            title: cleanText(fb.title, fallbackFb?.title || ''),
             cta: {
-              label: sanitizeCmsMarkup(fb.cta?.label || fallbackFb?.cta?.label || 'Découvrir'),
-              href: fb.cta?.href || fallbackFb?.cta?.href || '/catalog',
+              label: cleanText(fb.cta?.label, fallbackFb?.cta?.label || 'Découvrir'),
+              href: fb.cta?.href?.trim() || fallbackFb?.cta?.href || '/catalog',
             },
             image: {
-              src: fb.image?.src || fallbackFb?.image?.src || '/placeholder.jpg',
-              alt: sanitizeCmsMarkup(fb.image?.alt || fallbackFb?.image?.alt || ''),
+              src: fb.image?.src?.trim() || fallbackFb?.image?.src || '/placeholder.jpg',
+              alt: cleanText(fb.image?.alt, fallbackFb?.image?.alt || ''),
             },
           };
         })
@@ -98,16 +104,21 @@ export function resolvePageContent(cmsSections: PageSectionsData | null, fallbac
 
   const story = cmsSections.story
     ? {
-        label: sanitizeCmsMarkup(cmsSections.story.label || fallbackData.story.label),
-        title: sanitizeCmsMarkup(cmsSections.story.title || fallbackData.story.title),
+        label: cleanText(cmsSections.story.label, fallbackData.story.label),
+        title: cleanText(cmsSections.story.title, fallbackData.story.title),
         video: cmsSections.story.video || fallbackData.story.video,
-        paragraphs:
-          cmsSections.story.paragraphs && cmsSections.story.paragraphs.length > 0
-            ? cmsSections.story.paragraphs.map((p) => sanitizeCmsMarkup(p))
-            : fallbackData.story.paragraphs,
+        paragraphs: (() => {
+          if (!cmsSections.story.paragraphs || cmsSections.story.paragraphs.length === 0) {
+            return fallbackData.story.paragraphs;
+          }
+          const cleaned = cmsSections.story.paragraphs
+            .map((p) => cleanText(p, ''))
+            .filter((p) => p.length > 0);
+          return cleaned.length > 0 ? cleaned : fallbackData.story.paragraphs;
+        })(),
         cta: {
-          label: sanitizeCmsMarkup(cmsSections.story.cta?.label || fallbackData.story.cta?.label || 'Notre histoire'),
-          href: cmsSections.story.cta?.href || fallbackData.story.cta?.href || '/about-us',
+          label: cleanText(cmsSections.story.cta?.label, fallbackData.story.cta?.label || 'Notre histoire'),
+          href: cmsSections.story.cta?.href?.trim() || fallbackData.story.cta?.href || '/about-us',
         },
         values: cmsSections.story.values || fallbackData.story.values,
       }
@@ -115,14 +126,14 @@ export function resolvePageContent(cmsSections: PageSectionsData | null, fallbac
 
   const process = cmsSections.process
     ? {
-        label: sanitizeCmsMarkup(cmsSections.process.label || fallbackData.process.label),
-        title: sanitizeCmsMarkup(cmsSections.process.title || fallbackData.process.title),
+        label: cleanText(cmsSections.process.label, fallbackData.process.label),
+        title: cleanText(cmsSections.process.title, fallbackData.process.title),
         steps:
           cmsSections.process.steps && cmsSections.process.steps.length > 0
             ? cmsSections.process.steps.map((s) => ({
                 number: s.number,
-                title: sanitizeCmsMarkup(s.title),
-                description: sanitizeCmsMarkup(s.description),
+                title: cleanText(s.title, ''),
+                description: cleanText(s.description, ''),
               }))
             : fallbackData.process.steps,
       }
@@ -130,9 +141,9 @@ export function resolvePageContent(cmsSections: PageSectionsData | null, fallbac
 
   const quote = cmsSections.quote
     ? {
-        text: sanitizeCmsMarkup(cmsSections.quote.quote || fallbackData.quote.text),
-        author: sanitizeCmsMarkup(cmsSections.quote.author || fallbackData.quote.author),
-        role: sanitizeCmsMarkup(cmsSections.quote.role || fallbackData.quote.role || ''),
+        text: cleanText(cmsSections.quote.quote, fallbackData.quote.text),
+        author: cleanText(cmsSections.quote.author, fallbackData.quote.author),
+        role: cleanText(cmsSections.quote.role, fallbackData.quote.role || ''),
       }
     : fallbackData.quote;
 

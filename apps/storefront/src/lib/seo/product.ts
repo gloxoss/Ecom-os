@@ -108,19 +108,22 @@ export function buildProductJsonLd(
     availabilityUri = 'https://schema.org/PreOrder';
   }
 
-  // Derive genuine decimal price from minor units
-  const priceMinor = product.price?.amount_minor ?? 0;
-  const currency = product.price?.currency || 'MAD';
-  const priceDecimal = (priceMinor / 100).toFixed(2);
+  // Derive genuine decimal price from minor units only when price is defined
+  let offer: Record<string, unknown> | undefined;
+  if (product.price && typeof product.price.amount_minor === 'number') {
+    const priceMinor = product.price.amount_minor;
+    const currency = product.price.currency || 'MAD';
+    const priceDecimal = (priceMinor / 100).toFixed(2);
 
-  const offer: Record<string, unknown> = {
-    '@type': 'Offer',
-    price: priceDecimal,
-    priceCurrency: currency,
-    availability: availabilityUri,
-    url: options.canonicalUrl,
-    itemCondition: 'https://schema.org/NewCondition',
-  };
+    offer = {
+      '@type': 'Offer',
+      price: priceDecimal,
+      priceCurrency: currency,
+      availability: availabilityUri,
+      url: options.canonicalUrl,
+      itemCondition: 'https://schema.org/NewCondition',
+    };
+  }
 
   const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -129,8 +132,9 @@ export function buildProductJsonLd(
     description: cleanDescription,
     image: images.length > 0 ? images : undefined,
     sku: product.sku || product.id,
-    offers: offer,
+    ...(offer ? { offers: offer } : {}),
   };
+
 
   if (brand) {
     schema.brand = brand;
