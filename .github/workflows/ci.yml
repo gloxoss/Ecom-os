@@ -30,6 +30,25 @@ jobs:
       - run: pnpm test:coverage
       - run: pnpm hub:test
 
+      # Backend declaration gate: required companion plugins present, real HPOS
+      # opt-in, and version headers declared. Static metadata only - the live
+      # HPOS / Store API exercise needs WordPress + WooCommerce and stays in
+      # plugins/tests, which CI deliberately does not run (see
+      # docs/ecomos/evidence/ECO-1203/report.md).
+      - name: backend compatibility gate
+        run: pnpm exec tsx scripts/verify-backend-compatibility.ts
+
+      # Plugin contract suites (node:test, no WordPress or database needed).
+      - run: node --test plugins/wp-ecomos-operations/tests/*.spec.mjs plugins/wp-ecomos-addons/tests/*.spec.mjs
+
+      # Production runtime security invariants: CSP + nonce integrity, account
+      # route containment, private no-store on the revalidate route, fail-closed
+      # production config. Runs from apps/storefront so the `@/` tsconfig paths
+      # and next-intl's `next/server` import resolve.
+      - name: production runtime security checks
+        working-directory: apps/storefront
+        run: pnpm exec tsx ../../scripts/verify-production-runtime.mjs
+
       # Secret scanning
       - uses: gitleaks/gitleaks-action@v2
         env:
