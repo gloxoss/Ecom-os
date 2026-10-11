@@ -44,7 +44,7 @@ export function HeroSection({ data: hero }: HeroSectionProps) {
                   <div key={category.id} className="w-full">
                     <Link
                       href={category.href}
-                      className="hero-category-link group flex justify-center md:justify-between items-center w-full text-[10px] md:text-[11px] uppercase font-medium tracking-[0.25em] font-body text-white transition-all duration-300 md:opacity-70 hover:opacity-100 md:hover:pl-2"
+                      className="hero-category-link group flex justify-center md:justify-between items-center w-full min-h-[44px] py-2 text-[10px] md:text-[11px] uppercase font-medium tracking-[0.25em] font-body text-white transition-all duration-300 md:opacity-70 hover:opacity-100 md:hover:pl-2"
                     >
                       <span>{category.label}</span>
                       

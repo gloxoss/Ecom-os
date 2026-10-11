@@ -61,7 +61,7 @@ export function SiteHeaderClient() {
       >
 
         {/* Logo */}
-        <Link href="/" className="flex-none flex items-center hover:opacity-80 transition-opacity duration-300">
+        <Link href="/" className="flex-none flex items-center min-h-[44px] hover:opacity-80 transition-opacity duration-300">
           {/* Using plain <img> for SVG to avoid next/image domain restrictions and intrinsic-size inflation */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

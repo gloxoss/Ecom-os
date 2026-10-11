@@ -782,63 +782,69 @@ async function measureContrast(page: Page, scope: string): Promise<ContrastMeasu
 const INTERACTIVE_SELECTOR =
   'a[href], button, input[type="submit"], input[type="button"], [role="button"], [role="tab"], [role="link"]';
 
-/** Short, reproducible descriptions of every interactive element, in DOM order. */
-const LABELS_IN_PAGE = `(() => {
+/**
+ * Every measured target, with its box and its label, in one pass.
+ *
+ * Labels and boxes must come from the same snapshot. Collecting them in separate
+ * round-trips (a locator count, then an evaluate for labels, then per-element
+ * boundingBox calls) misaligns them the moment the DOM changes in between — React
+ * hydration and the reveal animations both do — which attributes a width to the
+ * wrong element and can leave the smallest target unnamed. That made a real
+ * failure impossible to locate.
+ */
+const TOUCH_TARGETS_IN_PAGE = `(() => {
+  const results = [];
   const nodes = Array.from(document.querySelectorAll(${JSON.stringify(INTERACTIVE_SELECTOR)}));
-  return nodes.map((element) => {
-    const tag = element.tagName.toLowerCase();
+  for (const element of nodes) {
+    // WCAG 2.5.8 exempts links that are inline within a sentence.
+    if (element.tagName === 'A' && getComputedStyle(element).display === 'inline') continue;
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 0.5 || rect.height < 0.5) continue;
+    // checkVisibility() walks display:none ancestors correctly. Do NOT use
+    // offsetParent === null as a visibility test: it is also null for position:fixed
+    // elements and their absolutely-positioned children, so it silently drops real
+    // controls in the fixed header.
+    if (typeof element.checkVisibility === 'function' && !element.checkVisibility()) continue;
+    if (getComputedStyle(element).visibility === 'hidden') continue;
     const aria = element.getAttribute('aria-label');
     const cls = typeof element.className === 'string' && element.className
       ? ' .' + element.className.trim().split(/\\s+/).slice(0, 3).join('.')
       : '';
     const text = (element.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 30);
-    return tag + (aria ? '[' + aria + ']' : '') + (text ? ' "' + text + '"' : '') + cls;
-  });
-})()`;
-
-/**
- * WCAG 2.5.8 exempts links that are inline within a sentence. Flag those so the
- * budget judges standalone controls only.
- */
-const INLINE_LINKS_IN_PAGE = `(() => {
-  const nodes = Array.from(document.querySelectorAll(${JSON.stringify(INTERACTIVE_SELECTOR)}));
-  return nodes.map((element) =>
-    element.tagName === 'A' && getComputedStyle(element).display === 'inline'
-  );
+    results.push({
+      label:
+        element.tagName.toLowerCase() +
+        (aria ? '[' + aria + ']' : '') +
+        (text ? ' "' + text + '"' : '') +
+        cls,
+      widthPx: Math.round(rect.width * 100) / 100,
+      heightPx: Math.round(rect.height * 100) / 100,
+    });
+  }
+  return results;
 })()`;
 
 async function measureTouchTargets(page: Page, scope: string): Promise<TouchTargetMeasurement> {
-  const locator = page.locator(INTERACTIVE_SELECTOR);
-  const total = await locator.count();
-  const limit = Math.min(total, 120);
-  const inlineLinks = (await page.evaluate(INLINE_LINKS_IN_PAGE)) as boolean[];
-  const labels = (await page.evaluate(LABELS_IN_PAGE)) as string[];
+  const all = (await page.evaluate(TOUCH_TARGETS_IN_PAGE)) as Array<{
+    label: string;
+    widthPx: number;
+    heightPx: number;
+  }>;
 
   let samples = 0;
   let smallest = Number.POSITIVE_INFINITY;
   let belowMinimum = 0;
   const smallestTargets: TouchTargetSample[] = [];
 
-  for (let index = 0; index < limit; index += 1) {
-    if (inlineLinks[index]) continue;
-    const element = locator.nth(index);
-    let box;
-    try {
-      if (!(await element.isVisible())) continue;
-      box = await element.boundingBox();
-    } catch {
-      continue;
-    }
-    if (!box || box.width < 0.5 || box.height < 0.5) continue;
-    const label = labels[index] ?? '';
-    const shortest = Math.min(box.width, box.height);
+  for (const target of all) {
+    const shortest = Math.min(target.widthPx, target.heightPx);
     samples += 1;
     if (shortest < smallest) smallest = shortest;
     if (shortest < STOREFRONT_BUDGETS.touchTargetMinimumPx) belowMinimum += 1;
     smallestTargets.push({
-      label,
-      widthPx: Number(box.width.toFixed(2)),
-      heightPx: Number(box.height.toFixed(2)),
+      label: target.label,
+      widthPx: target.widthPx,
+      heightPx: target.heightPx,
       shortestPx: Number(shortest.toFixed(2)),
     });
   }

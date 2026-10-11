@@ -23,7 +23,7 @@ export function WishlistButton({
         e.stopPropagation();
         toggleWishlist(productId);
       }}
-      className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-ring ${
+      className={`absolute top-2 right-2 w-11 h-11 rounded-full flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-ring ${
         active
           ? 'bg-red-50 text-red-500 border border-red-200'
           : 'bg-white/90 text-foreground hover:bg-white border border-border shadow-sm'

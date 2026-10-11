@@ -24,7 +24,7 @@ export function BrandFooter() {
               Navigation
             </h3>
             <div className="flex flex-col gap-4">
-              <Link href="/" className="group inline-flex overflow-hidden relative text-2xl lg:text-3xl font-medium tracking-tight">
+              <Link href="/" className="group inline-flex items-center min-h-[44px] overflow-hidden relative text-2xl lg:text-3xl font-medium tracking-tight">
                 <span className="group-hover:-translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
                   Home
                 </span>
@@ -32,7 +32,7 @@ export function BrandFooter() {
                   Home
                 </span>
               </Link>
-              <Link href="/catalog" className="group inline-flex overflow-hidden relative text-2xl lg:text-3xl font-medium tracking-tight">
+              <Link href="/catalog" className="group inline-flex items-center min-h-[44px] overflow-hidden relative text-2xl lg:text-3xl font-medium tracking-tight">
                 <span className="group-hover:-translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
                   Coffee
                 </span>
@@ -40,7 +40,7 @@ export function BrandFooter() {
                   Coffee
                 </span>
               </Link>
-              <Link href="/about-us" className="group inline-flex overflow-hidden relative text-2xl lg:text-3xl font-medium tracking-tight">
+              <Link href="/about-us" className="group inline-flex items-center min-h-[44px] overflow-hidden relative text-2xl lg:text-3xl font-medium tracking-tight">
                 <span className="group-hover:-translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
                   About
                 </span>
@@ -48,7 +48,7 @@ export function BrandFooter() {
                   About
                 </span>
               </Link>
-              <Link href="/contact-us" className="group inline-flex overflow-hidden relative text-2xl lg:text-3xl font-medium tracking-tight">
+              <Link href="/contact-us" className="group inline-flex items-center min-h-[44px] overflow-hidden relative text-2xl lg:text-3xl font-medium tracking-tight">
                 <span className="group-hover:-translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
                   Locations
                 </span>
@@ -116,7 +116,7 @@ export function BrandFooter() {
               Follow us
             </h3>
             <div className="flex flex-col gap-4">
-              <a href="#" target="_blank" rel="noopener noreferrer" className="group inline-flex overflow-hidden relative text-xl lg:text-2xl font-medium tracking-tight">
+              <a href="#" target="_blank" rel="noopener noreferrer" className="group inline-flex items-center min-h-[44px] overflow-hidden relative text-xl lg:text-2xl font-medium tracking-tight">
                 <span className="group-hover:-translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
                   Instagram
                 </span>
@@ -124,7 +124,7 @@ export function BrandFooter() {
                   Instagram
                 </span>
               </a>
-              <a href="#" target="_blank" rel="noopener noreferrer" className="group inline-flex overflow-hidden relative text-xl lg:text-2xl font-medium tracking-tight">
+              <a href="#" target="_blank" rel="noopener noreferrer" className="group inline-flex items-center min-h-[44px] overflow-hidden relative text-xl lg:text-2xl font-medium tracking-tight">
                 <span className="group-hover:-translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
                   Twitter/X
                 </span>
@@ -132,7 +132,7 @@ export function BrandFooter() {
                   Twitter/X
                 </span>
               </a>
-              <a href="#" target="_blank" rel="noopener noreferrer" className="group inline-flex overflow-hidden relative text-xl lg:text-2xl font-medium tracking-tight">
+              <a href="#" target="_blank" rel="noopener noreferrer" className="group inline-flex items-center min-h-[44px] overflow-hidden relative text-xl lg:text-2xl font-medium tracking-tight">
                 <span className="group-hover:-translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
                   LinkedIn
                 </span>

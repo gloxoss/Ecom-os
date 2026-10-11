@@ -132,7 +132,7 @@ export function ProductTabsClient({ tabs, size = "lg", emptyLabel = "No products
             data-tab-word
             onClick={() => selectTab(tab.id)}
             aria-selected={tab.id === activeId}
-            className={`font-heading font-light ${TAB_TEXT_SIZE[size]} tracking-tight transition-colors duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md ${
+            className={`inline-flex items-center min-h-[44px] font-heading font-light ${TAB_TEXT_SIZE[size]} tracking-tight transition-colors duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md ${
               tab.id === activeId ? "text-foreground" : "text-foreground/40 hover:text-foreground"
             }`}
           >

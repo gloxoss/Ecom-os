@@ -45,7 +45,7 @@ export function CatalogCollectionsSection({ collections }: { collections: Collec
 
                 <Link
                   href={`/catalog?category=${collection.id}#shop`}
-                  className="font-body text-sm font-medium uppercase tracking-[1.4px] text-foreground underline underline-offset-4 w-fit mt-auto"
+                  className="inline-flex items-center min-h-[44px] font-body text-sm font-medium uppercase tracking-[1.4px] text-foreground underline underline-offset-4 w-fit mt-auto"
                 >
                   Shop {collection.name}
                 </Link>

@@ -59,7 +59,7 @@ export function ReviewsClient({ label, items }: { label: string; items: Review[]
           type="button"
           onClick={prev}
           aria-label="Previous review"
-          className="group flex items-center justify-center w-[38px] h-[38px] rounded-full bg-background border border-border cursor-pointer transition-colors duration-300 hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="group flex items-center justify-center w-[44px] h-[44px] rounded-full bg-background border border-border cursor-pointer transition-colors duration-300 hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span className="relative block w-[18px] h-[18px] overflow-hidden">
             <Image src={ARROW} alt="" width={18} height={18} className="rotate-180 invert transition-transform duration-[400ms] ease-[cubic-bezier(0.86,0,0.07,1)] group-hover:-translate-x-full" />
@@ -70,7 +70,7 @@ export function ReviewsClient({ label, items }: { label: string; items: Review[]
           type="button"
           onClick={next}
           aria-label="Next review"
-          className="group flex items-center justify-center w-[38px] h-[38px] rounded-full bg-background border border-border cursor-pointer transition-colors duration-300 hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="group flex items-center justify-center w-[44px] h-[44px] rounded-full bg-background border border-border cursor-pointer transition-colors duration-300 hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span className="relative block w-[18px] h-[18px] overflow-hidden">
             <Image src={ARROW} alt="" width={18} height={18} className="invert transition-transform duration-[400ms] ease-[cubic-bezier(0.86,0,0.07,1)] group-hover:translate-x-full" />

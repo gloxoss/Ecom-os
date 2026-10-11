@@ -35,12 +35,12 @@ export function CartPageClient({ capabilities }: { capabilities: StoreCapabiliti
             <div className="flex items-center gap-2">
               <button
                 onClick={() => updateQty(item.lineKey, item.quantity - 1)}
-                className="w-8 h-8 border border-foreground/20 rounded flex items-center justify-center hover:bg-muted transition"
+                className="w-11 h-11 border border-foreground/20 rounded flex items-center justify-center hover:bg-muted transition"
               >−</button>
               <span className="w-8 text-center">{item.quantity}</span>
               <button
                 onClick={() => updateQty(item.lineKey, item.quantity + 1)}
-                className="w-8 h-8 border border-foreground/20 rounded flex items-center justify-center hover:bg-muted transition"
+                className="w-11 h-11 border border-foreground/20 rounded flex items-center justify-center hover:bg-muted transition"
               >+</button>
             </div>
             <p className="w-20 text-end font-medium">
