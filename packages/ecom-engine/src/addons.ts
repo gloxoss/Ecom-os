@@ -1,4 +1,4 @@
-import type { AddonManifest } from './addon-manifest.js';
+import type { AddonManifest } from './addon-manifest';
 
 export interface AddonContext {
   engineType: string;
@@ -12,4 +12,4 @@ export interface EcomAddon {
   disable: () => void;
 }
 
-export * from './addon-manifest.js';
+export * from './addon-manifest';

@@ -1,0 +1,20 @@
+{
+  "id": "multi-payment",
+  "name": "EcomOS Multi-Payment Gateway Addon",
+  "version": "0.1.0",
+  "description": "Payment gateway registry. Only gateways with completed acceptance may be enabled; COD is the currently certified method, and Stripe/CMI stay disabled until their own acceptance.",
+  "ecomOsApiRange": "^1.0.0",
+  "capabilities": {
+    "provided": ["multi_payment"]
+  },
+  "configSchema": {
+    "enabledProviders": {
+      "type": "array",
+      "required": false,
+      "description": "Gateway ids to register, from PAYMENT_PROVIDERS. Uncertified gateways must not be listed here."
+    }
+  },
+  "routes": [],
+  "uiSlots": [],
+  "adminSlots": []
+}

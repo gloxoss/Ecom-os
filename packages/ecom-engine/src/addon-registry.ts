@@ -6,8 +6,8 @@
  * Provides client-safe capability projections that cannot be forged.
  */
 
-import type { AddonManifest } from './addon-manifest.js';
-import { checkAddonCompatibility, validateAddonManifest } from './addon-manifest.js';
+import type { AddonManifest } from './addon-manifest';
+import { checkAddonCompatibility, validateAddonManifest } from './addon-manifest';
 
 export interface PublicCapabilityProjection {
   features: Record<string, boolean>;

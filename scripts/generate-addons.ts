@@ -34,6 +34,38 @@ export interface ResolvedAddon {
   manifest: AddonManifest;
 }
 
+/**
+ * An addon's `ADDONS` name is its feature flag, which need not match its
+ * directory: the RFQ addon lives at packages/addons-rfq but is toggled as
+ * `quotes` (that is the id the storefront route guard checks). Resolve by the
+ * declared flag before falling back to directory naming.
+ */
+export function resolveAddonByFlag(
+  name: string,
+  packagesDir: string
+): { importPath: string; dirPath: string } | null {
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(packagesDir, { withFileTypes: true });
+  } catch {
+    return null;
+  }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const manifestPath = path.join(packagesDir, entry.name, 'package.json');
+    if (!fs.existsSync(manifestPath)) continue;
+    try {
+      const pkg = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      if (pkg?.['ecom-os']?.addon === true && pkg['ecom-os'].flag === name && typeof pkg.name === 'string') {
+        return { importPath: pkg.name, dirPath: path.join(packagesDir, entry.name) };
+      }
+    } catch {
+      // Unreadable package.json is not an addon we can resolve; keep looking.
+    }
+  }
+  return null;
+}
+
 export function resolveAddon(
   name: string,
   pluginsDir: string,
@@ -44,6 +76,9 @@ export function resolveAddon(
   if (fs.existsSync(pkgPath)) {
     return { importPath: `@ecom-os/addons-${name}`, dirPath: pkgPath };
   }
+  // Then any package that declares this name as its addon flag
+  const byFlag = resolveAddonByFlag(name, packagesDir);
+  if (byFlag) return byFlag;
   // Fall back to plugins/{name}
   const pluginPath = path.join(pluginsDir, name);
   if (fs.existsSync(pluginPath)) {

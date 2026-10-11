@@ -1,0 +1,26 @@
+{
+  "id": "quotes",
+  "name": "EcomOS RFQ / Devis Addon",
+  "version": "1.0.0",
+  "description": "Guest request-for-quote basket, immutable offer revisions and optional duplicate-safe conversion into WooCommerce orders. Disabled unless ADDONS includes quotes.",
+  "ecomOsApiRange": "^1.0.0",
+  "capabilities": {
+    "provided": ["quotes", "quote_builder", "submit_quote"]
+  },
+  "configSchema": {
+    "rfqPolicy": {
+      "type": "object",
+      "required": false,
+      "description": "Overrides the default RFQ policy (offer expiry, per-line limits, stock reservation). Omitted fields fall back to DEFAULT_RFQ_POLICY."
+    }
+  },
+  "routes": [
+    { "path": "/api/rfq", "method": "POST", "authRequired": false },
+    { "path": "/api/rfq/offers", "method": "GET", "authRequired": false }
+  ],
+  "uiSlots": [],
+  "adminSlots": [],
+  "phpModule": {
+    "pluginFile": "plugins/wp-ecomos-rfq/wp-ecomos-rfq.php"
+  }
+}

@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "npm run generate-theme && npm run generate-addons && next dev",
-    "build": "npm run generate-theme && npm run generate-addons && next build",
+    "build": "npm run generate-theme && npm run generate-addons && next build --webpack",
+    "build:turbopack": "npm run generate-theme && npm run generate-addons && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",

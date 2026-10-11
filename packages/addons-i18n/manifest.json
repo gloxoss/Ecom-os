@@ -1,0 +1,28 @@
+{
+  "id": "i18n",
+  "name": "EcomOS Internationalisation Addon",
+  "version": "0.1.0",
+  "description": "Locale routing, message catalogues and RTL support. Disabled unless ADDONS includes i18n.",
+  "ecomOsApiRange": "^1.0.0",
+  "capabilities": {
+    "provided": ["i18n"]
+  },
+  "configSchema": {
+    "locales": {
+      "type": "array",
+      "required": false,
+      "description": "Active locale codes. Defaults to the addon's own locale catalogue."
+    },
+    "defaultLocale": {
+      "type": "string",
+      "required": false,
+      "description": "Fallback locale used when no locale is present in the request path."
+    }
+  },
+  "routes": [],
+  "uiSlots": [],
+  "adminSlots": [],
+  "phpModule": {
+    "pluginFile": "plugins/wp-epioso-i18n/wp-epioso-i18n.php"
+  }
+}

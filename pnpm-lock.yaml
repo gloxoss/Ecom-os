@@ -141,8 +141,24 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@26.6.4)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
 
+  packages/addons-rfq:
+    dependencies:
+      '@ecom-os/engine':
+        specifier: workspace:*
+        version: link:../ecom-engine
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 4.1.11
+        version: 4.1.11(@types/node@26.6.4)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+
   packages/brand-config:
     dependencies:
+      '@ecom-os/themes':
+        specifier: workspace:*
+        version: link:../themes
       zod:
         specifier: ^4.6.5
         version: 4.6.5
@@ -213,7 +229,11 @@ importers:
 
   plugins/cod-payment: {}
 
-  plugins/dummy-addon: {}
+  plugins/dummy-addon:
+    devDependencies:
+      '@ecom-os/engine':
+        specifier: workspace:*
+        version: link:../../packages/ecom-engine
 
   plugins/stripe-payment: {}
 

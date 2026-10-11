@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Any variant build output (e.g. backups taken during audits) must never be
+# scanned as source: Tailwind v4 auto-detects sources and a bundle directory
+# produces invalid generated CSS.
+/.next*/
