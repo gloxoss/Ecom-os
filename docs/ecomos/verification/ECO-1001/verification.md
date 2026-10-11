@@ -2,9 +2,9 @@
 
 - **Task:** `ECO-1001` (the audit's scoped correction task)
 - **Verifier:** `claude-verifier` (separate registration from the executor `claude-platform`)
-- **Verified commit:** `a009e5ec2e7bb2ee307dbf6b7a4c2482b60b8978`
-  (earlier verified commit of this round: `de1c802`; the same checks were re-run at the
-  final commit and are the ones reported below)
+- **Verified commit:** `434a16061a7a065dba341b2710162589a1938d24`
+  (this round's checks were run at three points: `de1c802`, `a009e5e` and the head above;
+  every command below was re-run at the head and those are the results reported)
 - **Verification worktree:** `C:/Users/OMEN/OneDrive/Documents/projects/ParaLoca/.audit-verify`
   — a separate `git worktree` at the verified commit with its **own installed
   dependencies**, so the checks do not read the executor's working tree.
@@ -59,9 +59,16 @@ on this machine from components already present. Full record and exact SQL in
 | 15 | Real backup import, integrity inspection, rollback | `verify-restore.ts` **exit 0**: 54 tables, HPOS table present, 0 null totals, 10 guest orders preserved, RFQ quote/revision integrity intact, target dropped and confirmed absent. With a bad dump it exits 1 and reports 0 tables rather than certifying |
 | 16 | Converted order priced in the store currency | order 24 from a revision carrying no currency: **2400.00 MAD**, not USD |
 
+| 17 | Browser budget, including the previously failing touch targets | `measure-storefront.ts --browser` **exit 0, 18 measured, 0 failed, overallStatus PASS**; smallest touch target **44 px with 0 below minimum** on both `/` and `/catalog` (was 16.5 px with 13 and 16 below) |
+| 18 | Shipping and tax | Order 25 carries a real `shipping` line (cost 30, tax 6) and a real `tax` line (`MA-TVA-1`); cart totals 2400 goods + 30 shipping + 486 tax = **2916.00 MAD**, matching the storefront confirmation |
+| 19 | Out of stock | `POST /cart/add-item` for a zero-stock variation returns **400** `woocommerce_rest_product_out_of_stock` |
+| 20 | Retry cannot duplicate an order | After the key fix, two further submissions created **no new order** (`max_id` unchanged) and the second was refused with "This submission key belongs to a different session" |
+
 Controls confirming the fixes are real, not cosmetic: the cross-owner/cart guard fired for
 real during this work (`cart_out_of_sync` when the browser claimed a variation the cart did
-not hold), and the restore script refused an artifact that would have produced a false pass.
+not hold), the restore script refused an artifact that would have produced a false pass, and
+the retry case above **did** create duplicate orders (26 and 28) before the key fix — which
+is how the defect was found.
 
 Positive controls on the checks that were strengthened — each actually executed, not
 read from source:
