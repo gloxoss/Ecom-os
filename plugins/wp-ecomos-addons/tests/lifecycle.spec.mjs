@@ -19,13 +19,69 @@ test('lifecycle.php functions and contracts', () => {
   assert.match(content, /function\s+ecomos_addon_verify_integrity\s*\(/, 'Must define ecomos_addon_verify_integrity');
 });
 
-test('Core WooCommerce data protection invariant', () => {
+test('Core WordPress and WooCommerce migration guard contract', () => {
   const lifecyclePath = path.join(pluginDir, 'lifecycle.php');
   const content = fs.readFileSync(lifecyclePath, 'utf8');
 
-  // Must detect and block DROP / ALTER on core tables
-  assert.match(content, /posts|postmeta|wc_orders/, 'Must guard core WooCommerce tables');
+  // Must guard comprehensive list of core WordPress and WooCommerce tables
+  assert.match(content, /posts/, 'Must guard posts');
+  assert.match(content, /postmeta/, 'Must guard postmeta');
+  assert.match(content, /options/, 'Must guard options');
+  assert.match(content, /users/, 'Must guard users');
+  assert.match(content, /wc_orders/, 'Must guard wc_orders');
+  assert.match(content, /wc_orders_meta/, 'Must guard wc_orders_meta');
+  assert.match(content, /woocommerce_order_items/, 'Must guard woocommerce_order_items');
+
+  // Must guard destructive DDL/DML operations
+  assert.match(content, /DROP\\s\+\(\?:DATABASE\|SCHEMA\)/, 'Must prohibit DROP DATABASE / SCHEMA');
+  assert.match(content, /RENAME\\s\+TABLE/, 'Must prohibit RENAME TABLE targeting core');
+  assert.match(content, /DELETE.*FROM/, 'Must prohibit DELETE FROM targeting core');
   assert.match(content, /Prohibited SQL operation targeting core WooCommerce tables/, 'Must return explicit error on dangerous SQL');
+});
+
+test('Simulated migration guard regex against prohibited and permitted SQL', () => {
+  const prefixes = ['wp_', 'wpt_'];
+  const coreNames = [
+    'posts', 'postmeta', 'options', 'users', 'usermeta',
+    'terms', 'term_taxonomy', 'term_relationships', 'comments', 'commentmeta',
+    'wc_orders', 'wc_orders_meta', 'wc_order_product_lookup',
+    'wc_order_stats', 'wc_customer_lookup',
+    'woocommerce_order_items', 'woocommerce_order_itemmeta'
+  ];
+
+  const tables = [];
+  for (const p of prefixes) {
+    for (const c of coreNames) {
+      tables.push(p + c);
+    }
+  }
+  const disjunction = `(?:${tables.join('|')})`;
+  const ddlPattern = new RegExp(`\\b(?:DROP|ALTER|TRUNCATE)\\s+(?:TABLE\\s+)?(?:IF\\s+EXISTS\\s+)?(?:\`?[\\w$]+\`?\\s*\\.\\s*)?\`?${disjunction}\`?\\b`, 'i');
+  const renamePattern = new RegExp(`\\bRENAME\\s+TABLE\\s+(?:(?:\`?[\\w$]+\`?\\s*\\.\\s*)?\`?${disjunction}\`?\\s+TO\\b|.*?\\bTO\\s+(?:\`?[\\w$]+\`?\\s*\\.\\s*)?\`?${disjunction}\`?\\b)`, 'i');
+  const deletePattern = new RegExp(`\\bDELETE\\s+(?:LOW_PRIORITY\\s+|QUICK\\s+|IGNORE\\s+)?FROM\\s+(?:\`?[\\w$]+\`?\\s*\\.\\s*)?\`?${disjunction}\`?\\b`, 'i');
+  const dropDbPattern = /\bDROP\s+(?:DATABASE|SCHEMA)\b/i;
+
+  const isGuarded = (sql) => {
+    return dropDbPattern.test(sql) || ddlPattern.test(sql) || renamePattern.test(sql) || deletePattern.test(sql);
+  };
+
+  // Prohibited statements must be rejected
+  assert.equal(isGuarded('DROP TABLE wp_posts'), true);
+  assert.equal(isGuarded('DROP TABLE `other_db`.`wpt_posts`'), true);
+  assert.equal(isGuarded('DROP TABLE IF EXISTS wpt_options'), true);
+  assert.equal(isGuarded('ALTER TABLE wpt_wc_orders ADD COLUMN injected VARCHAR(255)'), true);
+  assert.equal(isGuarded('TRUNCATE TABLE wpt_wc_orders'), true);
+  assert.equal(isGuarded('TRUNCATE wpt_users'), true);
+  assert.equal(isGuarded('RENAME TABLE wpt_posts TO wpt_posts_old'), true);
+  assert.equal(isGuarded('DELETE FROM wpt_postmeta WHERE meta_id > 100'), true);
+  assert.equal(isGuarded('DROP DATABASE ecomos_production'), true);
+  assert.equal(isGuarded('DROP SCHEMA ecomos_live'), true);
+
+  // Permitted statements on addon-owned tables must pass
+  assert.equal(isGuarded('CREATE TABLE wpt_ecomos_reports (id INT PRIMARY KEY)'), false);
+  assert.equal(isGuarded('ALTER TABLE wpt_ecomos_reports ADD COLUMN created_at DATETIME'), false);
+  assert.equal(isGuarded('DROP TABLE wpt_ecomos_reports'), false);
+  assert.equal(isGuarded('TRUNCATE TABLE wpt_ecomos_reports'), false);
 });
 
 test('Data retention on deactivation contract', () => {

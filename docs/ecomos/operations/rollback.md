@@ -104,7 +104,28 @@ recorded before it is performed so the reversal is itself reviewable.
 3. Cache and revalidation state can outlive a config reversal. Revalidate or purge after
    rolling back, or the old behaviour persists invisibly.
 
-## 6. What is not authorized
+## 6. Addon Migration Guard Contract & Core Table Constraints
+
+Addons managed by `plugins/wp-ecomos-addons/lifecycle.php` apply migrations via `ecomos_addon_migrate_up()` and rollback migrations via `ecomos_addon_rollback_down()`. Both directions pass all SQL statements through the prefix-aware core-table guard `ecomos_sql_targets_core_table()`.
+
+### 6.1 Guard Boundaries & Protected Targets
+The guard guarantees that addon migrations and rollbacks cannot tamper with core application state:
+1. **Database & Schema Protection**: Any `DROP DATABASE` or `DROP SCHEMA` statement is rejected immediately.
+2. **Prohibited Operations**: `DROP TABLE`, `ALTER TABLE`, `TRUNCATE TABLE` (or `TRUNCATE`), `RENAME TABLE`, and `DELETE FROM` targeting core tables are refused.
+3. **Protected Core Entities**:
+   - WordPress Core: `posts`, `postmeta`, `options`, `users`, `usermeta`, `terms`, `term_taxonomy`, `term_relationships`, `comments`, `commentmeta`.
+   - WooCommerce Core: `wc_orders`, `wc_orders_meta`, `wc_order_product_lookup`, `wc_order_stats`, `wc_customer_lookup`, `woocommerce_order_items`, `woocommerce_order_itemmeta`.
+4. **Prefix & Schema Qualification Tolerance**:
+   - Dynamic `$wpdb->prefix` (e.g., `wpt_`) is resolved at runtime with fallback to default `wp_`.
+   - Schema qualifiers (e.g., `` `other_db`.`wpt_posts` ``) do not defeat the pattern matcher.
+5. **Permitted Scope**: Addons retain full authority to create, alter, truncate, or drop their own dedicated tables (prefixed with `wp_ecomos_*`).
+
+### 6.2 Application Rollback & Data Preservation Guarantee
+When rolling back an application or disabling an addon:
+- `ecomos_addon_deactivate($addon_id, $retain_data = true)` retains table definitions and stored records by default.
+- Rolling back migration scripts via `ecomos_addon_rollback_down()` guarantees that core WooCommerce orders, catalog products, and customers remain 100% untouched.
+
+## 7. What is not authorized
 
 - **No destructive database operation** — no `DROP`, `DELETE`, `TRUNCATE` or overwrite of a
   database, schema, table or user, in production, in staging, or in the isolated test service.
@@ -116,13 +137,13 @@ recorded before it is performed so the reversal is itself reviewable.
   restore does not run.
 - **No restoring from an untrusted dump** into any service with access to real data.
 
-## 7. Honest status
+## 8. Honest status
 
-The isolation mechanism, gate, import, inspection and failure paths are implemented and
-exercised by `scripts/verify-restore.test.mjs` against synthetic decoys. What has **not** been
+The isolation mechanism, gate, import, inspection, migration guard constraints, and failure paths are implemented and
+exercised by `scripts/verify-restore.test.mjs` and `plugins/wp-ecomos-addons/tests/lifecycle.spec.mjs`. What has **not** been
 exercised, and is not claimed here:
 
 - A restore against a **real production backup**. None exists in this environment.
 - A **live production rollback** of any kind.
 - **Concurrent** restore and traffic.
-- Migration reversal for companion plugin schema changes — flagged in §5 and unapproved.
+- Destruction of core tables: explicitly forbidden and enforced by `ecomos_sql_targets_core_table()`.

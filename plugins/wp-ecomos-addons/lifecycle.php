@@ -12,39 +12,89 @@ if (!defined('ABSPATH')) {
 
 /**
  * Whether a migration statement destroys or rewrites a core WordPress or
- * WooCommerce table.
+/**
+ * Prefix-aware core-table migration guard.
  *
- * The prefix is read from $wpdb instead of being hardcoded. An earlier revision
- * matched only the literal `wp_` prefix, so on any install using a custom prefix
- * (this project's test install uses `wpt_`) a migration carrying
- * `DROP TABLE wpt_posts` sailed past the guard and deleted the posts table. The
- * `wp_` form is kept as a second candidate so a dump restored under a different
- * prefix is still caught.
+ * Prevents addon migrations or rollbacks from executing destructive DDL or DML
+ * against WordPress or WooCommerce core tables.
+ *
+ * Guaranteed boundaries:
+ *  - Refuses DROP TABLE, ALTER TABLE, TRUNCATE [TABLE], RENAME TABLE, DELETE FROM
+ *    against core WordPress tables (posts, postmeta, options, users, usermeta,
+ *    terms, term_taxonomy, term_relationships, comments, commentmeta) and
+ *    WooCommerce tables (wc_orders, wc_orders_meta, wc_order_product_lookup,
+ *    wc_order_stats, wc_customer_lookup, woocommerce_order_items, woocommerce_order_itemmeta).
+ *  - Refuses DROP DATABASE / DROP SCHEMA outright.
+ *  - Handles dynamic $wpdb->prefix (e.g. wpt_) with fallback to wp_.
+ *  - Catches schema-qualified identifiers (e.g. `other_db`.`wpt_posts`).
+ *  - Permits safe addon operations on addon-owned tables (e.g. wp_ecomos_*).
  *
  * @param string $sql
- * @return bool
+ * @return bool True if statement targets a protected core table or is prohibited DDL
  */
 function ecomos_sql_targets_core_table(string $sql): bool {
     global $wpdb;
+
+    // 1. Prohibit database-level drop outright
+    if (preg_match('/\bDROP\s+(?:DATABASE|SCHEMA)\b/i', $sql)) {
+        return true;
+    }
 
     $prefixes = array('wp_');
     if (isset($wpdb) && is_object($wpdb) && !empty($wpdb->prefix)) {
         $prefixes[] = $wpdb->prefix;
     }
 
+    $core_names = array(
+        'posts',
+        'postmeta',
+        'options',
+        'users',
+        'usermeta',
+        'terms',
+        'term_taxonomy',
+        'term_relationships',
+        'comments',
+        'commentmeta',
+        'wc_orders',
+        'wc_orders_meta',
+        'wc_order_product_lookup',
+        'wc_order_stats',
+        'wc_customer_lookup',
+        'woocommerce_order_items',
+        'woocommerce_order_itemmeta',
+    );
+
     $tables = array();
     foreach (array_unique($prefixes) as $prefix) {
-        foreach (array('posts', 'postmeta', 'wc_orders') as $core_table) {
+        foreach ($core_names as $core_table) {
             $tables[] = preg_quote($prefix . $core_table, '/');
         }
     }
 
-    // A schema-qualified name (`other_db`.`wpt_posts`) is the same target, so the
-    // qualifier is allowed in the pattern rather than letting it slip through.
-    $pattern = '/\b(?:DROP|ALTER|TRUNCATE)\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:`?[\w$]+`?\s*\.\s*)?`?(?:'
-        . implode('|', $tables) . ')`?\b/i';
+    $table_disjunction = '(?:' . implode('|', $tables) . ')';
 
-    return (bool) preg_match($pattern, $sql);
+    // 2. Prohibit DROP / ALTER / TRUNCATE on core tables (schema-qualified tolerated)
+    $ddl_pattern = '/\b(?:DROP|ALTER|TRUNCATE)\s+(?:TABLE\s+)?(?:IF\s+EXISTS\s+)?(?:`?[\w$]+`?\s*\.\s*)?`?'
+        . $table_disjunction . '`?\b/i';
+    if (preg_match($ddl_pattern, $sql)) {
+        return true;
+    }
+
+    // 3. Prohibit RENAME TABLE where source or target is a core table
+    $rename_pattern = '/\bRENAME\s+TABLE\s+(?:(?:`?[\w$]+`?\s*\.\s*)?`?' . $table_disjunction . '`?\s+TO\b|.*?\bTO\s+(?:`?[\w$]+`?\s*\.\s*)?`?' . $table_disjunction . '`?\b)/i';
+    if (preg_match($rename_pattern, $sql)) {
+        return true;
+    }
+
+    // 4. Prohibit DELETE FROM on core tables
+    $delete_pattern = '/\bDELETE\s+(?:LOW_PRIORITY\s+|QUICK\s+|IGNORE\s+)?FROM\s+(?:`?[\w$]+`?\s*\.\s*)?`?'
+        . $table_disjunction . '`?\b/i';
+    if (preg_match($delete_pattern, $sql)) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
