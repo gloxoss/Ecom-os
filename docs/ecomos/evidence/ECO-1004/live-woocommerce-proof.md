@@ -260,3 +260,42 @@ What this establishes is the architecture the audit asked about: isolated client
 installations, each with its own deployment, WordPress, database and secrets, are what this
 codebase serves — not a shared multitenant platform, and the same storefront build drives
 both.
+
+## CONFIRMED OPEN DEFECT — a simple product cannot be checked out
+
+Found while testing the second client, reproduced on client 1, **not fixed**.
+
+```
+Authoritative cart:  id=10  type=simple  variation=[]  qty=1
+Browser payload:     [{productId:"10", slug:..., quantity:1}]
+Result:              "La commande n'a pas pu être enregistrée (cart_out_of_sync)"
+```
+
+`submitCheckoutFormAction` refuses the submission at
+`cartCoversPayload(parsed.lines, cart.items)`. Every order placed successfully in this
+round was a **variable** product, where the payload carries a `variationId` and matches the
+authoritative line by variation identity. For a simple product the payload has no
+`variationId`, so the matcher takes its second branch:
+
+```ts
+return item.productId === line.productId && !item.variantId;
+```
+
+Both sides appear to read "10" — the Store API cart dump shows `id=10` and
+`mapStoreCartItem` sets `productId = String(raw.id)` — so the mismatch is **not explained**
+by source reading alone. Two candidates remain, neither confirmed:
+
+1. The cart line the action fetches is not the line the browser holds. The server log shows
+   `[fetchCartAction] Cart-Token not persisted in this phase` on every request, i.e.
+   WooCommerce is rotating the Cart-Token and the new one cannot be written during render.
+   The action may therefore evaluate a different cart than the one the payload describes.
+2. A type or identity difference on one side (`String` vs number, line key vs product id)
+   that `===` rejects.
+
+**Impact:** a guest can buy a variable product but **not a simple one** — a headline
+acceptance path of finding 1. Reproduce with a simple WooCommerce product, seed the cart via
+`POST /cart/add-item`, seed the client cart, and submit; it returns `cart_out_of_sync` every
+time.
+
+This is recorded as an open defect rather than closed, and rather than papered over by
+loosening the guard: the guard is doing its job by refusing a submission it cannot verify.
