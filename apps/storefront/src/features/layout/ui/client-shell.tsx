@@ -1,6 +1,7 @@
 import React from 'react';
 import { themeConfigToCssVars, type EcomTheme } from '@ecom-os/themes';
-import { getActiveClientTheme } from '../../../lib/client-profile';
+import { getActiveClientTheme, getActiveClientProfile } from '../../../lib/client-profile';
+import { isAddonActive } from '../../../lib/addon-capabilities';
 
 export interface ClientShellProps {
   children?: React.ReactNode;
@@ -10,6 +11,7 @@ export interface ClientShellProps {
   theme?: EcomTheme;
   locale?: string;
   className?: string;
+  quoteEnabled?: boolean;
 }
 
 /**
@@ -25,9 +27,15 @@ export function ClientShell({
   theme,
   locale = 'fr',
   className = '',
+  quoteEnabled,
 }: ClientShellProps) {
   const resolvedTheme = theme || getActiveClientTheme();
   const cssVars = themeConfigToCssVars(resolvedTheme.config) as React.CSSProperties;
+
+  const rfqFlag = process.env.NEXT_PUBLIC_FEATURE_RFQ !== 'false';
+  const showQuoteBanner = quoteEnabled !== undefined
+    ? quoteEnabled
+    : (rfqFlag && (isAddonActive('quotes') || Boolean(getActiveClientProfile()?.capabilities?.quotes)));
 
   return (
     <div
@@ -46,21 +54,23 @@ export function ClientShell({
       </a>
 
       {/* Discreet Secondary Professional RFQ Utility Banner */}
-      <div className="w-full bg-muted/60 border-b border-border text-xs py-1.5 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-[1320px] mx-auto flex items-center justify-between">
-          <span className="text-muted-foreground">
-            {locale === 'ar' ? 'موزع معتمد للمعدات الطبية بالمغرب' : 'Distributeur agréé de matériel médical au Maroc'}
-          </span>
-          <a
-            href={`/${locale}/devis`}
-            className="text-accent hover:underline font-medium flex items-center gap-1.5"
-            data-testid="pro-devis-link"
-          >
-            <span>{locale === 'ar' ? 'فضاء المهنيين وطلب عرض سعر' : 'Espace Professionnels & Demande de Devis'}</span>
-            <span aria-hidden="true">→</span>
-          </a>
+      {showQuoteBanner ? (
+        <div className="w-full bg-muted/60 border-b border-border text-xs py-1.5 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[1320px] mx-auto flex items-center justify-between">
+            <span className="text-muted-foreground">
+              {locale === 'ar' ? 'موزع معتمد للمعدات الطبية بالمغرب' : 'Distributeur agréé de matériel médical au Maroc'}
+            </span>
+            <a
+              href={`/${locale}/devis`}
+              className="text-accent hover:underline font-medium flex items-center gap-1.5"
+              data-testid="pro-devis-link"
+            >
+              <span>{locale === 'ar' ? 'فضاء المهنيين وطلب عرض سعر' : 'Espace Professionnels & Demande de Devis'}</span>
+              <span aria-hidden="true">→</span>
+            </a>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {/* Header Slot */}
       {headerSlot ? (

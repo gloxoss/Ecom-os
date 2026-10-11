@@ -3,9 +3,15 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useQuoteStore } from '../model/quote-store';
+import type { QuoteBasket } from '../../../../../../packages/addons-rfq/src/index';
 
-export function QuoteBuilder() {
-  const basket = useQuoteStore(state => state.basket);
+export interface QuoteBuilderProps {
+  initialBasket?: QuoteBasket;
+}
+
+export function QuoteBuilder({ initialBasket }: QuoteBuilderProps = {}) {
+  const storeBasket = useQuoteStore(state => state.basket);
+  const basket = initialBasket || storeBasket;
   const updateQty = useQuoteStore(state => state.updateQty);
   const updateNotes = useQuoteStore(state => state.updateNotes);
   const removeItem = useQuoteStore(state => state.removeItem);
