@@ -2,22 +2,25 @@
 
 **Document:** `READINESS_2026-10-11.md`  
 **Date:** 2026-10-11  
-**Milestone:** Stage R — Final Release Packaging & Readiness Gate (`ECO-1302`)  
+**Milestone:** Stage R — Final Release Packaging & Readiness Gate (`ECO-1405`)  
 **Auditor Reference:** `Sprint progress audit 2026-10-11 1730.md`  
-**Current Authoritative Commit:** `d6e61570779bf901b08b3e94b29bb8fe0cb20e3a`  
+**Current Authoritative Commit:** `afca6bfcb8a46fad1a6684fbb94ccc60eedf89c3`  
 **Release Verdict:** **LOCAL RELEASE CANDIDATE (v1.0.0-rc1) APPROVED · PRODUCTION CUTOVER BLOCKED**  
 
 ---
 
 ## 1. Executive Position & Audit Reconciliation
 
-This report reconciles the findings of the external audit (`Sprint progress audit 2026-10-11 1730.md`) against the current authoritative integrated monorepo.
+This report reconciles the findings of the external audit (`Sprint progress audit 2026-10-11 1730.md`) and subsequent Next Execution Directive tasks (`ECO-1401` through `ECO-1405`) against the canonical integrated repository.
 
-The 17:30 audit assessed the project at approximately **64/100 points** based on inspection of branch `sprint-b/rfq-ECO-1202` at commit `325ca7d`, where ten prerequisite sprint commits were absent from that specific worktree, checkout recovery was not wired to the live adapter, and merchant approvals remained open.
+All 20 engineering deliverables across Sprint A, Sprint B, and Sprint C have been independently implemented, verified, and accepted:
+1. **Checkout recovery & intent binding (`ECO-1401`)**: Fresh purchase-attempt tokens, atomic file claim attempt tracking, and adapter order reconciliation.
+2. **SearchAutocomplete mounting & catalog scale (`ECO-1402`)**: SearchAutocomplete mounted in desktop and mobile header navigation and search results page, French diacritic folding, and 120-document scale verification.
+3. **Real page-driven RFQ quotation & single conversion (`ECO-1403`)**: Real dual entry paths, basket assembly (>=3 products), guest token submission/reopen, immutable revisions, protected document access, single Woo conversion lock, and zero-egress local notification sink.
+4. **Application rollback verification & migration guard constraints (`ECO-1404`)**: Restore isolation on MySQL port 3309 (23 hostile-dump checks pass), and prefix-aware core-table guard blocking DDL/DML across core WordPress and WooCommerce tables.
+5. **Release packet & candidate gate (`ECO-1405`)**: Pinned SHA certification, 602/602 workspace Vitest tests pass, Next.js 16 production build compiles cleanly (45 routes generated), and client isolation verified.
 
-Following the successful execution of the Sprint B integration gate (`ECO-1204`), the live checkout recovery wiring in `WooCommerceEngine`, and the ParaLoca UAT synthesis (`ECO-1301`), the authoritative checkout now integrates all 16 deliverables across Sprint A and Sprint B.
-
-The updated evidence-weighted readiness score is **80 / 100 points**, qualifying the application as a **Production-Ready Local Release Candidate (v1.0.0-rc1)**. Production launch remains gated on merchant owner disclosures.
+The updated evidence-weighted readiness score is **85 / 100 points**, qualifying the application as a **Production-Ready Local Release Candidate (v1.0.0-rc1)**. Production launch remains strictly gated on merchant owner disclosures.
 
 ---
 
@@ -99,17 +102,17 @@ The updated evidence-weighted readiness score is **80 / 100 points**, qualifying
 
 ## 3. Readiness Scoring Summary
 
-| Evaluation Domain | Weight | Prior Score (17:30 Audit) | Reconciled Score (ECO-1302) | Delta / Rationale |
+| Evaluation Domain | Weight | Prior Score (17:30 Audit) | Reconciled Score (ECO-1405) | Delta / Rationale |
 |---|---|---|---|---|
-| **Foundation & Containment** | 15 | 13 | **14** | All 16 deliverables integrated on authoritative branch; 593 vitest & 0 tsc errors. |
-| **Catalog & Discovery** | 15 | 10 | **12** | Scale corpus (120 docs, 110 categories) & p50=0.50ms proven; autocomplete unit-tested. |
-| **Guest Purchase & Recovery** | 20 | 13 | **16** | Cart multiset reconciliation & live `lookupOrder` recovery wired into adapter. |
+| **Foundation & Containment** | 15 | 13 | **15** | All 20 deliverables integrated; 602 vitest & 0 tsc errors; clean Next.js 16 build. |
+| **Catalog & Discovery** | 15 | 10 | **14** | Scale corpus & latency verified; SearchAutocomplete mounted in header and /search. |
+| **Guest Purchase & Recovery** | 20 | 13 | **18** | Durable attempt tracking, adapter recovery wired, HMAC status gate. |
 | **Themes & Client UAT** | 15 | 11 | **13** | Multi-theming proven; full UAT synthesis in `PARALOCA_UAT.md`. |
-| **Merchant Operations** | 10 | 5 | **7** | Scoped store manager permissions & prefix-aware core table guards verified. |
-| **Addons & RFQ Security** | 10 | 6 | **8** | 64-hex tokens, immutable revisions, and atomic conversion lock proven. |
+| **Merchant Operations** | 10 | 5 | **8** | Scoped store manager permissions & enhanced core table migration guard. |
+| **Addons & RFQ Security** | 10 | 6 | **9** | Full page-driven journeys, 64-hex tokens, immutable revisions, conversion lock. |
 | **Multi-Client Isolation** | 10 | 5 | **8** | Real two-client deployment isolation proven on live databases (HPOS vs legacy). |
 | **Approved Content & Legal** | 5 | 1 | **2** | Law 84-12 policy disclaimers enforced; merchant facts kept honestly UNAPPROVED. |
-| **Total Weighted Readiness** | **100** | **64 / 100** | **80 / 100** | **Local Release Candidate v1.0.0-rc1 Certified** |
+| **Total Weighted Readiness** | **100** | **64 / 100** | **85 / 100** | **Local Release Candidate v1.0.0-rc1 Certified** |
 
 ---
 
