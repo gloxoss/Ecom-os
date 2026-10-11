@@ -5,6 +5,7 @@ import { formatMoney } from '@/lib/format-money';
 import { Accordion } from '@/components/shared/accordion';
 import { Reveal } from '@/features/landing/ui/reveal';
 import { AddToCartButton } from './add-to-cart-button';
+import { AddToQuoteButton } from './add-to-quote-button';
 import { VariationSelector } from './variation-selector';
 import { ProductZoomImage } from './product-zoom-image';
 import { findMatchingVariation } from '../model/purchase-intent';
@@ -17,6 +18,11 @@ interface ProductHeroProps {
   categoryLabel: string;
   specs: { label: string; value: string }[];
   description: string[];
+  /**
+   * Resolved on the server from the authoritative addon registry, so the RFQ
+   * action cannot be turned on by a client-side flag.
+   */
+  quoteEnabled?: boolean;
 }
 
 const SHIPPING_INFO =
@@ -24,7 +30,7 @@ const SHIPPING_INFO =
 const RETURNS_INFO =
   'Unopened and unused items can be returned within 14 days for a full refund or exchange according to terms.';
 
-export function ProductHero({ product, categoryLabel, specs, description }: ProductHeroProps) {
+export function ProductHero({ product, categoryLabel, specs, description, quoteEnabled = false }: ProductHeroProps) {
   const variations = product.variations || product.variants || [];
   const isVariable = product.type === 'variable' || variations.length > 0;
 
@@ -118,6 +124,17 @@ export function ProductHero({ product, categoryLabel, specs, description }: Prod
               )}
 
               <AddToCartButton product={product} selectedAttributes={selectedAttributes} />
+
+              {quoteEnabled && (
+                <AddToQuoteButton
+                  productId={product.id}
+                  variationId={selectedVariation?.id}
+                  sku={activeSku}
+                  title={product.name}
+                  unitPriceEstimated={selectedVariation?.price.amount_minor ?? product.price.amount_minor}
+                  thumbnail={activeImage?.url}
+                />
+              )}
 
               <div className="flex flex-col gap-4">
                 {specs.map((spec) => (

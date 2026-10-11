@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AddonRegistry } from '@ecom-os/engine';
 import { setStorefrontRegistryForTesting } from '../../lib/addon-capabilities';
-import { POST, clearRfqStoresForTesting } from '../../app/api/rfq/route';
+import { POST } from '../../app/api/rfq/route';
+import { clearRfqStoresForTesting } from '../../features/rfq/model/server-quote-store';
 
 describe('RFQ Idempotent Submission API & Security Barrier (ECO-703)', () => {
   let registry: AddonRegistry;

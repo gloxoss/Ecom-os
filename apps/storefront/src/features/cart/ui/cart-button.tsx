@@ -46,7 +46,7 @@ export function CartButton() {
                 <p className="text-secondary text-center py-12">{t('empty')}</p>
               ) : (
                 items.map(item => (
-                  <div key={item.id} className="flex gap-4 items-start">
+                  <div key={item.lineKey} className="flex gap-4 items-start">
                     {item.images[0] && (
                       <div className="relative w-16 h-16 flex-shrink-0 bg-muted rounded overflow-hidden">
                         <Image src={item.images[0].url} alt={item.images[0].altText || item.name} fill className="object-cover" />
@@ -54,14 +54,15 @@ export function CartButton() {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{item.name}</p>
+                      {item.variationName && <p className="text-secondary text-xs truncate">{item.variationName}</p>}
                       <p className="text-secondary text-sm">${(item.price.amount_minor / 100).toFixed(2)}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <button onClick={() => updateQty(item.id, item.quantity - 1)} className="w-6 h-6 border rounded text-sm">−</button>
+                        <button onClick={() => updateQty(item.lineKey, item.quantity - 1)} className="w-6 h-6 border rounded text-sm">−</button>
                         <span className="text-sm w-4 text-center">{item.quantity}</span>
-                        <button onClick={() => updateQty(item.id, item.quantity + 1)} className="w-6 h-6 border rounded text-sm">+</button>
+                        <button onClick={() => updateQty(item.lineKey, item.quantity + 1)} className="w-6 h-6 border rounded text-sm">+</button>
                       </div>
                     </div>
-                    <button onClick={() => removeItem(item.id)} className="text-secondary hover:text-foreground text-sm">✕</button>
+                    <button onClick={() => removeItem(item.lineKey)} className="text-secondary hover:text-foreground text-sm">✕</button>
                   </div>
                 ))
               )}

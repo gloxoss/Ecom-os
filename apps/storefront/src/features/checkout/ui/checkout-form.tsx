@@ -1,26 +1,33 @@
 'use client';
 
 import { useCartStore } from '@/stores/cart-store';
-import { useEffect, useRef, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import type { ShippingMethod, StoreCapabilities } from '@ecom-os/engine';
+import { serializeCartItems } from '../model/cart-payload';
+import type { CheckoutFormState } from '../server/checkout-form-actions';
 
 interface CheckoutFormProps {
   cartId: string;
-  action: (formData: FormData) => void;
+  action: (state: CheckoutFormState | null, formData: FormData) => Promise<CheckoutFormState>;
   gateways: Array<{ id: string; name: string }>;
   shippingMethods: ShippingMethod[];
   capabilities: StoreCapabilities;
 }
 
+const CHECKOUT_COUNTRIES = [
+  { code: 'MA', label: 'Maroc' },
+  { code: 'FR', label: 'France' },
+];
+
 export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabilities }: CheckoutFormProps) {
-  const { items, getCartTotal, coupon, applyCoupon, removeCoupon, shippingMethod, setShippingMethod } = useCartStore();
+  const { items, getCartTotal, coupon, applyCoupon, removeCoupon, shippingMethod, setShippingMethod, clearCart } = useCartStore();
   const cartItemsRef = useRef<HTMLInputElement>(null);
   const t = useTranslations('checkout');
   const [selectedGateway, setSelectedGateway] = useState(gateways[0]?.id ?? 'cod');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [state, formAction, isPending] = useActionState(action, null);
 
   // Initialize shipping method if not set
   useEffect(() => {
@@ -32,42 +39,43 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
     }
   }, [shippingMethod, shippingMethods, setShippingMethod]);
 
-  // Serialize cart items for server — IDs + slugs + quantities only, never prices
+  // Serialize cart lines for the server — ids, variation ids and quantities only, never prices.
   useEffect(() => {
     if (!cartItemsRef.current) return;
-    const payload = items.map((item) => ({
-      productId: item.id,
-      slug: item.slug,
-      quantity: item.quantity,
-    }));
-    cartItemsRef.current.value = JSON.stringify(payload);
+    cartItemsRef.current.value = serializeCartItems(items);
   }, [items]);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    if (isSubmitting) {
-      e.preventDefault();
-      return;
+  // The authoritative order succeeded, so the local optimistic projection is spent.
+  useEffect(() => {
+    if (state?.ok) {
+      clearCart();
     }
+  }, [state?.ok, clearCart]);
 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     const form = e.currentTarget;
     const errors: Record<string, string> = {};
 
-    const email = (form.elements.namedItem('email') as HTMLInputElement)?.value;
-    const firstName = (form.elements.namedItem('firstName') as HTMLInputElement)?.value;
-    const lastName = (form.elements.namedItem('lastName') as HTMLInputElement)?.value;
-    const address = (form.elements.namedItem('address') as HTMLTextAreaElement)?.value;
+    const value = (name: string) => (form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement)?.value ?? '';
 
+    const email = value('email');
     if (!email || !email.includes('@')) {
       errors.email = 'Veuillez saisir une adresse email valide.';
     }
-    if (!firstName || firstName.trim().length === 0) {
+    if (value('firstName').trim().length === 0) {
       errors.firstName = 'Le prénom est requis.';
     }
-    if (!lastName || lastName.trim().length === 0) {
+    if (value('lastName').trim().length === 0) {
       errors.lastName = 'Le nom est requis.';
     }
-    if (!address || address.trim().length === 0) {
-      errors.address = 'L’adresse de livraison est requise.';
+    if (value('address1').trim().length < 3) {
+      errors.address1 = 'L’adresse de livraison est requise.';
+    }
+    if (value('city').trim().length < 2) {
+      errors.city = 'La ville est requise.';
+    }
+    if (value('phone').trim().length === 0) {
+      errors.phone = 'Le numéro de téléphone est requis.';
     }
 
     if (Object.keys(errors).length > 0) {
@@ -82,8 +90,28 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
     }
 
     setFormErrors({});
-    setIsSubmitting(true);
   };
+
+  if (state?.ok) {
+    return (
+      <main className="max-w-3xl mx-auto px-4 py-24 text-center" role="status" aria-live="polite">
+        <h1 className="text-3xl font-bold mb-4">Commande enregistrée</h1>
+        <p className="text-secondary mb-2 text-lg">
+          Votre commande{state.orderId ? ` n° ${state.orderId}` : ''} a été créée.
+        </p>
+        <p className="text-secondary mb-2">Statut WooCommerce : {state.status ?? 'processing'}</p>
+        <p className="text-sm text-muted-foreground mb-8">
+          Paiement à la livraison : le règlement reste dû au moment de la réception.
+        </p>
+        <Link
+          href="/catalog"
+          className="inline-flex items-center justify-center min-h-[44px] px-6 py-2.5 bg-foreground text-background font-medium rounded-md hover:opacity-90 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none transition motion-reduce:transition-none"
+        >
+          {t('browse')}
+        </Link>
+      </main>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -100,11 +128,20 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
     );
   }
 
+  const serverError = state && !state.ok ? state.error : undefined;
+  const fieldError = (name: string) => formErrors[name] ?? state?.errors?.[name];
+
   return (
     <main className="max-w-3xl mx-auto px-4 py-16">
       <h1 className="text-3xl font-bold mb-10">{t('title')}</h1>
 
-      <form action={action} onSubmit={handleSubmit} noValidate className="space-y-8">
+      {serverError && (
+        <p className="mb-6 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive" role="alert">
+          La commande n’a pas pu être enregistrée ({serverError}). Veuillez vérifier vos informations et réessayer.
+        </p>
+      )}
+
+      <form action={formAction} onSubmit={handleSubmit} noValidate className="space-y-8">
         <input type="hidden" name="cartItems" ref={cartItemsRef} />
         <input type="hidden" name="cartId" value={cartId} />
         <input type="hidden" name="couponCode" value={coupon?.code ?? ''} />
@@ -124,15 +161,15 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
               autoComplete="email"
               required
               aria-required="true"
-              aria-invalid={Boolean(formErrors.email)}
-              aria-describedby={formErrors.email ? 'email-error' : undefined}
+              aria-invalid={Boolean(fieldError('email'))}
+              aria-describedby={fieldError('email') ? 'email-error' : undefined}
               className={`w-full min-h-[44px] border p-3 rounded-md bg-background text-sm focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none transition motion-reduce:transition-none ${
-                formErrors.email ? 'border-destructive' : 'border-foreground/20'
+                fieldError('email') ? 'border-destructive' : 'border-foreground/20'
               }`}
             />
-            {formErrors.email && (
+            {fieldError('email') && (
               <p id="email-error" role="alert" className="text-xs text-destructive mt-1 font-medium">
-                {formErrors.email}
+                {fieldError('email')}
               </p>
             )}
           </div>
@@ -166,13 +203,15 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
                   />
                   <div className="flex-1 flex justify-between items-center text-sm">
                     <span className="font-medium">{method.title}</span>
-                    <span className="font-semibold">${(method.cost.amount_minor / 100).toFixed(2)}</span>
+                    <span className="font-semibold">{method.cost.amount_minor / 100} {method.cost.currency}</span>
                   </div>
                 </label>
               ))}
             </fieldset>
           ) : (
-            <p className="text-sm text-secondary" role="status">Aucune méthode de livraison disponible.</p>
+            <p className="text-sm text-secondary" role="status">
+              Les options de livraison seront confirmées par le serveur selon votre adresse.
+            </p>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
@@ -186,15 +225,15 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
                 autoComplete="given-name"
                 required
                 aria-required="true"
-                aria-invalid={Boolean(formErrors.firstName)}
-                aria-describedby={formErrors.firstName ? 'firstName-error' : undefined}
+                aria-invalid={Boolean(fieldError('firstName'))}
+                aria-describedby={fieldError('firstName') ? 'firstName-error' : undefined}
                 className={`w-full min-h-[44px] border p-3 rounded-md bg-background text-sm focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none transition motion-reduce:transition-none ${
-                  formErrors.firstName ? 'border-destructive' : 'border-foreground/20'
+                  fieldError('firstName') ? 'border-destructive' : 'border-foreground/20'
                 }`}
               />
-              {formErrors.firstName && (
+              {fieldError('firstName') && (
                 <p id="firstName-error" role="alert" className="text-xs text-destructive mt-1 font-medium">
-                  {formErrors.firstName}
+                  {fieldError('firstName')}
                 </p>
               )}
             </div>
@@ -209,42 +248,139 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
                 autoComplete="family-name"
                 required
                 aria-required="true"
-                aria-invalid={Boolean(formErrors.lastName)}
-                aria-describedby={formErrors.lastName ? 'lastName-error' : undefined}
+                aria-invalid={Boolean(fieldError('lastName'))}
+                aria-describedby={fieldError('lastName') ? 'lastName-error' : undefined}
                 className={`w-full min-h-[44px] border p-3 rounded-md bg-background text-sm focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none transition motion-reduce:transition-none ${
-                  formErrors.lastName ? 'border-destructive' : 'border-foreground/20'
+                  fieldError('lastName') ? 'border-destructive' : 'border-foreground/20'
                 }`}
               />
-              {formErrors.lastName && (
+              {fieldError('lastName') && (
                 <p id="lastName-error" role="alert" className="text-xs text-destructive mt-1 font-medium">
-                  {formErrors.lastName}
+                  {fieldError('lastName')}
                 </p>
               )}
             </div>
           </div>
 
           <div>
-            <label htmlFor="checkout-address" className="block text-sm font-medium mb-1">
+            <label htmlFor="checkout-phone" className="block text-sm font-medium mb-1">
+              Téléphone <span className="text-destructive" aria-hidden="true">*</span>
+            </label>
+            <input
+              id="checkout-phone"
+              name="phone"
+              type="tel"
+              autoComplete="tel"
+              required
+              aria-required="true"
+              aria-invalid={Boolean(fieldError('phone'))}
+              aria-describedby={fieldError('phone') ? 'phone-error' : undefined}
+              className={`w-full min-h-[44px] border p-3 rounded-md bg-background text-sm focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none transition motion-reduce:transition-none ${
+                fieldError('phone') ? 'border-destructive' : 'border-foreground/20'
+              }`}
+            />
+            {fieldError('phone') && (
+              <p id="phone-error" role="alert" className="text-xs text-destructive mt-1 font-medium">
+                {fieldError('phone')}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="checkout-address1" className="block text-sm font-medium mb-1">
               Adresse complète <span className="text-destructive" aria-hidden="true">*</span>
             </label>
             <textarea
-              id="checkout-address"
-              name="address"
+              id="checkout-address1"
+              name="address1"
               autoComplete="street-address"
               required
               rows={3}
               aria-required="true"
-              aria-invalid={Boolean(formErrors.address)}
-              aria-describedby={formErrors.address ? 'address-error' : undefined}
+              aria-invalid={Boolean(fieldError('address1'))}
+              aria-describedby={fieldError('address1') ? 'address1-error' : undefined}
               className={`w-full border p-3 rounded-md bg-background text-sm focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none transition motion-reduce:transition-none ${
-                formErrors.address ? 'border-destructive' : 'border-foreground/20'
+                fieldError('address1') ? 'border-destructive' : 'border-foreground/20'
               }`}
             />
-            {formErrors.address && (
-              <p id="address-error" role="alert" className="text-xs text-destructive mt-1 font-medium">
-                {formErrors.address}
+            {fieldError('address1') && (
+              <p id="address1-error" role="alert" className="text-xs text-destructive mt-1 font-medium">
+                {fieldError('address1')}
               </p>
             )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="checkout-city" className="block text-sm font-medium mb-1">
+                Ville <span className="text-destructive" aria-hidden="true">*</span>
+              </label>
+              <input
+                id="checkout-city"
+                name="city"
+                autoComplete="address-level2"
+                required
+                aria-required="true"
+                aria-invalid={Boolean(fieldError('city'))}
+                aria-describedby={fieldError('city') ? 'city-error' : undefined}
+                className={`w-full min-h-[44px] border p-3 rounded-md bg-background text-sm focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none transition motion-reduce:transition-none ${
+                  fieldError('city') ? 'border-destructive' : 'border-foreground/20'
+                }`}
+              />
+              {fieldError('city') && (
+                <p id="city-error" role="alert" className="text-xs text-destructive mt-1 font-medium">
+                  {fieldError('city')}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="checkout-postcode" className="block text-sm font-medium mb-1">
+                Code postal
+              </label>
+              <input
+                id="checkout-postcode"
+                name="postcode"
+                autoComplete="postal-code"
+                aria-invalid={Boolean(fieldError('postcode'))}
+                aria-describedby={fieldError('postcode') ? 'postcode-error' : undefined}
+                className={`w-full min-h-[44px] border p-3 rounded-md bg-background text-sm focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none transition motion-reduce:transition-none ${
+                  fieldError('postcode') ? 'border-destructive' : 'border-foreground/20'
+                }`}
+              />
+              {fieldError('postcode') && (
+                <p id="postcode-error" role="alert" className="text-xs text-destructive mt-1 font-medium">
+                  {fieldError('postcode')}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="checkout-country" className="block text-sm font-medium mb-1">
+                Pays <span className="text-destructive" aria-hidden="true">*</span>
+              </label>
+              <select
+                id="checkout-country"
+                name="country"
+                defaultValue="MA"
+                aria-required="true"
+                aria-invalid={Boolean(fieldError('country'))}
+                className={`w-full min-h-[44px] border p-3 rounded-md bg-background text-sm focus-visible:ring-2 focus-visible:ring-foreground focus-visible:outline-none transition motion-reduce:transition-none ${
+                  fieldError('country') ? 'border-destructive' : 'border-foreground/20'
+                }`}
+              >
+                {CHECKOUT_COUNTRIES.map((country) => (
+                  <option key={country.code} value={country.code}>
+                    {country.label}
+                  </option>
+                ))}
+              </select>
+              {fieldError('country') && (
+                <p id="country-error" role="alert" className="text-xs text-destructive mt-1 font-medium">
+                  {fieldError('country')}
+                </p>
+              )}
+            </div>
           </div>
         </section>
 
@@ -291,11 +427,13 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
           <h2 id="summary-heading" className="font-semibold text-base">{t('summary')}</h2>
           <ul className="divide-y divide-foreground/10" aria-label="Articles de la commande">
             {items.map((item) => (
-              <li key={item.id} className="py-2.5 flex justify-between text-sm">
+              <li key={item.lineKey} className="py-2.5 flex justify-between text-sm">
                 <span>
-                  {item.name} <span className="text-muted-foreground">× {item.quantity}</span>
+                  {item.name}
+                  {item.variationName && <span className="text-muted-foreground"> — {item.variationName}</span>}
+                  <span className="text-muted-foreground"> × {item.quantity}</span>
                 </span>
-                <span className="font-medium">${(item.price.amount_minor / 100).toFixed(2)}</span>
+                <span className="font-medium">{(item.price.amount_minor / 100).toFixed(2)} {item.price.currency}</span>
               </li>
             ))}
           </ul>
@@ -303,20 +441,20 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
           {coupon && (
             <div className="flex justify-between text-sm text-green-600 font-medium pt-2" role="status">
               <span>Remise ({coupon.code})</span>
-              <span>-${(coupon.discount_minor / 100).toFixed(2)}</span>
+              <span>−{(coupon.discount_minor / 100).toFixed(2)}</span>
             </div>
           )}
 
           {shippingMethod && (
             <div className="flex justify-between text-sm pt-1">
               <span>Livraison ({shippingMethod.title})</span>
-              <span>${(shippingMethod.cost_minor / 100).toFixed(2)}</span>
+              <span>{(shippingMethod.cost_minor / 100).toFixed(2)}</span>
             </div>
           )}
 
           <div className="border-t border-foreground/10 pt-3 flex justify-between font-bold text-base">
             <span>{t('estimatedTotal')}</span>
-            <span>${(getCartTotal() / 100).toFixed(2)}</span>
+            <span>{(getCartTotal() / 100).toFixed(2)}</span>
           </div>
           <p className="text-xs text-muted-foreground">{t('priceNote')}</p>
         </section>
@@ -324,11 +462,11 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={gateways.length === 0 || isSubmitting}
-          aria-busy={isSubmitting}
+          disabled={gateways.length === 0 || isPending}
+          aria-busy={isPending}
           className="w-full min-h-[48px] bg-foreground text-background py-3.5 px-6 rounded-md font-bold text-base hover:opacity-90 focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:outline-none transition motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {isSubmitting ? (
+          {isPending ? (
             <>
               <svg
                 className="animate-spin -ml-1 mr-2 h-5 w-5 text-background motion-reduce:animate-none"

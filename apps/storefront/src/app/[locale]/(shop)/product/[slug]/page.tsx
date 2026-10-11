@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getEngine } from '@/lib/engine';
 import { ProductHero } from '@/features/product/ui/product-hero';
+import { isAddonActive } from '@/lib/addon-capabilities';
 import { RelatedProductsSection } from '@/features/product/ui/related-products-section';
 import { LocationSection } from '@/components/shared/location-section';
 import { JsonLd } from '@/components/seo/json-ld';
@@ -47,6 +48,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         categoryLabel={category?.name ?? 'Maison collection'}
         specs={details?.specs ?? DEFAULT_SPECS}
         description={details?.description ?? DEFAULT_DESCRIPTION}
+        quoteEnabled={isAddonActive('quotes')}
       />
       <RelatedProductsSection products={related} />
       <LocationSection data={catalogData.location} />

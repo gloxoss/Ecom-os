@@ -1,34 +1,30 @@
 import crypto from 'node:crypto';
-import { guardAddonRoute } from '@/lib/addon-route-guard';
+import { guardAddonRoute } from '../../../lib/addon-route-guard';
+import { getRfqQuoteStore } from '../../../features/rfq/model/server-quote-store';
 import {
   validateRfqSubmitInput,
   transition,
   type RfqQuote,
 } from '../../../../../../packages/addons-rfq/src/index';
 
-// In-memory idempotency cache for duplicate submission deduplication
-interface CachedRfqResponse {
-  statusCode: number;
-  data: {
-    success: boolean;
-    quoteId: string;
-    quoteNumber: string;
-    accessSecret: string;
-    state: string;
-  };
+/**
+ * Owner key for idempotent replay.
+ *
+ * This route has no guest cart/session token: the storefront keeps an opaque
+ * cart cookie inside the cart feature, but nothing on this API surface exposes a
+ * stable submitter token. The identity the payload already carries, and the one
+ * the quote is filed under (`guestChallengeEmail`), is the normalized contact
+ * email. It is therefore the natural owner binding: a replay presenting the same
+ * Idempotency-Key with a different contact email is a different caller.
+ */
+function resolveOwnerKey(body: unknown): string {
+  const contact = (body as { contact?: { email?: unknown } } | null)?.contact;
+  const email = contact?.email;
+  return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
 
-const idempotencyStore = new Map<string, CachedRfqResponse>();
-const quoteStore = new Map<string, RfqQuote>();
-
-export function clearRfqStoresForTesting(): void {
-  idempotencyStore.clear();
-  quoteStore.clear();
-}
-
-export function getQuoteForTesting(id: string): RfqQuote | undefined {
-  return quoteStore.get(id);
-}
+// Test helpers are exported from `features/rfq/model/server-quote-store`, not
+// from here: a route module may only export its HTTP handlers.
 
 export async function POST(req: Request) {
   // 1. Authoritative Addon Route Guard
@@ -68,24 +64,48 @@ export async function POST(req: Request) {
 
   const headerIdempKey = req.headers.get('idempotency-key') || req.headers.get('x-idempotency-key');
   const idempotencyKey = (headerIdempKey || body?.idempotencyKey || '').trim();
+  const store = getRfqQuoteStore();
+  const ownerKey = resolveOwnerKey(body);
 
-  // 3. Idempotency Check
-  if (idempotencyKey && idempotencyStore.has(idempotencyKey)) {
-    const cached = idempotencyStore.get(idempotencyKey)!;
-    return new Response(
-      JSON.stringify({
-        ...cached.data,
-        idempotent: true,
-      }),
-      {
-        status: cached.statusCode,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store, private',
-          'X-Idempotent-Replay': 'true',
-        },
+  // 3. Idempotency Check, bound to the submitting owner
+  if (idempotencyKey) {
+    const cached = store.getIdempotency(idempotencyKey);
+    if (cached) {
+      // A cached entry belongs to exactly one submitter. A different owner gets
+      // no quote id and no accessSecret: fail closed instead of handing over
+      // another guest's bearer grant.
+      if (cached.ownerKey !== ownerKey) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            code: 'IDEMPOTENCY_OWNER_MISMATCH',
+            errors: ['This idempotency key belongs to a different submission session.'],
+          }),
+          {
+            status: 409,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, private',
+            },
+          }
+        );
       }
-    );
+
+      return new Response(
+        JSON.stringify({
+          ...cached.data,
+          idempotent: true,
+        }),
+        {
+          status: cached.statusCode,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store, private',
+            'X-Idempotent-Replay': 'true',
+          },
+        }
+      );
+    }
   }
 
   // 4. Input validation
@@ -143,8 +163,8 @@ export async function POST(req: Request) {
     email: input.contact.email,
   });
 
-  // Store in persistence
-  quoteStore.set(quoteId, submittedQuote);
+  // Store in the shared durable store: this is the same quote the offers route reads.
+  store.putQuote(submittedQuote);
 
   const responsePayload = {
     success: true,
@@ -154,9 +174,10 @@ export async function POST(req: Request) {
     state: submittedQuote.state,
   };
 
-  // Cache response under idempotency key
+  // Cache response under idempotency key, bound to this owner
   if (idempotencyKey) {
-    idempotencyStore.set(idempotencyKey, {
+    store.putIdempotency(idempotencyKey, {
+      ownerKey,
       statusCode: 201,
       data: responsePayload,
     });

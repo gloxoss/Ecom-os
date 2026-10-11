@@ -1,25 +1,25 @@
 import crypto from 'node:crypto';
 import { guardAddonRoute } from '../../../../lib/addon-route-guard';
+import { getRfqQuoteStore } from '../../../../features/rfq/model/server-quote-store';
 import {
   transition,
   isOfferExpired,
   type RfqQuote,
 } from '../../../../../../../packages/addons-rfq/src/index';
 
-// In-memory quote store for testing / local execution fallback
-const mockQuotesStore = new Map<string, RfqQuote>();
+// This route reads and writes the SAME store the submission route uses, so a
+// quote just submitted at /api/rfq is immediately the quote a token read or a
+// merchant offer action resolves against. There is no second mock store.
+//
+// Guest reads/accepts/rejects/revises are authorized by the quote's own access
+// token here. Merchant and staff views (priced offers, conversion to a Woo
+// order) are WordPress-authenticated actions in the companion plugin's REST
+// routes (`plugins/wp-ecomos-rfq/routes.php`, permission callbacks using
+// `ecomos_operator`/`manage_woocommerce`); staff administration stays native to
+// WordPress rather than being duplicated in this storefront.
 
-export function setOfferQuoteForTesting(quote: RfqQuote): void {
-  mockQuotesStore.set(quote.id, quote);
-}
-
-export function clearOfferQuotesForTesting(): void {
-  mockQuotesStore.clear();
-}
-
-export function getOfferQuoteForTesting(id: string): RfqQuote | undefined {
-  return mockQuotesStore.get(id);
-}
+// Test helpers are exported from `features/rfq/model/server-quote-store`, not
+// from here: a route module may only export its HTTP handlers.
 
 export async function GET(req: Request) {
   const guard = guardAddonRoute('quotes');
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
     );
   }
 
-  const quote = mockQuotesStore.get(quoteId);
+  const quote = getRfqQuoteStore().getQuote(quoteId);
   if (!quote) {
     return new Response(
       JSON.stringify({ success: false, error: 'Quote not found' }),
@@ -109,7 +109,8 @@ export async function POST(req: Request) {
     );
   }
 
-  const quote = mockQuotesStore.get(quoteId);
+  const store = getRfqQuoteStore();
+  const quote = store.getQuote(quoteId);
   if (!quote) {
     return new Response(
       JSON.stringify({ success: false, error: 'Quote not found' }),
@@ -168,6 +169,7 @@ export async function POST(req: Request) {
       const nextQuote = transition(quote, 'accepted', guestActor, { revisionId });
       quote.state = nextQuote.state;
       quote.updatedAt = nextQuote.updatedAt;
+      store.putQuote(quote);
       return new Response(
         JSON.stringify({
           success: true,
@@ -191,6 +193,7 @@ export async function POST(req: Request) {
       quote.state = nextQuote.state;
       quote.rejectionReason = nextQuote.rejectionReason;
       quote.updatedAt = nextQuote.updatedAt;
+      store.putQuote(quote);
       return new Response(
         JSON.stringify({
           success: true,
@@ -214,6 +217,7 @@ export async function POST(req: Request) {
       quote.state = nextQuote.state;
       quote.customerRevisionNotes = nextQuote.customerRevisionNotes;
       quote.updatedAt = nextQuote.updatedAt;
+      store.putQuote(quote);
       return new Response(
         JSON.stringify({
           success: true,

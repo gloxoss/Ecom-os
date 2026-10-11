@@ -88,6 +88,8 @@ interface CheckoutQuoteEngine {
     orderId: string | number;
     orderKey: string;
     status: string;
+    /** Present on an idempotent replay: the contact the order was placed with. */
+    email?: string;
   }>;
 }
 
@@ -265,10 +267,13 @@ export async function submitCheckoutAction(
 
     await clearCartCookie();
 
+    // On an idempotent replay the engine returns the contact the order was
+    // originally placed with. Prefer it over the retry's supplied email so a
+    // replay cannot mint a guest access grant for a different address.
     const orderToken = createGuestOrderGrant({
       orderId: result.orderId,
       orderKey: result.orderKey,
-      email: addressPayload.email,
+      email: result.email || addressPayload.email,
     });
 
     return {

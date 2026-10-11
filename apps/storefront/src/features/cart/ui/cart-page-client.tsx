@@ -26,19 +26,20 @@ export function CartPageClient({ capabilities }: { capabilities: StoreCapabiliti
     <div>
       <div className="divide-y divide-foreground/10">
         {items.map(item => (
-          <div key={item.id} className="flex gap-4 py-5 items-center">
+          <div key={item.lineKey} className="flex gap-4 py-5 items-center">
             <div className="flex-1">
               <p className="font-medium">{item.name}</p>
+              {item.variationName && <p className="text-secondary text-xs">{item.variationName}</p>}
               <p className="text-secondary text-sm">${(item.price.amount_minor / 100).toFixed(2)}</p>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => updateQty(item.id, item.quantity - 1)}
+                onClick={() => updateQty(item.lineKey, item.quantity - 1)}
                 className="w-8 h-8 border border-foreground/20 rounded flex items-center justify-center hover:bg-muted transition"
               >−</button>
               <span className="w-8 text-center">{item.quantity}</span>
               <button
-                onClick={() => updateQty(item.id, item.quantity + 1)}
+                onClick={() => updateQty(item.lineKey, item.quantity + 1)}
                 className="w-8 h-8 border border-foreground/20 rounded flex items-center justify-center hover:bg-muted transition"
               >+</button>
             </div>
@@ -46,7 +47,7 @@ export function CartPageClient({ capabilities }: { capabilities: StoreCapabiliti
               ${((item.price.amount_minor * item.quantity) / 100).toFixed(2)}
             </p>
             <button
-              onClick={() => removeItem(item.id)}
+              onClick={() => removeItem(item.lineKey)}
               className="text-secondary hover:text-foreground text-sm underline"
             >
               {t('remove')}

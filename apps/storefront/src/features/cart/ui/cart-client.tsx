@@ -52,7 +52,7 @@ export function CartClient({ products }: CartClientProps) {
             const itemTotalFmt = `${((item.price.amount_minor * item.quantity) / 100).toFixed(2).replace(/\.00$/, "")}$`;
 
             return (
-              <div key={item.id} className="flex gap-6 pb-8 border-b border-border relative">
+              <div key={item.lineKey} className="flex gap-6 pb-8 border-b border-border relative">
                 <div className="w-24 h-24 sm:w-32 sm:h-32 bg-input rounded-xl overflow-hidden relative shrink-0">
                   <Image
                     src={product.images[0]?.url || ""}
@@ -67,10 +67,13 @@ export function CartClient({ products }: CartClientProps) {
                       <Link href={`/product/${product.slug}`} className="font-heading text-xl md:text-2xl hover:text-primary transition-colors text-foreground">
                         {product.name}
                       </Link>
+                      {item.variationName && (
+                        <p className="font-body text-sm text-foreground/50">{item.variationName}</p>
+                      )}
                       <p className="font-body text-sm text-foreground/60">{priceFmt}</p>
                     </div>
                     <button
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => removeItem(item.lineKey)}
                       className="text-foreground/40 hover:text-foreground transition-colors self-start p-2 -m-2"
                       aria-label="Remove item"
                     >
@@ -81,15 +84,15 @@ export function CartClient({ products }: CartClientProps) {
                   <div className="flex justify-between items-end mt-4">
                     <div className="flex items-center border border-border rounded-full bg-background overflow-hidden">
                       <button
-                        onClick={() => updateQty(item.id, item.quantity - 1)}
+                        onClick={() => updateQty(item.lineKey, item.quantity - 1)}
                         className="p-1 hover:bg-neutral-100 rounded-full transition-colors"
                         aria-label="Decrease quantity"
                       >
                         <Minus size={16} />
                       </button>
                       <span className="w-8 text-center">{item.quantity}</span>
-                      <button 
-                        onClick={() => updateQty(item.id, item.quantity + 1)}
+                      <button
+                        onClick={() => updateQty(item.lineKey, item.quantity + 1)}
                         className="px-3 py-2 text-foreground/60 hover:bg-input hover:text-foreground transition-colors"
                         aria-label="Increase quantity"
                       >

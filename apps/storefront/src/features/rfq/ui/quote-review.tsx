@@ -97,12 +97,18 @@ export function QuoteReview() {
             Un email de confirmation contenant votre lien d&apos;accès sécurisé et votre récapitulatif a été envoyé à votre adresse.
           </p>
         </div>
+        {/* Access grant travels in the URL fragment so the token never reaches the server. */}
         <Link
-          href="/"
+          href={`/devis/offer?quoteId=${encodeURIComponent(submissionResult.quoteId)}#token=${encodeURIComponent(submissionResult.accessSecret)}`}
           className="inline-block px-6 py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
         >
-          Retour à l&apos;accueil
+          Suivre ma demande de devis
         </Link>
+        <div>
+          <Link href="/" className="inline-block text-sm text-muted-foreground underline">
+            Retour à l&apos;accueil
+          </Link>
+        </div>
       </div>
     );
   }
