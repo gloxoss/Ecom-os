@@ -100,3 +100,28 @@ authorized.
 
 No `DROP`/`DELETE`/`TRUNCATE`/overwrite anywhere, in any scenario, including test cleanup.
 Port 3308 was never contacted. No production, deployment or plugin action.
+
+## 6. Submission — the verified chain, and a repeated hub base defect
+
+| Item | SHA / value |
+| --- | --- |
+| ECO-1105 isolation (prerequisite, submitted) | `ceb8f3d` |
+| This task's implementation and report | committed on `sprint-a/recovery-ECO-1105` |
+| Isolated service used | own datadir under `%TEMP%/ecomos-restore-isolation/…`, port **127.0.0.1:3309** |
+| Source service touched | **none** — port 3308's PID was unchanged before and after |
+| Real dump restored | `ecomos-backup2.sql`, 289,750 bytes, 54 tables, single schema |
+
+**What was executed by me rather than reported to me:** the no-artifact refusal (exit 2), the
+real-dump restore (exit 0 VERIFIED), and `node --test scripts/verify-restore.test.mjs` (exit 0,
+23/23) were each re-run in this worktree. The 26-check fidelity table in §1 is that run's own
+output. This report measures and evidences; acceptance is the coordinator's on the verifier's
+verdict.
+
+**Hub base defect, repeated.** `ECO-1106` was assigned with base `a25c4bf` — this task's own
+committed tip. `done` computes the submitted slice from that base, so it is empty and refuses
+with *"Submit your own new tip commit, not another task submission"*; no commit can satisfy it.
+This is the third instance of the same setting in this sprint (after ECO-1100's reopen set the
+base to the worktree HEAD, and the ECO-1100 rebase stranded its base). The rule the coordinator
+needs: **on assignment or reopen, set the base to a commit that precedes the executor's own
+work for that task** — normally the accepted prerequisite commit (`ceb8f3d` here) — never to
+the tip the executor is about to submit.
