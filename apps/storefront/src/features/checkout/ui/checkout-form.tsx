@@ -34,6 +34,15 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
   const stateOptions = CHECKOUT_STATES[country] ?? {};
   const [state, formAction, isPending] = useActionState(action, null);
 
+  // Fresh cryptographically secure purchase-attempt ID per legitimate new purchase intent.
+  // Retained across retries/re-submissions of this form.
+  const [purchaseAttemptId] = useState(() => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return `att_${crypto.randomUUID()}`;
+    }
+    return `att_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  });
+
   // Initialize shipping method if not set
   useEffect(() => {
     if (!shippingMethod && shippingMethods.length > 0) {
@@ -125,6 +134,7 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
       )}
 
       <form action={formAction} onSubmit={handleSubmit} noValidate className="space-y-8">
+        <input type="hidden" name="attemptId" value={purchaseAttemptId} />
         <input type="hidden" name="cartItems" ref={cartItemsRef} />
         <input type="hidden" name="cartId" value={cartId} />
         <input type="hidden" name="couponCode" value={coupon?.code ?? ''} />

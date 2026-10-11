@@ -125,7 +125,8 @@ export async function submitCheckoutFormAction(
     }
   }
 
-  const result = await submitCheckoutAction(addressInput);
+  const attemptId = field(formData, 'attemptId') || undefined;
+  const result = await submitCheckoutAction(addressInput, attemptId);
   if (!result.ok) {
     return {
       ok: false,

@@ -1,5 +1,5 @@
 import { storeApiFetch, type StoreAddress } from './cart';
-import { globalAttemptManager, CheckoutAttemptManager, attemptPayloadHash } from './checkout-attempts';
+import { globalAttemptManager, CheckoutAttemptManager, attemptPayloadHash, BUSY_ATTEMPT_ERROR } from './checkout-attempts';
 import { restFetch } from './rest';
 
 export interface StoreCheckoutInput {
@@ -82,13 +82,13 @@ function billingEmail(input: StoreCheckoutInput): string | undefined {
 
 export interface OrderCorrelation {
   orderId: string | number;
-  orderKey?: string;
-  email?: string;
+  orderKey?: string | undefined;
+  email?: string | undefined;
 }
 
 export interface OrderLookupContext {
   ownerKey: string;
-  email?: string;
+  email?: string | undefined;
 }
 
 /**
@@ -100,6 +100,7 @@ export type OrderLookup = (attemptKey: string, ctx: OrderLookupContext) => Promi
 
 export interface IdempotentCheckoutOptions {
   lookupOrder?: OrderLookup;
+  activeLockTimeoutMs?: number;
 }
 
 /** Correlation marker embedded in the order's customer note at submission. */
@@ -120,11 +121,12 @@ export async function findOrderByAttemptCorrelation(
 ): Promise<OrderCorrelation | null> {
   if (!attemptKey) throw new Error('Invalid checkout attempt key.');
   const marker = correlationMarker(attemptKey);
-  const perPage = Math.min(Math.max(opts.perPage ?? 20, 1), 100);
-  const orders = (await restFetch(`/orders?per_page=${perPage}&orderby=date&order=desc`)) as Array<
-    Record<string, unknown>
-  >;
-  if (!Array.isArray(orders)) return null;
+  const perPage = Math.min(Math.max(opts.perPage ?? 100, 1), 100);
+  const rawOrders = (await restFetch(`/orders?per_page=${perPage}&orderby=date&order=desc`)) as unknown;
+  if (!Array.isArray(rawOrders)) {
+    throw new Error('Malformed WooCommerce orders response during correlation lookup.');
+  }
+  const orders = rawOrders as Array<Record<string, unknown>>;
   for (const order of orders) {
     if (!order || typeof order !== 'object') continue;
     const note = typeof order.customer_note === 'string' ? order.customer_note : '';
@@ -189,6 +191,17 @@ export async function executeIdempotentCheckout(
         ...(record.email ? { email: record.email } : {}),
       };
     }
+
+    // Directive item 3: On PENDING state, a lookup miss must not supersede an active purchase owner!
+    // If the attempt is still within its active processing window, an active worker
+    // is currently executing the submission. Fail closed with busy error.
+    const existing = await manager.getAttempt(attemptKey);
+    const activeLockMs = opts.activeLockTimeoutMs ?? 15000;
+    const age = existing ? Date.now() - existing.updatedAt : 0;
+    if (existing && age < activeLockMs) {
+      throw new Error(check.error || BUSY_ATTEMPT_ERROR);
+    }
+
     await manager.markFailedRetryable(
       attemptKey,
       cartToken,
@@ -215,15 +228,58 @@ export async function executeIdempotentCheckout(
 
   try {
     const result = await submitStoreCheckout(cartToken, input, attemptKey);
-    await manager.confirmAttempt(
-      attemptKey,
-      result.orderId,
-      result.orderKey,
-      cartToken,
-      billingEmail(input)
-    );
-    return result;
+    try {
+      await manager.confirmAttempt(
+        attemptKey,
+        result.orderId,
+        result.orderKey,
+        cartToken,
+        billingEmail(input)
+      );
+      return result;
+    } catch {
+      // Local confirmation error following successful store checkout.
+      // Order exists in WooCommerce; return confirmed result.
+      return result;
+    }
   } catch (err: unknown) {
+    // Directive item 2: A lost response or failed local confirmation can follow
+    // successful Woo order creation. Preserve unknown outcomes and reconcile before
+    // permitting another POST.
+    if (opts.lookupOrder) {
+      try {
+        const contact = billingEmail(input);
+        const found = await opts.lookupOrder(
+          attemptKey,
+          contact ? { ownerKey: cartToken, email: contact } : { ownerKey: cartToken }
+        );
+        if (found) {
+          const record = await manager.reconcileFound(
+            attemptKey,
+            cartToken,
+            found.orderId,
+            found.orderKey,
+            found.email ?? contact
+          );
+          return {
+            ok: true,
+            orderId: record.orderId!,
+            orderKey: record.orderKey ?? '',
+            status: 'processing',
+            customerId: 0,
+            paymentStatus: 'success',
+            ...(record.email ? { email: record.email } : {}),
+          };
+        }
+      } catch {
+        // Recovery lookup threw: outcome is truly UNKNOWN.
+        // DO NOT mark attempt FAILED (which would allow an immediate retry to POST again).
+        const msg = err instanceof Error ? err.message : 'Checkout submission failed.';
+        throw new Error(
+          `Checkout outcome is unknown: ${msg}. Order recovery could not verify outcome; refusing to retry blindly.`
+        );
+      }
+    }
     const message = err instanceof Error ? err.message : 'Checkout submission failed.';
     await manager.failAttempt(attemptKey, message, cartToken);
     throw err;

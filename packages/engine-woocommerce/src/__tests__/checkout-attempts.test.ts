@@ -14,6 +14,7 @@ import {
   attemptPayloadHash,
   createDefaultAttemptStore,
   globalAttemptManager,
+  BUSY_ATTEMPT_ERROR,
 } from '../checkout-attempts';
 import {
   submitStoreCheckout,
@@ -698,6 +699,7 @@ describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => 
 
       const result = await executeIdempotentCheckout('miss-key', 'cart-miss', checkoutInput, manager, {
         lookupOrder: async () => null,
+        activeLockTimeoutMs: 0,
       });
       expect(result.orderId).toBe(888);
       expect(posts).toBe(1);
@@ -729,6 +731,123 @@ describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => 
       ).rejects.toThrow(/unknown.*recovery failed/i);
       expect(posts).toBe(0);
       expect((await manager.getAttempt('unk-key'))?.status).toBe('PENDING');
+    });
+
+    it('refuses to supersede an active pending checkout owner when lookup finds no order yet', async () => {
+      const manager = new CheckoutAttemptManager();
+      await manager.startAttempt('active-key', 'cart-active', attemptPayloadHash('cart-active', checkoutInput));
+      let posts = 0;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+          if ((init?.method || 'GET').toUpperCase() === 'POST') posts += 1;
+          return checkoutSuccess(999, 'wc_order_999');
+        })
+      );
+
+      // Attempt is recent (< 15s) and lookupOrder finds no order yet (active worker still submitting)
+      await expect(
+        executeIdempotentCheckout('active-key', 'cart-active', checkoutInput, manager, {
+          lookupOrder: async () => null,
+          activeLockTimeoutMs: 15000,
+        })
+      ).rejects.toThrow(BUSY_ATTEMPT_ERROR);
+
+      expect(posts).toBe(0);
+      expect((await manager.getAttempt('active-key'))?.status).toBe('PENDING');
+    });
+
+    it('recovers when submitStoreCheckout throws but order was created in WooCommerce', async () => {
+      const manager = new CheckoutAttemptManager();
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(async () => {
+          throw new Error('Connection reset by peer');
+        })
+      );
+
+      const recovered = await executeIdempotentCheckout('dropped-key', 'cart-dropped', checkoutInput, manager, {
+        lookupOrder: async () => ({
+          orderId: 555,
+          orderKey: 'wc_recovered_555',
+          email: checkoutInput.billing_address.email,
+        }),
+      });
+
+      expect(recovered.ok).toBe(true);
+      expect(recovered.orderId).toBe(555);
+      expect(recovered.orderKey).toBe('wc_recovered_555');
+      const attempt = await manager.getAttempt('dropped-key');
+      expect(attempt?.status).toBe('CONFIRMED');
+      expect(attempt?.orderId).toBe(555);
+    });
+
+    it('preserves unknown outcome and prevents duplicate POST when submission and lookup both fail', async () => {
+      const manager = new CheckoutAttemptManager();
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(async () => {
+          throw new Error('Gateway timeout');
+        })
+      );
+
+      await expect(
+        executeIdempotentCheckout('unknown-outcome-key', 'cart-unknown', checkoutInput, manager, {
+          lookupOrder: async () => {
+            throw new Error('Lookup network error');
+          },
+        })
+      ).rejects.toThrow(/Checkout outcome is unknown/i);
+
+      // Status must remain PENDING so a blind retry cannot immediately POST again
+      const attempt = await manager.getAttempt('unknown-outcome-key');
+      expect(attempt?.status).toBe('PENDING');
+    });
+
+    it('proves concurrent full checkout requests produce exactly one order and reject the other as busy', async () => {
+      const manager = new CheckoutAttemptManager();
+      let posts = 0;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+          if ((init?.method || 'GET').toUpperCase() === 'POST') {
+            posts += 1;
+            // Simulate 50ms processing delay in WooCommerce
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            return checkoutSuccess(444, 'wc_order_444');
+          }
+          return {
+            ok: true,
+            status: 200,
+            headers: new Headers(),
+            json: async () => ({ items: [] }),
+          };
+        })
+      );
+
+      const [resA, resB] = await Promise.allSettled([
+        executeIdempotentCheckout('concurrent-key', 'cart-concurrent', checkoutInput, manager, {
+          lookupOrder: async () => null,
+          activeLockTimeoutMs: 15000,
+        }),
+        executeIdempotentCheckout('concurrent-key', 'cart-concurrent', checkoutInput, manager, {
+          lookupOrder: async () => null,
+          activeLockTimeoutMs: 15000,
+        }),
+      ]);
+
+      const fulfilled = [resA, resB].filter((r) => r.status === 'fulfilled');
+      const rejected = [resA, resB].filter((r) => r.status === 'rejected');
+
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
+      expect(posts).toBe(1);
+      if (fulfilled[0]?.status === 'fulfilled') {
+        expect(fulfilled[0].value.orderId).toBe(444);
+      }
+      if (rejected[0]?.status === 'rejected') {
+        expect(rejected[0].reason.message).toContain(BUSY_ATTEMPT_ERROR);
+      }
     });
 
     it('embeds the correlation marker in the customer note only when keyed', async () => {
@@ -784,6 +903,25 @@ describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => 
       const found = await findOrderByAttemptCorrelation('att-9', { email: 'buyer@example.com' });
       expect(found).toEqual({ orderId: 3, orderKey: 'wc_3', email: 'buyer@example.com' });
       expect(await findOrderByAttemptCorrelation('att-missing', { email: 'buyer@example.com' })).toBeNull();
+    });
+
+    it('fails closed when correlation lookup receives a non-array response', async () => {
+      vi.stubEnv('WC_REST_URL', 'http://woo.test/wp-json/wc/v3');
+      vi.stubEnv('WC_REST_KEY', 'ck_test');
+      vi.stubEnv('WC_REST_SECRET', 'cs_test');
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: async () => ({ code: 'woocommerce_rest_cannot_view', message: 'Sorry' }),
+        })
+      );
+
+      await expect(
+        findOrderByAttemptCorrelation('att-corrupt', { email: 'buyer@example.com' })
+      ).rejects.toThrow(/Malformed WooCommerce orders response/i);
     });
   });
 
