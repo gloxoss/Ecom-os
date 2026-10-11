@@ -2,7 +2,9 @@
 
 - **Task:** `ECO-1001` (the audit's scoped correction task)
 - **Verifier:** `claude-verifier` (separate registration from the executor `claude-platform`)
-- **Verified commit:** `de1c80239eaf68bf300df3eadb4708b10e354fcf`
+- **Verified commit:** `a009e5ec2e7bb2ee307dbf6b7a4c2482b60b8978`
+  (earlier verified commit of this round: `de1c802`; the same checks were re-run at the
+  final commit and are the ones reported below)
 - **Verification worktree:** `C:/Users/OMEN/OneDrive/Documents/projects/ParaLoca/.audit-verify`
   — a separate `git worktree` at the verified commit with its **own installed
   dependencies**, so the checks do not read the executor's working tree.
@@ -41,7 +43,25 @@ Run in `C:/Users/OMEN/OneDrive/Documents/projects/ParaLoca/.audit-verify` at `de
 | 8 | `tsx --test apps/storefront/e2e/release.spec.ts` | **0** | 11 passed, 0 failed |
 | 9 | `tsx --test <all 14 node:test e2e specs>` | **0** | **71 passed**, 0 failed |
 | 10 | `eslint . --ignore-pattern ".next*"` (in `apps/storefront`) | **0** | **0 errors**, 26 warnings |
-| 11 | `next build --webpack` (in `apps/storefront`) | **0** | compiled, 45/45 static pages generated; `/checkout`, `/devis/review`, `/devis/offer`, `/api/rfq`, `/api/rfq/offers` present in the route table |
+| 11 | `next build --webpack` (in `apps/storefront`) | **0** | compiled, 45/45 static pages generated; `/checkout`, `/checkout/success`, `/devis/review`, `/devis/offer`, `/api/rfq`, `/api/rfq/offers` present in the route table |
+
+## Live-environment verification
+
+Executed against a real WordPress 7.1.3 + WooCommerce 11.2.1 + MySQL 8.4.0 instance built
+on this machine from components already present. Full record and exact SQL in
+`docs/ecomos/evidence/ECO-1004/live-woocommerce-proof.md`.
+
+| # | Check | Observed |
+| --- | --- | --- |
+| 12 | Real browser places a guest COD order through the storefront | orders 17 (variation 12 × 2, 2400 MAD), 18 (variation 13 × 3, 4500 MAD), 20 (variation 12 × 2, 2400 MAD); guest `customer_id 0`; `wc-processing` in the HPOS tables; `_variation_id` and `_qty` exactly as chosen; **0** `shop_order` rows in `wp_posts` |
+| 13 | Private guest read-back of the order | 200 with the fragment-held grant; **400** with none; **403** with a bad token |
+| 14 | Concurrent RFQ conversion against the real database | two simultaneous processes, one accepted quote → **exactly one order (21)**, second refused `conversion_in_progress`; one `converted_order_id`; **1** row carrying `_ecomos_rfq_quote_id`; retry returns `isDuplicate: true` for order 21 |
+| 15 | Real backup import, integrity inspection, rollback | `verify-restore.ts` **exit 0**: 54 tables, HPOS table present, 0 null totals, 10 guest orders preserved, RFQ quote/revision integrity intact, target dropped and confirmed absent. With a bad dump it exits 1 and reports 0 tables rather than certifying |
+| 16 | Converted order priced in the store currency | order 24 from a revision carrying no currency: **2400.00 MAD**, not USD |
+
+Controls confirming the fixes are real, not cosmetic: the cross-owner/cart guard fired for
+real during this work (`cart_out_of_sync` when the browser claimed a variation the cart did
+not hold), and the restore script refused an artifact that would have produced a false pass.
 
 Positive controls on the checks that were strengthened — each actually executed, not
 read from source:
@@ -61,22 +81,25 @@ and it is recorded here so the next verifier is not surprised by it.
 
 ## What the verification does **not** establish
 
-This verifies that the repository is internally consistent and that the checks are
-honest. It does **not** verify that a customer can buy anything. Specifically, none of
-the following was executed anywhere in this round:
+Checks 1–16 above are executed results, not assertions. What remains unestablished:
 
-1. A browser placing a real order against live WooCommerce (stock, totals, shipping,
-   tax, retry, out-of-stock).
-2. RFQ persistence, staff access or concurrent conversion against a real WordPress
-   database.
-3. The PHP/HPOS/Store API compatibility suite against WordPress.
-4. A real backup import with an observed rollback.
-5. A second isolated client with its own deployment, WordPress, database and secrets.
-6. Owner-supplied merchant facts and product-claim sources.
+1. **The browser product-page → cart path.** The engine fetches products over GraphQL, so
+   this needs `wp-graphql-woocommerce`, which is not on this machine; installing it is
+   beyond the hub's stated plugin scope. The variation and quantity reaching the orders
+   were seeded through the same Store API call `addToCartAction` issues, not clicked on a
+   product page. Out-of-stock, retry, shipping and tax cases are unexercised through the UI.
+2. **The Next.js RFQ routes writing to WordPress.** Real persistence is proven at the
+   plugin level; the storefront routes still use their local store.
+3. **Merchant/staff access with an authenticated WordPress session.**
+4. **A second isolated client** with its own deployment, WordPress, database and secrets.
+5. **Owner-supplied merchant facts and product-claim sources.**
+6. **Production behaviour.** The live environment ran on plain HTTP with a disclosed
+   SSL-marker shim for WooCommerce REST basic-auth. Production CSP (nonce +
+   `strict-dynamic`) and real TLS were not exercised.
 
-The browser measurement that *was* executed failed the touch-target budget: the smallest
-measured target is 16.5px against a 44px minimum. That is a real defect, and it is
-recorded as a failure, not smoothed over.
+The browser measurement that was executed failed the touch-target budget: the smallest
+measured target is 16.5px against a 44px minimum. That is a real defect, measured and
+recorded as a failure rather than smoothed over, and it remains unfixed.
 
 ## Verdict
 
