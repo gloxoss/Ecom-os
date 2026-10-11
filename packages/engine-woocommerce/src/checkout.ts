@@ -116,7 +116,7 @@ export function correlationMarker(attemptKey: string): string {
  */
 export async function findOrderByAttemptCorrelation(
   attemptKey: string,
-  opts: { email?: string; perPage?: number } = {}
+  opts: { email?: string | undefined; perPage?: number | undefined } = {}
 ): Promise<OrderCorrelation | null> {
   if (!attemptKey) throw new Error('Invalid checkout attempt key.');
   const marker = correlationMarker(attemptKey);

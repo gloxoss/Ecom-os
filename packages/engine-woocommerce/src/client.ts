@@ -246,7 +246,8 @@ export class WooCommerceEngine implements EcomEngine {
   ): Promise<StoreCheckoutResult> {
     if (attemptKey) {
       return executeIdempotentCheckout(attemptKey, cartId, input, undefined, {
-        lookupOrder: async (key, opts) => findOrderByAttemptCorrelation(key, { email: opts?.email }),
+        lookupOrder: async (key, opts) =>
+          findOrderByAttemptCorrelation(key, opts?.email ? { email: opts.email } : {}),
       });
     }
     return submitStoreCheckout(cartId, input);
