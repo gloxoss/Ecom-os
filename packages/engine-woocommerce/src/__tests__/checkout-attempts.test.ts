@@ -231,8 +231,8 @@ describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => 
 
       const result = await submitStoreCheckout('tok-cod', validCheckoutInput);
 
-      expect(mockFetch).toHaveBeenCalledOnce();
-      const call = mockFetch.mock.calls[0]!;
+      expect(mockFetch.mock.calls.some((c) => (c[1] as RequestInit | undefined)?.method === 'POST')).toBe(true);
+      const call = mockFetch.mock.calls.find((c) => (c[1] as RequestInit | undefined)?.method === 'POST')!;
       expect(call[0]).toContain('/checkout');
       const body = JSON.parse(call[1]?.body as string);
       expect(body.payment_method).toBe('cod');
@@ -289,12 +289,12 @@ describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => 
 
       const first = await executeIdempotentCheckout('dup-key', 'cart-dup', checkoutInput, manager);
       expect(first.orderId).toBe(777);
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch.mock.calls.filter((c) => (c[1] as RequestInit | undefined)?.method === 'POST').length).toBe(1);
 
       // Second submission with same key
       const second = await executeIdempotentCheckout('dup-key', 'cart-dup', checkoutInput, manager);
       expect(second.orderId).toBe(777);
-      expect(mockFetch).toHaveBeenCalledTimes(1); // Fetch NOT called again!
+      expect(mockFetch.mock.calls.filter((c) => (c[1] as RequestInit | undefined)?.method === 'POST').length).toBe(1);
     });
 
     it('rejects concurrent submission in progress with descriptive error', async () => {

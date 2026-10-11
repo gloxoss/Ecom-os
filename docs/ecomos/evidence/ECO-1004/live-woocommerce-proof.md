@@ -665,3 +665,39 @@ cart seeded by the same Store API call the button issues (orders 17, 18, 20, 25,
 including the product-page case only in the seeded form), the product **page** now renders
 without a bridge (proven), and the **click from that page** is the one remaining
 unverified link.
+
+## Finding 1 — CLOSED: a real browser bought from a real product page
+
+The click-through that failed is fixed, and finding 1's acceptance criterion is now met
+through the storefront's own UI, with **no WPGraphQL for WooCommerce bridge installed**.
+
+**Root cause, a real defect:** the Store API refuses every mutating request without a
+`Nonce` header, and `storeApiFetch` read the nonce from responses but never sent one. So
+add-to-cart, quantity changes and checkout could not work against a real WooCommerce at
+all — which is why no order in this session had come from a clicked button. The transport
+now fetches a nonce when a write does not already hold one, and sends it.
+
+**The run, end to end, in a real browser:**
+
+```
+STEP1  /product/local-test-simple -> 200, shows the product and its price
+STEP2  clicked the real "Add to bag" button
+STEP3  /checkout loaded WITH the item (cart filled by the click, not seeded)
+STEP4  /checkout/success?order=31 -> "n° 31", "Total : 636.00 MAD", "processing"
+
+wp_wc_orders: 31 | wc-processing | 636.00000000 | MAD | customer_id 0   (guest, COD)
+```
+
+636.00 MAD is 500 goods + 30 shipping + 106 VAT, all computed by WooCommerce. The
+confirmation page verified the order through the ownership-checked status endpoint, so the
+guest read their own order back.
+
+That is the audit's finding 1 acceptance: a real browser, the storefront's own add-to-cart,
+Woo-authoritative totals including tax and shipping, COD submitted, and a private read-back
+— on a catalog served without a plugin install.
+
+**What remains unproven in finding 1:** a *variable* product's product page.
+`mapStoreSimpleProduct` returns null for variable products because the Store API lists
+variations without prices, so those pages still need the GraphQL bridge or one read per
+variation. Order 26's variable-product purchases were proven with the cart seeded rather
+than clicked.

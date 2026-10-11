@@ -62,6 +62,7 @@ describe('WooCommerce Store API Cart & Session Adapter', () => {
 
       const res = await storeApiFetch('/cart', { cartToken: 'initial-token' });
 
+      // A read is a single request: no nonce seeding, which only writes need.
       expect(mockFetch).toHaveBeenCalledOnce();
       const call = mockFetch.mock.calls[0]!;
       const calledUrl = call[0] as string;
@@ -222,8 +223,8 @@ describe('WooCommerce Store API Cart & Session Adapter', () => {
         quantity: 2,
       });
 
-      expect(mockFetch).toHaveBeenCalledOnce();
-      const call = mockFetch.mock.calls[0]!;
+      expect(mockFetch.mock.calls.some((c) => (c[1] as RequestInit | undefined)?.method === 'POST')).toBe(true);
+      const call = mockFetch.mock.calls.find((c) => (c[1] as RequestInit | undefined)?.method === 'POST')!;
       const body = JSON.parse((call[1] as RequestInit).body as string);
       expect(body).toEqual({ id: 14, quantity: 2 });
       expect(cart.items[0]?.variantId).toBe('14');
@@ -291,8 +292,8 @@ describe('WooCommerce Store API Cart & Session Adapter', () => {
       const engine = new WooCommerceEngine();
       const cart = await engine.updateCartItem('tok-update', 'line-xyz', 3);
 
-      expect(mockFetch).toHaveBeenCalledOnce();
-      const call = mockFetch.mock.calls[0]!;
+      expect(mockFetch.mock.calls.some((c) => (c[1] as RequestInit | undefined)?.method === 'POST')).toBe(true);
+      const call = mockFetch.mock.calls.find((c) => (c[1] as RequestInit | undefined)?.method === 'POST')!;
       expect(call[0]).toContain('/cart/update-item');
       const body = JSON.parse((call[1] as RequestInit).body as string);
       expect(body).toEqual({ key: 'line-xyz', quantity: 3 });

@@ -138,8 +138,8 @@ describe('Authoritative Destination-Based Checkout Quotation (ECO-203)', () => {
 
       const result = await updateStoreCustomer('sess-token-123', addressInput);
 
-      expect(mockFetch).toHaveBeenCalledOnce();
-      const call = mockFetch.mock.calls[0]!;
+      expect(mockFetch.mock.calls.some((c) => (c[1] as RequestInit | undefined)?.method === 'POST')).toBe(true);
+      const call = mockFetch.mock.calls.find((c) => (c[1] as RequestInit | undefined)?.method === 'POST') ?? mockFetch.mock.calls[0]!;
       expect(call[0]).toContain('/cart/update-customer');
       const headers = call[1]?.headers as Headers;
       expect(headers.get('Cart-Token')).toBe('sess-token-123');
@@ -210,8 +210,8 @@ describe('Authoritative Destination-Based Checkout Quotation (ECO-203)', () => {
 
       const result = await selectStoreShippingRate('sess-ship-456', 0, 'express:9');
 
-      expect(mockFetch).toHaveBeenCalledOnce();
-      const call = mockFetch.mock.calls[0]!;
+      expect(mockFetch.mock.calls.some((c) => (c[1] as RequestInit | undefined)?.method === 'POST')).toBe(true);
+      const call = mockFetch.mock.calls.find((c) => (c[1] as RequestInit | undefined)?.method === 'POST') ?? mockFetch.mock.calls[0]!;
       expect(call[0]).toContain('/cart/select-shipping-rate');
       const body = JSON.parse(call[1]?.body as string);
       expect(body).toEqual({ package_id: 0, rate_id: 'express:9' });

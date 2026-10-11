@@ -5,6 +5,8 @@ export interface StoreApiRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   cartToken?: string;
   body?: unknown;
+  /** Nonce returned by a previous Store API response; a fresh one is fetched when absent. */
+  nonce?: string;
 }
 
 export interface StoreApiResponse<T = any> {
@@ -45,16 +47,44 @@ export async function storeApiFetch<T = any>(
     throw new Error('WooCommerce Store API requires HTTPS in production.');
   }
 
+  const method = options.method || 'GET';
+  let cartToken = options.cartToken;
+  let nonce = options.nonce;
+
+  /**
+   * WooCommerce's Store API refuses every mutating request without a `Nonce` header:
+   * "Missing the Nonce header. This endpoint requires a valid nonce." The nonce is issued
+   * with a cart read, so a write that does not already hold one has to fetch it first —
+   * otherwise add-to-cart, quantity changes and checkout all fail against a real store,
+   * which is exactly what happened before this was added.
+   */
+  if (method !== 'GET' && !nonce) {
+    try {
+      const seedRes = await fetch(`${baseUrl.replace(/\/$/, '')}/cart`, {
+        headers: cartToken ? { 'Cart-Token': cartToken } : {},
+        signal: AbortSignal.timeout(30000),
+      });
+      nonce = seedRes.headers.get('Nonce') || seedRes.headers.get('X-WC-Store-API-Nonce') || undefined;
+      const seedToken = seedRes.headers.get('Cart-Token');
+      if (seedToken) cartToken = seedToken;
+    } catch {
+      // Fall through: the write proceeds and WooCommerce reports the reason itself.
+    }
+  }
+
   const headers = new Headers();
-  if (options.cartToken) {
-    headers.set('Cart-Token', options.cartToken);
+  if (cartToken) {
+    headers.set('Cart-Token', cartToken);
+  }
+  if (nonce) {
+    headers.set('Nonce', nonce);
   }
   if (options.body) {
     headers.set('Content-Type', 'application/json');
   }
 
   const res = await fetch(url.toString(), {
-    method: options.method || 'GET',
+    method,
     headers,
     signal: AbortSignal.timeout(30000),
     ...(options.body ? { body: JSON.stringify(options.body) } : {}),
