@@ -54,6 +54,7 @@ export async function submitStoreCheckout(
   const customerId = typeof data?.customer_id === 'number' ? data.customer_id : 0;
   const paymentResult = data?.payment_result as Record<string, unknown> | undefined;
   const paymentStatus = String(paymentResult?.payment_status || 'success');
+  const contactEmail = billingEmail(input);
 
   return {
     ok: true,
@@ -62,7 +63,7 @@ export async function submitStoreCheckout(
     status,
     customerId,
     paymentStatus,
-    email: billingEmail(input),
+    ...(contactEmail ? { email: contactEmail } : {}),
     raw: data,
   };
 }
@@ -96,7 +97,7 @@ export async function executeIdempotentCheckout(
       status: 'processing',
       customerId: 0,
       paymentStatus: 'success',
-      email: check.email,
+      ...(check.email ? { email: check.email } : {}),
     };
   }
 

@@ -206,7 +206,7 @@ export class CheckoutAttemptManager {
       operation: this.operation,
       ownerKey,
       status: 'PENDING',
-      email: existing?.email,
+      ...(existing?.email ? { email: existing.email } : {}),
       createdAt: existing ? existing.createdAt : now,
       updatedAt: now,
     });
@@ -229,6 +229,7 @@ export class CheckoutAttemptManager {
     }
 
     const now = Date.now();
+    const contactEmail = email ?? existing?.email;
     const confirmed: CheckoutAttempt = {
       attemptKey,
       operation: existing?.operation ?? this.operation,
@@ -236,7 +237,7 @@ export class CheckoutAttemptManager {
       status: 'CONFIRMED',
       orderId,
       ...(orderKey ? { orderKey } : {}),
-      ...(email ?? existing?.email ? { email: email ?? existing?.email } : {}),
+      ...(contactEmail ? { email: contactEmail } : {}),
       createdAt: existing ? existing.createdAt : now,
       updatedAt: now,
     };
@@ -259,7 +260,7 @@ export class CheckoutAttemptManager {
       ownerKey: ownerKey ?? existing?.ownerKey ?? '',
       status: 'FAILED',
       error,
-      email: existing?.email,
+      ...(existing?.email ? { email: existing.email } : {}),
       createdAt: existing ? existing.createdAt : now,
       updatedAt: now,
     };

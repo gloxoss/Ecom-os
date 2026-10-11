@@ -21,6 +21,8 @@ export interface StoreCartResult {
   cart: Cart;
   cartToken: string;
   raw: any;
+  /** Nonce issued with the latest response; thread it into the next mutation. */
+  nonce?: string;
 }
 
 export function getStoreApiUrl(): string {
@@ -126,12 +128,14 @@ export async function fetchStoreCart(cartToken?: string): Promise<StoreCartResul
     cart,
     cartToken: activeToken,
     raw: res.data,
+    ...(res.nonce ? { nonce: res.nonce } : {}),
   };
 }
 
 export async function addItemToStoreCart(
   cartToken: string | undefined,
-  input: { id: number; quantity: number }
+  input: { id: number; quantity: number },
+  nonce?: string
 ): Promise<StoreCartResult> {
   const options: StoreApiRequestOptions = {
     method: 'POST',
@@ -140,6 +144,9 @@ export async function addItemToStoreCart(
   if (cartToken) {
     options.cartToken = cartToken;
   }
+  if (nonce) {
+    options.nonce = nonce;
+  }
   const res = await storeApiFetch('/cart/add-item', options);
   const activeToken = res.cartToken || cartToken || '';
   const cart = mapStoreCart(res.data, activeToken, res.data?.totals?.currency_code || 'MAD');
@@ -147,17 +154,20 @@ export async function addItemToStoreCart(
     cart,
     cartToken: activeToken,
     raw: res.data,
+    ...(res.nonce ? { nonce: res.nonce } : {}),
   };
 }
 
 export async function updateStoreCartItem(
   cartToken: string,
   key: string,
-  quantity: number
+  quantity: number,
+  nonce?: string
 ): Promise<StoreCartResult> {
   const res = await storeApiFetch('/cart/update-item', {
     method: 'POST',
     cartToken,
+    ...(nonce ? { nonce } : {}),
     body: { key, quantity },
   });
   const activeToken = res.cartToken || cartToken;
@@ -166,16 +176,19 @@ export async function updateStoreCartItem(
     cart,
     cartToken: activeToken,
     raw: res.data,
+    ...(res.nonce ? { nonce: res.nonce } : {}),
   };
 }
 
 export async function removeStoreCartItem(
   cartToken: string,
-  key: string
+  key: string,
+  nonce?: string
 ): Promise<StoreCartResult> {
   const res = await storeApiFetch('/cart/remove-item', {
     method: 'POST',
     cartToken,
+    ...(nonce ? { nonce } : {}),
     body: { key },
   });
   const activeToken = res.cartToken || cartToken;
@@ -184,6 +197,7 @@ export async function removeStoreCartItem(
     cart,
     cartToken: activeToken,
     raw: res.data,
+    ...(res.nonce ? { nonce: res.nonce } : {}),
   };
 }
 
@@ -360,6 +374,175 @@ export async function selectStoreShippingRate(
       amount_minor: isNaN(taxTotalMinor) ? 0 : taxTotalMinor,
       currency,
     },
+  };
+}
+
+/**
+ * Canonical identity of one cart line. Variations match by variation ID across
+ * both sides: the Store API reports a variation line under its variation ID,
+ * so keying variations by parent product alone would never match.
+ */
+export function cartLineKey(productId: string, variationId?: string): string {
+  return variationId ? `v:${variationId}` : `p:${productId}`;
+}
+
+export interface IntendedCartLine {
+  productId: string;
+  variationId?: string;
+  quantity: number;
+}
+
+export interface CartReconcileDiff {
+  added: number;
+  updated: number;
+  removed: number;
+  /** Intended variation lines paired against a surplus simple line of the same product. */
+  variationMismatches: number;
+  details: Array<{ action: 'add' | 'update' | 'remove'; key: string; quantity?: number }>;
+}
+
+export interface ReconcileStoreCartResult extends StoreCartResult {
+  diff: CartReconcileDiff;
+}
+
+interface NormalizedLine {
+  key: string;
+  lineKey?: string;
+  productId: string;
+  variationId?: string;
+  quantity: number;
+}
+
+function normalizeIntended(lines: IntendedCartLine[]): Map<string, NormalizedLine> {
+  const merged = new Map<string, NormalizedLine>();
+  for (const line of lines) {
+    if (!Number.isInteger(line.quantity) || line.quantity < 1) {
+      throw new Error(`Invalid intended quantity for product ${line.productId}: ${line.quantity}`);
+    }
+    const target = line.variationId ?? line.productId;
+    if (!/^\d+$/.test(target)) {
+      throw new Error(`Invalid product or variation ID for reconcile: ${target}`);
+    }
+    const key = cartLineKey(line.productId, line.variationId);
+    const existing = merged.get(key);
+    if (existing) {
+      existing.quantity += line.quantity;
+    } else {
+      merged.set(key, {
+        key,
+        productId: line.productId,
+        ...(line.variationId ? { variationId: line.variationId } : {}),
+        quantity: line.quantity,
+      });
+    }
+  }
+  return merged;
+}
+
+function normalizeWooItems(items: Array<{ id: string; productId: string; variantId?: string; quantity: number }>): Map<string, NormalizedLine> {
+  const map = new Map<string, NormalizedLine>();
+  for (const item of items) {
+    map.set(cartLineKey(item.productId, item.variantId), {
+      key: cartLineKey(item.productId, item.variantId),
+      lineKey: item.id,
+      productId: item.productId,
+      ...(item.variantId ? { variationId: item.variantId } : {}),
+      quantity: item.quantity,
+    });
+  }
+  return map;
+}
+
+/**
+ * Makes the authoritative WooCommerce cart exactly match the intended
+ * product/variation/quantity multiset: missing lines are added, quantity drift
+ * is updated, surplus lines are removed. Mutations run strictly sequentially
+ * while threading the rotated Cart-Token and Nonce, then the final cart is
+ * re-read and compared exactly. Any mutation failure aborts with the
+ * authoritative Store API error; a final mismatch throws instead of claiming
+ * success.
+ */
+export async function reconcileStoreCart(
+  cartToken: string | undefined,
+  intended: IntendedCartLine[],
+  options: { nonce?: string } = {}
+): Promise<ReconcileStoreCartResult> {
+  const wanted = normalizeIntended(intended);
+  let token = cartToken || '';
+  let nonce = options.nonce;
+
+  const read = await fetchStoreCart(token || undefined);
+  token = read.cartToken || token;
+  nonce = read.nonce ?? nonce;
+  if (!token) {
+    throw new Error('Cart reconciliation requires a WooCommerce cart token.');
+  }
+  const current = normalizeWooItems(read.cart.items);
+
+  const diff: CartReconcileDiff = { added: 0, updated: 0, removed: 0, variationMismatches: 0, details: [] };
+
+  for (const [key, want] of wanted) {
+    const have = current.get(key);
+    if (have && have.quantity !== want.quantity && have.lineKey) {
+      const res = await updateStoreCartItem(token, have.lineKey, want.quantity, nonce);
+      token = res.cartToken || token;
+      nonce = res.nonce ?? nonce;
+      diff.updated += 1;
+      diff.details.push({ action: 'update', key, quantity: want.quantity });
+    }
+  }
+
+  for (const [key, have] of current) {
+    if (!wanted.has(key) && have.lineKey) {
+      const res = await removeStoreCartItem(token, have.lineKey, nonce);
+      token = res.cartToken || token;
+      nonce = res.nonce ?? nonce;
+      diff.removed += 1;
+      diff.details.push({ action: 'remove', key });
+    }
+  }
+
+  for (const [key, want] of wanted) {
+    if (!current.has(key)) {
+      const surplusSimple = [...current.values()].find(
+        (have) => !wanted.has(have.key) && !have.variationId && have.productId === want.productId
+      );
+      if (want.variationId && surplusSimple) {
+        diff.variationMismatches += 1;
+      }
+      const targetId = parseInt(want.variationId ?? want.productId, 10);
+      const res = await addItemToStoreCart(token || undefined, { id: targetId, quantity: want.quantity }, nonce);
+      token = res.cartToken || token;
+      nonce = res.nonce ?? nonce;
+      diff.added += 1;
+      diff.details.push({ action: 'add', key, quantity: want.quantity });
+    }
+  }
+
+  const final = await fetchStoreCart(token || undefined);
+  token = final.cartToken || token;
+  nonce = final.nonce ?? nonce;
+  const verified = normalizeWooItems(final.cart.items);
+
+  const problems: string[] = [];
+  for (const [key, want] of wanted) {
+    const got = verified.get(key);
+    if (!got) problems.push(`missing ${key}`);
+    else if (got.quantity !== want.quantity) problems.push(`quantity ${key}: want ${want.quantity}, got ${got.quantity}`);
+  }
+  for (const [key] of verified) {
+    if (!wanted.has(key)) problems.push(`surplus ${key}`);
+  }
+  if (problems.length > 0) {
+    throw new Error(`Cart reconciliation failed: ${problems.join('; ')}`);
+  }
+
+  return {
+    cart: final.cart,
+    cartToken: token,
+    raw: final.raw,
+    ...(nonce ? { nonce } : {}),
+    diff,
   };
 }
 
