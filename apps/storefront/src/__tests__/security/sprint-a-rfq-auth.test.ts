@@ -14,7 +14,7 @@ import {
 import {
   type RfqQuote,
   type OfferRevision,
-} from '../../../../../../packages/addons-rfq/src/index';
+} from '../../../../../packages/addons-rfq/src/index';
 
 function createSubmitRequest(body: unknown, headers: Record<string, string> = {}): Request {
   return new Request('http://localhost:3000/api/rfq', {
@@ -441,6 +441,9 @@ describe('ECO-1103: RFQ Security & Guest/Staff Credential Decoupling', () => {
             items: [],
             revisions: [],
             currentRevisionId: 'rev_2',
+            accessSecretHash: 'mock_hash',
+            guestChallengeEmail: 'test@example.ma',
+            isContactVerified: true,
             expiresAt: '2020-01-01T00:00:00Z', // Expired in past
             createdAt: '2020-01-01T00:00:00Z',
             updatedAt: '2020-01-01T00:00:00Z',
@@ -487,6 +490,9 @@ describe('ECO-1103: RFQ Security & Guest/Staff Credential Decoupling', () => {
             items: [],
             revisions: [],
             currentRevisionId: 'rev_2',
+            accessSecretHash: 'mock_hash',
+            guestChallengeEmail: 'test@example.ma',
+            isContactVerified: true,
             expiresAt: futureDate, // Active unexpired
             createdAt: '2026-09-01T00:00:00Z',
             updatedAt: '2026-09-01T00:00:00Z',
