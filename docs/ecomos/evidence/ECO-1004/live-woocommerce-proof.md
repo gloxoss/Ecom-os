@@ -414,3 +414,40 @@ security-relevant workflow, and the remaining budget in this session is not enou
 implement *and verify* it. An unverified rewrite of the RFQ persistence layer left in the
 tree would be worse than a precisely documented gap — and the audit's own standard is that
 unverified work must not be presented as done.
+
+### The RFQ rewiring, broken into steps — step 1 is done
+
+**Step 1 — done (commit `25b6679`).** `RfqQuoteStore` is now asynchronous, with every call
+site awaiting it. Verified: tsc 0, vitest 521, node:test 71, eslint 0.
+
+**Step 2 — the WordPress store and the plugin's identity handover.** Two changes together,
+because either alone is wrong:
+
+- `plugins/wp-ecomos-rfq/routes.php`: `ecomos_rfq_rest_create_quote` currently generates the
+  quote id, number and access secret itself, so a caller cannot persist a quote whose
+  identity it already issued to a guest. It must accept a caller-supplied `id`,
+  `quote_number` and `access_secret_hash` (validated: `[\w-]+`, a semver-shaped number, a
+  64-hex hash) and fall back to generating them when absent.
+- A `WordPressRfqQuoteStore` implementing the now-async interface against
+  `POST /wp-json/ecomos/v1/rfq/quotes` and `GET /wp-json/ecomos/v1/rfq/quotes/{id}`,
+  selected when `ECOM_RFQ_WP_URL` is configured.
+
+**Step 3 — guest authorization moves to WordPress.** This is the part that makes it a
+refactor rather than an adapter, and it is not optional:
+
+```php
+// ecomos_rfq_rest_get_quote
+// Scrub secret hash before transmitting
+unset($quote['access_secret_hash']);
+```
+
+The plugin deliberately never transmits the secret hash. `offers/route.ts` authorizes the
+guest by hashing the presented token and comparing it to `quote.accessSecretHash`, which a
+WordPress-backed store can therefore never supply. Authorization has to move server-side to
+WordPress — the store's read needs to carry the guest token and let
+`ecomos_rfq_rest_check_read_permission` decide — which changes the store interface again
+(a token-aware read) and the offers route with it, plus its tests.
+
+Steps 2 and 3 were not started. Step 1 is a real, verified increment toward them; starting
+step 2 without the budget to reach step 3 would leave a WordPress store that cannot
+authorize a guest read, which is worse than the honest gap.
