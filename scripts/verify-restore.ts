@@ -1,22 +1,34 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+
+import { runIsolatedRestore, ISOLATION_PORT } from './restore-isolation/index.ts';
 
 /**
  * Backup restore verification.
  *
  * This script does not simulate a restore. It either imports a real SQL dump into an
- * isolated MySQL database, inspects HPOS order and RFQ quote integrity in that
- * database, and observes a rollback - or it reports NOT RUN and exits non-zero.
+ * *isolated MySQL service* -- a separate mysqld with its own fresh data directory,
+ * bound to 127.0.0.1:3309 only, reached by a restricted user whose grants are the
+ * target schema and nothing else -- inspects HPOS order and RFQ quote integrity in
+ * that service, and reports what it found, or it reports NOT RUN and exits non-zero.
  *
  * There is no synthetic snapshot fallback and no hardcoded table count: an earlier
  * revision fed a locally built object (tableCount 42, hposOrdersVerified true) into a
  * `simulateRestoreRehearsal` helper and reported success without touching a database.
  * That is not recovery evidence, so it is gone.
  *
+ * A database *name* on the source service is not isolation. A dump carrying
+ * `USE source_db;`, a fully qualified `source_db.table` insert, a trigger, an event, a
+ * routine or `LOAD DATA INFILE` runs with the importing identity's privileges against
+ * whatever service it is pointed at. Isolation here is a different process, a
+ * different data directory and target-only credentials, proved by a fail-closed gate
+ * before a single byte of the dump is read.
+ *
  * Exit codes: 0 VERIFIED, 1 FAIL, 2 NOT RUN (blocked on a real artifact/environment),
- * 3 PARTIAL (restore inspected, rollback rehearsal not observed).
+ * 3 PARTIAL (restore imported and inspected in isolation, but the run did not complete
+ * the full lifecycle, e.g. the isolated service was kept or could not be confirmed
+ * stopped).
  */
 
 export type RestoreStatus = 'VERIFIED' | 'PARTIAL' | 'FAIL' | 'NOT RUN';
@@ -27,6 +39,20 @@ export interface RestoreCheck {
   detail: string;
 }
 
+export interface IsolationSummary {
+  host: string;
+  port: number;
+  targetSchema: string;
+  restrictedUser: string | null;
+  datadir: string | null;
+  gatePassed: boolean;
+  failedGates: string[];
+  grantedPrivileges: string[];
+  partialTables: string[];
+  teardown: string | null;
+  notes: string[];
+}
+
 export interface RestoreReport {
   status: RestoreStatus;
   reason: string;
@@ -34,6 +60,7 @@ export interface RestoreReport {
   targetDatabase: string | null;
   checks: RestoreCheck[];
   rollbackObserved: boolean;
+  isolation: IsolationSummary | null;
 }
 
 export interface RestoreOptions {
@@ -41,9 +68,12 @@ export interface RestoreOptions {
   targetDatabase: string | undefined;
   sourceDatabase: string | undefined;
   mysqlBin: string | undefined;
+  mysqlBinDir: string | undefined;
   confirmTarget: string | undefined;
   confirmDrop: string | undefined;
   keepTarget: boolean;
+  sourcePort: number | undefined;
+  requiredTables: string[] | undefined;
 }
 
 const EXIT_CODES: Record<RestoreStatus, number> = {
@@ -53,356 +83,164 @@ const EXIT_CODES: Record<RestoreStatus, number> = {
   PARTIAL: 3,
 };
 
-const REQUIRED_PLUGIN_TABLES = ['ecomos_rfq_quotes', 'ecomos_rfq_revisions'];
-
-function report(
-  status: RestoreStatus,
-  reason: string,
-  backupPath: string | null,
-  targetDatabase: string | null,
-  checks: RestoreCheck[] = [],
-  rollbackObserved = false,
-): RestoreReport {
-  return { status, reason, backupPath, targetDatabase, checks, rollbackObserved };
-}
-
 function isSafeIdentifier(value: string): boolean {
   return /^[A-Za-z0-9_]+$/.test(value);
 }
 
-function resolveMysqlBin(explicit: string | undefined): string | null {
-  if (explicit) return fs.existsSync(explicit) ? explicit : null;
-
-  const fromEnv = process.env.ECOM_OS_MYSQL_BIN;
-  if (fromEnv) return fs.existsSync(fromEnv) ? fromEnv : null;
-
-  try {
-    execFileSync('mysql', ['--version'], { stdio: 'ignore' });
-    return 'mysql';
-  } catch {
-    // Not on PATH; fall through to the Local by Flywheel dev convenience below.
-  }
-
-  const localRoot = process.env.APPDATA
-    ? path.join(process.env.APPDATA, 'Local', 'lightning-services')
-    : '';
-  if (localRoot && fs.existsSync(localRoot)) {
-    for (const entry of fs.readdirSync(localRoot)) {
-      if (!entry.startsWith('mysql-')) continue;
-      const candidate = path.join(localRoot, entry, 'bin', 'win64', 'bin', 'mysql.exe');
-      if (fs.existsSync(candidate)) return candidate;
-    }
-  }
-
-  return null;
-}
-
-function mysqlConnectionArgs(): string[] {
-  const args = ['--batch', '--skip-column-names', '--protocol=TCP'];
-  const host = process.env.ECOM_OS_MYSQL_HOST;
-  const port = process.env.ECOM_OS_MYSQL_PORT;
-  const user = process.env.ECOM_OS_MYSQL_USER;
-  if (host) args.push(`--host=${host}`);
-  if (port) args.push(`--port=${port}`);
-  if (user) args.push(`--user=${user}`);
-  return args;
-}
-
-function mysqlQuery(bin: string, sql: string, database?: string): string {
-  const args = mysqlConnectionArgs();
-  if (database) args.push(database);
-  args.push('--execute', sql);
-  return execFileSync(bin, args, {
-    encoding: 'utf8',
-    env: process.env,
-    maxBuffer: 64 * 1024 * 1024,
-  }).trim();
-}
-
-function mysqlImportDump(bin: string, database: string, dumpPath: string): void {
-  execFileSync(bin, [...mysqlConnectionArgs(), database], {
-    input: fs.readFileSync(dumpPath),
-    env: process.env,
-    maxBuffer: 256 * 1024 * 1024,
-  });
-}
-
-function listTables(bin: string, database: string): string[] {
-  return mysqlQuery(
-    bin,
-    `SELECT table_name FROM information_schema.tables WHERE table_schema = '${database}'`,
-  )
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function count(bin: string, database: string, sql: string): number {
-  const value = mysqlQuery(bin, sql, database);
+function parseOptionalPort(value: string | undefined): number | undefined {
+  if (!value) return undefined;
   const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : Number.NaN;
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-/** Import the dump into an isolated target database and inspect it. */
-export function verifyRestore(options: RestoreOptions): RestoreReport {
-  const backupPath =
-    options.backupPath ?? process.env.ECOM_OS_RESTORE_BACKUP ?? undefined;
-  const targetDatabase =
+/** Resolve the directory containing mysqld/mysql/mysqldump/mysqladmin. */
+function resolveBinDirFromOptions(options: RestoreOptions): string | undefined {
+  if (options.mysqlBinDir) return options.mysqlBinDir;
+  if (options.mysqlBin) return path.dirname(options.mysqlBin);
+  if (process.env.ECOM_OS_MYSQL_BIN_DIR) return process.env.ECOM_OS_MYSQL_BIN_DIR;
+  if (process.env.ECOM_OS_MYSQL_BIN) return path.dirname(process.env.ECOM_OS_MYSQL_BIN);
+  return undefined;
+}
+
+/**
+ * Import a real dump into an isolated service and inspect it.
+ *
+ * The source service is never the importer: the target is a separate mysqld on
+ * 127.0.0.1:3309 reached only by the restricted target user. Port 3308 and any
+ * other service are never contacted.
+ */
+export async function verifyRestore(options: RestoreOptions): Promise<RestoreReport> {
+  const backupPath = options.backupPath ?? process.env.ECOM_OS_RESTORE_BACKUP ?? undefined;
+  const targetSchema =
     options.targetDatabase ?? process.env.ECOM_OS_RESTORE_TARGET_DB ?? undefined;
   const sourceDatabase =
     options.sourceDatabase ?? process.env.ECOM_OS_RESTORE_SOURCE_DB ?? undefined;
-  const confirmTarget = options.confirmTarget ?? undefined;
-  const confirmDrop = options.confirmDrop ?? undefined;
+  const sourcePort = options.sourcePort ?? parseOptionalPort(process.env.ECOM_OS_MYSQL_PORT);
+
+  const fail = (reason: string, backup: string | null, target: string | null): RestoreReport => ({
+    status: 'FAIL',
+    reason,
+    backupPath: backup,
+    targetDatabase: target,
+    checks: [],
+    rollbackObserved: false,
+    isolation: null,
+  });
 
   if (!backupPath) {
-    return report(
-      'NOT RUN',
-      'No real backup artifact supplied: pass --dump <path> or set ECOM_OS_RESTORE_BACKUP. ' +
+    return {
+      status: 'NOT RUN',
+      reason:
+        'No real backup artifact supplied: pass --dump <path> or set ECOM_OS_RESTORE_BACKUP. ' +
         'A synthetic snapshot cannot stand in for a backup.',
-      null,
-      targetDatabase ?? null,
-    );
+      backupPath: null,
+      targetDatabase: targetSchema ?? null,
+      checks: [],
+      rollbackObserved: false,
+      isolation: null,
+    };
   }
 
   const resolvedBackup = path.resolve(backupPath);
   if (!fs.existsSync(resolvedBackup) || !fs.statSync(resolvedBackup).isFile()) {
-    return report('FAIL', `Backup file not found: ${resolvedBackup}`, resolvedBackup, null);
+    return fail(`Backup file not found: ${resolvedBackup}`, resolvedBackup, null);
   }
   if (fs.statSync(resolvedBackup).size === 0) {
-    return report('FAIL', `Backup file is empty: ${resolvedBackup}`, resolvedBackup, null);
+    return fail(`Backup file is empty: ${resolvedBackup}`, resolvedBackup, null);
   }
 
-  const dumpHead = fs.readFileSync(resolvedBackup, 'utf8').slice(0, 65536);
-  if (!/CREATE TABLE|INSERT INTO|-- MySQL dump/i.test(dumpHead)) {
-    return report(
-      'FAIL',
-      `File does not look like a SQL dump (no CREATE TABLE / INSERT INTO): ${resolvedBackup}`,
+  if (targetSchema !== undefined && !isSafeIdentifier(targetSchema)) {
+    return fail(
+      `Target schema name must match [A-Za-z0-9_]+: ${targetSchema}`,
       resolvedBackup,
-      null,
+      targetSchema,
     );
   }
-
-  if (!targetDatabase) {
-    return report(
-      'NOT RUN',
-      'Blocked on an isolated restore database: pass --target-db <name> or set ' +
-        'ECOM_OS_RESTORE_TARGET_DB. It must be a scratch database you are willing to overwrite.',
+  if (sourceDatabase && targetSchema && sourceDatabase === targetSchema) {
+    return fail(
+      `Target schema equals the source database name (${targetSchema}); refuse to restore over the source.`,
       resolvedBackup,
-      null,
+      targetSchema,
     );
   }
-  if (!isSafeIdentifier(targetDatabase)) {
-    return report(
-      'FAIL',
-      `Target database name must match [A-Za-z0-9_]+: ${targetDatabase}`,
+  if (options.confirmTarget !== undefined && options.confirmTarget !== (targetSchema ?? 'restore_target')) {
+    return fail(
+      `--confirm-target ${options.confirmTarget} does not match the target schema ` +
+        `(${targetSchema ?? 'restore_target'}). Refusing to proceed on an unconfirmed target.`,
       resolvedBackup,
-      targetDatabase,
-    );
-  }
-  if (sourceDatabase && sourceDatabase === targetDatabase) {
-    return report(
-      'FAIL',
-      `Target database equals source database (${targetDatabase}); refuse to restore over the source.`,
-      resolvedBackup,
-      targetDatabase,
-    );
-  }
-  if (confirmTarget !== targetDatabase) {
-    return report(
-      'NOT RUN',
-      `Refusing to write without confirmation: pass --confirm-target ${targetDatabase} ` +
-        `to confirm it is an isolated scratch database.`,
-      resolvedBackup,
-      targetDatabase,
+      targetSchema ?? null,
     );
   }
 
-  const mysqlBin = resolveMysqlBin(options.mysqlBin);
-  if (!mysqlBin) {
-    return report(
-      'NOT RUN',
-      'Blocked on a MySQL client: none on PATH and ECOM_OS_MYSQL_BIN is unset. ' +
-        'Point ECOM_OS_MYSQL_BIN at a mysql client to import and inspect the dump.',
-      resolvedBackup,
-      targetDatabase,
-    );
-  }
+  const binDir = resolveBinDirFromOptions(options);
 
-  const checks: RestoreCheck[] = [];
+  // Destructive rollback is not authorized. --confirm-drop is accepted for CLI
+  // compatibility and deliberately ignored: nothing is dropped, dropped-and-confirmed
+  // or truncated anywhere, in the implementation or in teardown.
+  const destructiveRollbackRequested = options.confirmDrop !== undefined;
 
-  try {
-    mysqlQuery(
-      mysqlBin,
-      `DROP DATABASE IF EXISTS \`${targetDatabase}\`; CREATE DATABASE \`${targetDatabase}\`;`,
-    );
-    mysqlImportDump(mysqlBin, targetDatabase, resolvedBackup);
-  } catch (error) {
-    return report(
-      'FAIL',
-      `Import into ${targetDatabase} failed: ${error instanceof Error ? error.message : String(error)}`,
-      resolvedBackup,
-      targetDatabase,
-      checks,
-    );
-  }
-
-  const tables = listTables(mysqlBin, targetDatabase);
-  checks.push({
-    name: 'tables imported',
-    ok: tables.length > 0,
-    detail: `${tables.length} table(s) in ${targetDatabase}`,
+  const result = await runIsolatedRestore({
+    dumpPath: resolvedBackup,
+    targetSchema,
+    mysqlBinDir: binDir,
+    sourcePort,
+    requiredTableSuffixes: options.requiredTables,
+    keepService: options.keepTarget,
   });
 
-  const ordersTable = tables.find((table) => table.endsWith('wc_orders'));
-  if (!ordersTable) {
-    checks.push({
-      name: 'HPOS orders table present',
-      ok: false,
-      detail: 'no *wc_orders table found; HPOS orders were not restored',
-    });
-  } else {
-    const prefix = ordersTable.slice(0, ordersTable.length - 'wc_orders'.length);
-    const orderCount = count(mysqlBin, targetDatabase, `SELECT COUNT(*) FROM \`${ordersTable}\``);
-    const badStatus = count(
-      mysqlBin,
-      targetDatabase,
-      `SELECT COUNT(*) FROM \`${ordersTable}\` WHERE status IS NULL OR status = ''`,
-    );
-    const badTotals = count(
-      mysqlBin,
-      targetDatabase,
-      `SELECT COUNT(*) FROM \`${ordersTable}\` WHERE total_amount IS NULL`,
-    );
-    const guestOrders = count(
-      mysqlBin,
-      targetDatabase,
-      `SELECT COUNT(*) FROM \`${ordersTable}\` WHERE customer_id = 0`,
-    );
+  const isolation: IsolationSummary = {
+    host: result.service?.host ?? '127.0.0.1',
+    port: result.service?.port ?? ISOLATION_PORT,
+    targetSchema: result.targetSchema,
+    restrictedUser: result.service?.restrictedUser ?? null,
+    datadir: result.datadir,
+    gatePassed: result.gate?.ok ?? false,
+    failedGates: result.gate?.failed ?? [],
+    grantedPrivileges: result.service?.grantedPrivileges ?? [],
+    partialTables: result.importOutcome?.partialTables ?? [],
+    teardown: result.teardown
+      ? `${result.teardown.method}: ${result.teardown.detail}`
+      : options.keepTarget
+        ? 'skipped (--keep-target): the isolated service was left running'
+        : null,
+    notes: result.notes,
+  };
 
-    checks.push({
-      name: 'HPOS orders table present',
-      ok: true,
-      detail: `${ordersTable} restored`,
-    });
-    checks.push({
-      name: 'HPOS orders inspected',
-      ok: Number.isFinite(orderCount) && orderCount > 0,
-      detail: `${orderCount} order(s) in ${ordersTable}`,
-    });
-    checks.push({
-      name: 'HPOS order status integrity',
-      ok: badStatus === 0,
-      detail: `${badStatus} order(s) with an empty status`,
-    });
-    checks.push({
-      name: 'HPOS order total integrity',
-      ok: badTotals === 0,
-      detail: `${badTotals} order(s) with a null total_amount`,
-    });
-    checks.push({
-      name: 'guest orders preserved',
-      ok: Number.isFinite(guestOrders) && guestOrders <= orderCount,
-      detail: `${guestOrders} guest order(s) (customer_id = 0)`,
-    });
+  const checks: RestoreCheck[] = result.checks.map((check) => ({
+    name: check.name,
+    ok: check.ok,
+    detail: check.detail,
+  }));
 
-    const quotesTable = `${prefix}${REQUIRED_PLUGIN_TABLES[0]}`;
-    const revisionsTable = `${prefix}${REQUIRED_PLUGIN_TABLES[1]}`;
-    if (tables.includes(quotesTable)) {
-      const badQuotes = count(
-        mysqlBin,
-        targetDatabase,
-        `SELECT COUNT(*) FROM \`${quotesTable}\` WHERE state IS NULL OR state = ''`,
-      );
-      checks.push({
-        name: 'RFQ quote state integrity',
-        ok: badQuotes === 0,
-        detail: `${badQuotes} quote(s) with an empty state in ${quotesTable}`,
-      });
-    }
-    if (tables.includes(quotesTable) && tables.includes(revisionsTable)) {
-      const orphanRevisions = count(
-        mysqlBin,
-        targetDatabase,
-        `SELECT COUNT(*) FROM \`${revisionsTable}\` r LEFT JOIN \`${quotesTable}\` q ` +
-          'ON q.id = r.quote_id WHERE q.id IS NULL',
-      );
-      checks.push({
-        name: 'RFQ revisions reference real quotes',
-        ok: orphanRevisions === 0,
-        detail: `${orphanRevisions} orphan revision(s)`,
-      });
-    }
+  const suffixes: string[] = [];
+  if (result.status === 'VERIFIED' || result.status === 'PARTIAL') {
+    suffixes.push(
+      'No destructive rollback was performed: teardown stops the isolated service and drops nothing, ' +
+        'and the data directory is left in place.',
+    );
+  } else if (result.importOutcome && !result.importOutcome.ok) {
+    suffixes.push(
+      `Import stopped at dump line ${result.importOutcome.failedAtLine ?? 'unknown'}; ` +
+        'the isolation harness does not choose what the dump writes.',
+    );
   }
-
-  let rollbackObserved = false;
-  if (options.keepTarget) {
-    checks.push({
-      name: 'rollback rehearsal',
-      ok: false,
-      detail: 'skipped (--keep-target); rollback was not observed',
-    });
-  } else if (confirmDrop !== targetDatabase) {
-    checks.push({
-      name: 'rollback rehearsal',
-      ok: false,
-      detail: `not authorized; pass --confirm-drop ${targetDatabase} to drop the isolated target`,
-    });
-  } else {
-    try {
-      mysqlQuery(mysqlBin, `DROP DATABASE IF EXISTS \`${targetDatabase}\``);
-      const remaining = mysqlQuery(
-        mysqlBin,
-        `SELECT COUNT(*) FROM information_schema.schemata WHERE schema_name = '${targetDatabase}'`,
-      );
-      rollbackObserved = remaining === '0';
-      checks.push({
-        name: 'rollback rehearsal',
-        ok: rollbackObserved,
-        detail: rollbackObserved
-          ? `${targetDatabase} dropped and confirmed absent after restore`
-          : `${targetDatabase} still present after rollback attempt`,
-      });
-    } catch (error) {
-      checks.push({
-        name: 'rollback rehearsal',
-        ok: false,
-        detail: `rollback failed: ${error instanceof Error ? error.message : String(error)}`,
-      });
-    }
-  }
-
-  const failed = checks.filter((check) => !check.ok);
-  if (failed.length > 0) {
-    return report(
-      'FAIL',
-      `${failed.length} integrity check(s) failed in ${targetDatabase}`,
-      resolvedBackup,
-      targetDatabase,
-      checks,
-      rollbackObserved,
+  if (destructiveRollbackRequested && result.importOutcome?.ok) {
+    suffixes.push(
+      '--confirm-drop was supplied but destructive cleanup is not authorized; it was ignored.',
     );
   }
 
-  if (!rollbackObserved) {
-    return report(
-      'PARTIAL',
-      'Restore imported and order/quote integrity verified, but no rollback was observed. ' +
-        'This is not a full disaster-recovery rehearsal.',
-      resolvedBackup,
-      targetDatabase,
-      checks,
-      false,
-    );
-  }
+  const reason = [result.reason, ...suffixes].filter(Boolean).join(' ');
 
-  return report(
-    'VERIFIED',
-    `Restored ${targetDatabase} from ${resolvedBackup}, inspected order/quote integrity, and observed rollback.`,
-    resolvedBackup,
-    targetDatabase,
+  return {
+    status: result.status,
+    reason,
+    backupPath: resolvedBackup,
+    targetDatabase: result.targetSchema,
     checks,
-    true,
-  );
+    rollbackObserved: false,
+    isolation,
+  };
 }
 
 function parseArgs(argv: string[]): RestoreOptions {
@@ -411,9 +249,12 @@ function parseArgs(argv: string[]): RestoreOptions {
     targetDatabase: undefined,
     sourceDatabase: undefined,
     mysqlBin: undefined,
+    mysqlBinDir: undefined,
     confirmTarget: undefined,
     confirmDrop: undefined,
     keepTarget: false,
+    sourcePort: undefined,
+    requiredTables: undefined,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -426,6 +267,7 @@ function parseArgs(argv: string[]): RestoreOptions {
         i += 1;
         break;
       case '--target-db':
+      case '--target-schema':
         options.targetDatabase = take();
         i += 1;
         break;
@@ -435,6 +277,18 @@ function parseArgs(argv: string[]): RestoreOptions {
         break;
       case '--mysql-bin':
         options.mysqlBin = take();
+        i += 1;
+        break;
+      case '--mysql-bin-dir':
+        options.mysqlBinDir = take();
+        i += 1;
+        break;
+      case '--source-port':
+        options.sourcePort = parseOptionalPort(take());
+        i += 1;
+        break;
+      case '--required-table':
+        options.requiredTables = [...(options.requiredTables ?? []), take()];
         i += 1;
         break;
       case '--confirm-target':
@@ -469,9 +323,13 @@ function invokedDirectly(): boolean {
 }
 
 if (invokedDirectly()) {
-  console.log('--- EcomOS Backup & Restore Verification (real import, no simulation) ---');
-  const result = verifyRestore(parseArgs(process.argv.slice(2)));
-  console.log(JSON.stringify(result, null, 2));
-  console.error(`[RESTORE-${result.status}] ${result.reason}`);
-  process.exit(EXIT_CODES[result.status]);
+  // Wrapped rather than top-level await: tsx compiles this file as CJS, where
+  // top-level await is not available.
+  void (async () => {
+    console.log('--- EcomOS Backup & Restore Verification (isolated service, real import, no simulation) ---');
+    const result = await verifyRestore(parseArgs(process.argv.slice(2)));
+    console.log(JSON.stringify(result, null, 2));
+    console.error(`[RESTORE-${result.status}] ${result.reason}`);
+    process.exit(EXIT_CODES[result.status]);
+  })();
 }
