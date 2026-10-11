@@ -470,8 +470,11 @@ describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => 
         const replayB = await second.startAttempt('proc-key', 'cart-b');
         const okCount = [replayA.ok, replayB.ok].filter(Boolean).length;
         expect(okCount).toBe(0);
-        if (!replayA.ok) expect(replayA.status).toBe('PENDING');
-        if (!replayB.ok) expect(['PENDING', 'OWNER_MISMATCH'].includes(replayB.status)).toBe(true);
+        const statuses = [
+          !replayA.ok ? replayA.status : '',
+          !replayB.ok ? replayB.status : '',
+        ].sort();
+        expect(statuses).toEqual(['OWNER_MISMATCH', 'PENDING']);
       } finally {
         rmSync(dir, { recursive: true, force: true });
       }

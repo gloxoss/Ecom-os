@@ -50,6 +50,7 @@ import {
 import {
   submitStoreCheckout,
   executeIdempotentCheckout,
+  findOrderByAttemptCorrelation,
   type StoreCheckoutInput,
   type StoreCheckoutResult,
 } from './checkout';
@@ -244,7 +245,9 @@ export class WooCommerceEngine implements EcomEngine {
     attemptKey?: string
   ): Promise<StoreCheckoutResult> {
     if (attemptKey) {
-      return executeIdempotentCheckout(attemptKey, cartId, input);
+      return executeIdempotentCheckout(attemptKey, cartId, input, undefined, {
+        lookupOrder: async (key, opts) => findOrderByAttemptCorrelation(key, { email: opts?.email }),
+      });
     }
     return submitStoreCheckout(cartId, input);
   }
