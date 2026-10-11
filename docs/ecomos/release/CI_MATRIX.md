@@ -1,65 +1,69 @@
-# EcomOS CI/CD Pipeline & Matrix Specification
+# EcomOS CI Pipeline Specification
 
 - **Document**: `CI_MATRIX.md`
-- **Application**: EcomOS Cross-Profile Architecture
-- **Version**: 1.0.0
-- **Status**: **PRODUCTION ACTIVE**
+- **Application**: EcomOS Continuous Integration
+- **Version**: 2.0.0
+- **Status**: MATCHES REALITY — this file now describes exactly what `.github/workflows/ci.yml` runs. The broader matrix in the previous revision (Node 22/24, multiple profiles, `ADDONS="rfq"`, Playwright stages) was not implemented and has been moved to section 3 as pending work. See `release/CORRECTION_2026-10-11.md` for the withdrawal record.
 
 ---
 
-## 1. Toolchain & Environment Matrix
+## 1. What actually runs
 
-| Component | Canonical Version | Verification Command | Gate Enforcement |
+Workflow: `.github/workflows/ci.yml`. Triggered on push to `main` and on every pull request. **One job**, `ci`, on `ubuntu-latest`. There is no `strategy: matrix` and no parallel job fan-out.
+
+| # | Step | Command | Notes |
 | :--- | :--- | :--- | :--- |
-| **Node.js** | `>= 22.0.0` (active LTS: v24+) | `node -v` | Mandatory prerequisite |
-| **pnpm** | `11.7.0` | `pnpm -v` | Lockfile frozen (`pnpm install --frozen-lockfile`) |
-| **TypeScript** | `5.9.3` | `pnpm -r typecheck` | Zero `any`, strict null checks |
-| **Vitest** | `4.1.11` | `pnpm test` | Core packages unit coverage |
-| **Playwright / Tsx** | `^1.64.0` / `^4.23.15` | `npx tsx --test apps/storefront/e2e/*.spec.ts` | E2E browser & API contracts |
+| 1 | Toolchain | `pnpm/action-setup@v4` (11.7.0), `actions/setup-node@v4` (node 22, pnpm cache) | single Node version |
+| 2 | Install | `pnpm install --frozen-lockfile` | |
+| 3 | Engine-import guard | `pnpm guard` | `scripts/check-engine-imports.ts` + its node test |
+| 4 | Lint | `pnpm -r lint` | |
+| 5 | Typecheck | `pnpm -r typecheck` | |
+| 6 | Unit tests + coverage | `pnpm test:coverage` | `vitest run --coverage` |
+| 7 | Hub governance | `pnpm hub:test` | `node --test .agent-hub/test/*.test.mjs` |
+| 8 | Secret scan | `gitleaks/gitleaks-action@v2` | |
+| 9 | Dependency scan | `aquasecurity/trivy-action@master` | `scan-type: fs`, `severity: CRITICAL`, `exit-code: 1` |
+| 10 | Storefront build | `pnpm --filter storefront build` | single build, `ADDONS=""` |
 
----
+The build step sets placeholder backend values, not a live site:
 
-## 2. CI Stage Pipeline
-
-```mermaid
-flowchart LR
-    A["Checkout"] --> B["Dependency Install (Frozen)"]
-    B --> C["Engine Import Guard"]
-    C --> D["Lint & Typecheck Matrix"]
-    D --> E["Unit & State Machine Tests"]
-    E --> F["Hub & Governance Check"]
-    F --> G["Security & Gitleaks Scan"]
-    G --> H["Storefront Production Build"]
+```yaml
+env:
+  ECOM_ENGINE: woocommerce
+  WC_GRAPHQL_URL: https://woocommerce.example.test/graphql
+  WC_REST_URL: https://woocommerce.example.test/wp-json/wc/v3
+  WC_REST_KEY: ci-placeholder
+  WC_REST_SECRET: ci-placeholder
+  ECOM_OS_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+  REVALIDATE_SECRET: test-revalidate-secret-32byteslong!
+  SESSION_COOKIE_SECRET: test-session-secret-32byteslong!!
+  DEFAULT_LOCALE: en
+  LOCALES: en,fr,ar
+  ADDONS: ""
 ```
 
-### Stage 1: Engine Import Guard
-- **Command**: `pnpm guard`
-- **Purpose**: Enforces architectural layer boundaries (`ecom-engine` boundary; prevents direct database or store-engine coupling in UI components).
+`ADDONS` is deliberately empty: with no addon names, `generate-addons.ts` writes an empty `registeredAddons` and the build cannot fail on a missing manifest. See `EXTENDING.md` section 3.5 for why a non-empty value would break today.
 
-### Stage 2: Lint & Typecheck Matrix
-- **Commands**:
-  - `pnpm -r lint`
-  - `pnpm -r typecheck`
-- **Target Workspaces**: `packages/ecom-engine`, `packages/brand-config`, `packages/themes`, `packages/addons-rfq`, `apps/storefront`.
+---
 
-### Stage 3: Unit, Addon & State Machine Test Suite
-- **Commands**:
-  - `pnpm test:coverage`
-  - `npx tsx --test packages/addons-rfq/src/*.test.ts`
-  - `npx tsx --test clients/paraloca/*.test.ts`
-- **Coverage Requirement**: 100% on business state machines and financial calculation helpers.
+## 2. Coverage of the local suite (what "CI passed" does and does not mean)
 
-### Stage 4: Multi-Agent Hub Governance & Invariants
-- **Command**: `pnpm hub:test`
-- **Purpose**: Verifies hub lockfile, role transitions, invariant assertions, and gate proofs.
+- `pnpm test:coverage` uses the root `vitest.config.ts`, whose `include` is `apps/storefront/src/**/*.test.ts(x)` and `packages/*/src/**/*.test.ts`. That covers `packages/addons-rfq`, `packages/ecom-engine`, `packages/engine-woocommerce`, `packages/addons-i18n`, `packages/addons-multi-payment` and `packages/cli`.
+- Coverage thresholds/collection are limited to five files (`apps/storefront/src/lib/{crypto,logger}.ts`, `apps/storefront/src/app/api/revalidate/route.ts`, `packages/addons-multi-payment/src/{hash,dedup}.ts`). A green coverage step is not whole-repo coverage.
+- **`clients/paraloca/*.test.ts` (brand-schema, content-approval, profile, rfq-policy) is not collected by any configuration or job.** Neither root `vitest run` nor `pnpm verify` runs them. They are dead unless invoked explicitly.
+- `scripts/generate-addons.test.mjs` uses `node:test` and is not wired into `pnpm test`, `pnpm guard` or `pnpm hub:test`. Run it manually through tsx: `node node_modules/tsx/dist/cli.mjs --test scripts/generate-addons.test.mjs` (5 pass). Plain `node --test` fails 2 of them because the file imports `addon-manifest.js` for a `.ts` module.
+- No browser test runs. `pnpm e2e` (Playwright, `apps/storefront/e2e/*.spec.ts`) is **not** part of CI.
+- `scripts/verify-production-runtime.mjs` exists and is invoked by no workflow.
 
-### Stage 5: Security & Secret Scanning
-- **Checks**:
-  - `gitleaks` secret pattern scanning.
-  - Trivy dependency vulnerability inspection (`CRITICAL` exit-code 1).
-  - Production runtime headers verification (`scripts/verify-production-runtime.mjs`).
+---
 
-### Stage 6: Isolated Storefront Production Build
-- **Command**: `pnpm --filter storefront build`
-- **Profiles Tested**: `paraloca` (default), `default-minimal`.
-- **Addon Combinations**: `ADDONS=""` (clean base), `ADDONS="rfq"` (quotes activated).
+## 3. Aspirational / pending (clearly labelled — not currently implemented)
+
+The previous revision of this document presented these as enforced stages. They are not. Each would need a real workflow edit before it can be cited as CI coverage:
+
+- A Node 22/24 browser matrix.
+- Per-profile builds (`paraloca`, `default-minimal`) and per-addon builds (`ADDONS="rfq"`). Blocked on the missing addon manifests.
+- Playwright e2e stage.
+- `verify-production-runtime.mjs` runtime-headers stage.
+- Running `clients/paraloca/*.test.ts` and `scripts/generate-addons.test.mjs`.
+
+Until those are added to `.github/workflows/ci.yml`, "the CI matrix covers X" is false for every item in this list.

@@ -2,6 +2,8 @@
 
 All notable changes to the EcomOS codebase across all development phases are documented here.
 
+> **Read with the correction record.** The `1.0.0` entries below are hub task titles, not verified outcomes. Several are withdrawn in whole or part by `release/CORRECTION_2026-10-11.md`: the "CI matrix" (a single workflow job, see `release/CI_MATRIX.md`), the PHP/HPOS "compatibility matrix with Store API upgrade proofs" (no plugin declares HPOS; see `release/BACKEND_MATRIX.md`), the "provisioning CLI" (no runnable command; see `operations/PROVISION.md`), the "disaster recovery rehearsal" (a simulation; see `operations/RESTORE.md`), and "proving engine reuse" (no second deployment; see the correction record). Where this changelog and that record conflict, the record wins.
+
 ---
 
 ## [1.0.0] - 2026-10-10

@@ -1,5 +1,8 @@
 # Local staging baseline, 2026-10-09
 
+- **Status**: HISTORICAL RECORD — a dated local, isolated baseline. It is not a production certification and not a statement about the current working tree. Version numbers below are what was observed on this exact site on 2026-10-09; other documents that cite them (`COMPATIBILITY.md`, `release/BACKEND_MATRIX.md`) treat them as the only executed evidence, not as a supported floor.
+- **Scope**: one Local site, one backend connector, no browser. Nothing here proves storefront checkout, concurrency safety or production behavior.
+
 Owner supplied `http://paraloca.local/wp-admin` for isolated staging. Its login credentials are not saved in repository files, reports, or environment variables. Local's bundled WP-CLI provides local administrative inspection without using the login password.
 
 ## Verified baseline
@@ -33,7 +36,7 @@ If rolling back this fixture/connector setup, also remove its added local `ECOM_
 
 ## Repeatable public preflight
 
-Run `pnpm exec tsx scripts/probe-woocommerce.ts http://paraloca.local`. The script prints only public capability/status summaries and token presence, never token values. A nonzero exit means prerequisites are missing. A successful preflight does not prove cart updates or checkout.
+Run `pnpm exec tsx scripts/probe-woocommerce.ts http://paraloca.local` (on a machine where the `pnpm` shim works, this is `node node_modules/tsx/dist/cli.mjs scripts/probe-woocommerce.ts http://paraloca.local`). The script prints only public capability/status summaries and token presence, never token values. A nonzero exit means prerequisites are missing. A successful preflight does not prove cart updates or checkout.
 
 ## Verified backend commerce checkpoint
 
@@ -69,6 +72,13 @@ Browser/CSP/hydration and image processing are unverified; Local's Imagick warni
 
 The optional WP-CLI registry checksum check for WooCommerce/WPGraphQL ran without completing and was stopped; no checksum pass is claimed for those two plugins. Their downloads came from WordPress.org. The bridge ZIP checksum matched the upstream release digest. One public GraphQL preflight exceeded its 15-second timeout while other checks were running; the repeat completed successfully. Local performance under load remains unverified.
 
-After this slice, `pnpm run verify` passed: engine/addon guard, lint (18 warnings, zero errors), workspace type checks and 74 unit tests in 14 files. The smoke script passed standalone TypeScript checking, both PHP helpers passed syntax checks, and the PowerShell launcher parsed successfully. The launcher was not started; no new browser/build claim is made.
+After this slice, `pnpm run verify` passed: engine/addon guard, lint (18 warnings, zero errors), workspace type checks and 74 unit tests in 14 files. The counts are this snapshot only: a later 2026-10-10 audit recorded 16 files / 125 tests on a moved working tree. The smoke script passed standalone TypeScript checking, both PHP helpers passed syntax checks, and the PowerShell launcher parsed successfully. The launcher was not started; no new browser/build claim is made.
+
+## Corrections applied after later review
+
+Two claims that circulated from this period have been corrected in their own documents, and are recorded here so the baseline is not read as endorsing them:
+
+- Client provisioning has no runnable command. `docs/ecomos/operations/PROVISION.md` now states plainly that `pnpm --filter @ecom-os/cli provision` does not work and that only a validator + tests exist.
+- `ADDONS=i18n,multi-payment` (the root `.env.example` default) and `ADDONS=rfq` both fail `predev`/`prebuild`, because only `plugins/dummy-addon` ships a `manifest.json`. See `EXTENDING.md` section 3.5 and `INSTALL.md` section 5.
 
 Sources: [WooCommerce installation](https://woocommerce.com/document/installing-uninstalling-woocommerce/), [WPGraphQL installation](https://github.com/wp-graphql/wp-graphql), [commerce bridge release](https://github.com/wp-graphql/wp-graphql-woocommerce/releases/tag/v1.0.3). Versions and declared requirements were also checked through WordPress.org's plugin-information API.

@@ -1,4 +1,4 @@
-# EcomOS v1.0.0 Certified Production Release Packet: ParaLoca
+# EcomOS v1.0.0 Release Packet: ParaLoca
 
 - **Document**: `RELEASE_PACKET.md`
 - **Application**: EcomOS / ParaLoca Headless Storefront
@@ -6,7 +6,9 @@
 - **Target Domain**: `paraloca.ma` (DNS cutover gated)
 - **Staging Domain**: `staging.paraloca.ma`
 - **Merchant Entity**: ParaLoca SARL (Casablanca, Maroc)
-- **Release Status**: **STAGE CERTIFIED — AWAITING OPERATOR LAUNCH APPROVAL**
+- **Release Status**: **NOT CERTIFIED — documentation claims corrected 2026-10-11**
+
+> **Status correction.** See `release/CORRECTION_2026-10-11.md` (task `ECO-1001`), the authoritative withdrawal record; it supersedes the completion and certification language here. The previous revision was titled "Certified Production Release Packet" with a "STAGE CERTIFIED" status and a gate diagram showing every gate PASS. No executed certification evidence backs that. The gate diagram below records hub task states, and the 2026-10-10 audit (`AUDIT_2026-10-10.md`) found the independent verification provenance for those states insufficient. The following specific claims have since been corrected in their own documents: CI matrix (`CI_MATRIX.md`), HPOS plugin declarations (`BACKEND_MATRIX.md`), provisioning CLI (`operations/PROVISION.md`), rollback/restore rehearsal (`ROLLBACK.md`, `operations/RESTORE.md`), and addon manifest lifecycle (`EXTENDING.md`). Do not use this packet as a launch authorization.
 
 ---
 
@@ -31,11 +33,14 @@ flowchart TD
 3. **Medical Device Truthfulness**: All product specifications reflect verified manufacturer data under Moroccan Law 84-12. Unverified DMP numbers (`CLM-07`, `CLM-08`) remain unpublished.
 4. **Coming Soon Landing Page**: Staging verification preserves the active Coming Soon page on `paraloca.ma`; DNS cutover requires explicit operator execution.
 
+"Certified Payments" here means *enabled in the client profile*, not certified by any payment body: only `cod` is enabled, and Cash on Delivery is an offline method. The Law 84-12 / manufacturer-data assertions in item 3 are content claims made elsewhere in the site data and are not verified by any artifact in this repository.
+
+
 ---
 
 ## 2. Integrated Evidence Artifacts
 
-| Milestone | Task | Evidence Artifact | Verification Status |
+| Milestone | Task | Evidence Artifact | Hub status (not independent proof) |
 | :--- | :--- | :--- | :--- |
 | **Client Profile** | `ECO-801` | `docs/ecomos/evidence/ECO-801/report.md` | **PASS (ACCEPTED)** |
 | **Visual Direction** | `ECO-802` | `docs/ecomos/evidence/ECO-802/report.md` | **PASS (ACCEPTED)** |

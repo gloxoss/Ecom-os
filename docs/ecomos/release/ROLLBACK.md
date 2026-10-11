@@ -1,41 +1,51 @@
-# EcomOS Production Rollback Runbook
+# EcomOS Rollback Runbook
 
 - **Document**: `ROLLBACK.md`
 - **Application**: EcomOS / ParaLoca Storefront
-- **Version**: 1.0.0
-- **Status**: **PRODUCTION CERTIFIED**
+- **Version**: 1.1.0
+- **Status**: UNEXERCISED PLAN — no deployment has been performed from this repository, and none of the edge/hosting infrastructure named below is configured by repository code. Treat every step as a checklist to adapt to the real hosting environment, not as verified procedure. See `release/CORRECTION_2026-10-11.md` for the withdrawal record.
 
 ---
 
-## 1. Emergency Trigger Conditions
+## 0. Prerequisites that do not exist yet
 
-An emergency rollback must be initiated immediately if any of the following occur during or after launch:
-1. **Critical Payment Defect**: Failure of Cash on Delivery order recording in WooCommerce HPOS.
-2. **Security Vulnerability**: Exposure of internal backend credentials, encryption keys, or customer PII.
-3. **Session or Account Collision**: Exposure of customer account login or registration prompts.
-4. **Catastrophic Latency**: p95 storefront response latency $> 2000\text{ ms}$ or error rate $> 1\%$.
+This repository contains no deployment target, no CDN configuration, no DNS record and no "coming soon" origin. The earlier revision of this runbook named a specific production domain and origin host as if they were configured. Nothing in the source or CI sets those up: the CI workflow only builds the storefront with placeholder backend URLs, and no workflow deploys.
+
+Before this runbook is usable, the operator must supply and record: the hosting platform, the DNS/edge provider, the previous-known-good deployment identifier, and how traffic is switched. Fill those in; do not read the example values below as real.
 
 ---
 
-## 2. Rapid Rollback Sequence ($\le 5$ Minutes)
+## 1. Trigger conditions
 
-### Phase 1: Edge Traffic Reversion (T+0 to T+60 Seconds)
-1. In Cloudflare / Edge DNS dashboard, switch the routing rule for `paraloca.ma/*` back to the static Coming Soon origin:
-   - Origin target: `coming-soon.internal`
-   - Cache purge: Purge edge cache for all URLs (`*`).
-2. Immediate verification:
-   ```bash
-   curl -I https://paraloca.ma
-   ```
-   Confirm HTTP 200 serving static Coming Soon page.
+Consider rollback when any of the following is observed in the deployed environment:
 
-### Phase 2: Session & Transaction Drainage (T+60 to T+180 Seconds)
-1. Allow existing in-flight checkout orders in WooCommerce to complete.
-2. Verify WooCommerce database lock status:
-   ```bash
-   wp db check
-   ```
+1. Cash-on-Delivery orders failing to record in WooCommerce.
+2. Exposure of backend credentials, encryption keys, or customer data.
+3. Improper exposure of account login/registration surfaces (these are disabled by design; exposure is a defect).
+4. Sustained severe latency or error rate beyond the operator's SLO.
 
-### Phase 3: Root Cause Logging & Incident Escalation (T+180 to T+300 Seconds)
-1. Capture Next.js server error logs and WooCommerce error logs (`wp-content/uploads/wc-logs/`).
-2. Log postmortem incident report in `.agent-hub/` and notify technical orchestrator.
+---
+
+## 2. Rollback sequence (skeleton)
+
+Times are objectives, not measured.
+
+1. **Revert traffic (T+0)**: point the edge/DNS routing rule for the production hostname back to the previous-known-good origin, then purge the edge cache for affected URLs. (`Cloudflare`/"Coming Soon origin" were used as filler examples in a previous revision; substitute the real provider and origin.)
+2. **Confirm**: request the production URL and confirm it serves the reverted origin before declaring the revert complete.
+3. **Drain**: let in-flight checkouts finish. On the backend, `wp db check` only validates the MySQL tables; it does not confirm order correctness.
+4. **Capture**: collect Next.js server logs and WooCommerce logs (`wp-content/uploads/wc-logs/`) for the incident.
+5. **Record**: write the postmortem under `docs/ecomos/` (or the hub incident path) and notify the orchestrator.
+
+---
+
+## 3. Database and plugin rollback
+
+Traffic reversion does not undo data changes. If a plugin activation or migration caused the incident, follow `docs/ecomos/operations/RESTORE.md` (unrehearsed) and `docs/ecomos/addons/LIFECYCLE.md` for reversible addon migrations. Deactivating a plugin does not roll back the WooCommerce database changes it made.
+
+---
+
+## 4. What is not proven
+
+- No rollback drill has been executed.
+- No production deployment has occurred, so no rollback of one has occurred.
+- The latency/error thresholds and the five-minute target are unvalidated objectives.

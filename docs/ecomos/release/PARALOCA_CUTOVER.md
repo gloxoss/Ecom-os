@@ -5,8 +5,10 @@
 - **Client**: ParaLoca SARL (`paraloca.ma`)
 - **Staging Domain**: `staging.paraloca.ma`
 - **Production Domain**: `paraloca.ma`
-- **Current Status**: **STAGE READY — LAUNCH GATED**
+- **Current Status**: **PLAN ONLY — INFRASTRUCTURE UNVERIFIED (corrected 2026-10-11)**
 - **Prerequisite**: Explicit signed production launch authorization (Phase 9 / `ECO-906`)
+
+> **Status correction.** Nothing in this repository configures or references the infrastructure this runbook assumes: no Cloudflare/edge configuration, no `staging.paraloca.ma` or `api.paraloca.ma` records, no Redis (the only Redis references in the tree are inside the vendored `plugins/wordpress-mcp` submodule), and the search providers are not wired into the storefront (`INSTALL.md` section 7). The `paraloca.ma` hosts below are the intended targets from the client profile (`clients/paraloca/profile.ts`), not configured systems. Every step must be mapped to the real hosting stack before it can be executed.
 
 ---
 
@@ -25,8 +27,8 @@
 1. Verify latest production database migration status:
    - HPOS tables active and synchronized
    - Custom post types (`rfq_quote`) verified
-2. Confirm Redis object caching and search indices (Typesense / Meilisearch / Native Woo fallback) healthy.
-3. Validate SSL certificates for `paraloca.ma` and `api.paraloca.ma`.
+2. Confirm Redis object caching and search indices (Typesense / Meilisearch / Native Woo fallback) healthy. **Not applicable as written**: no Redis and no search index are configured by this repository; search providers exist in code but are not wired in.
+3. Validate SSL certificates for `paraloca.ma` and `api.paraloca.ma`. **Unverified**: neither hostname is configured here, and there is no `api.paraloca.ma` service in the source.
 
 ### Step 2: Traffic Routing & Edge Cutover (T-0 Minutes)
 1. Update Cloudflare / DNS edge routing rule:

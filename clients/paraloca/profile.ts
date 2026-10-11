@@ -96,9 +96,12 @@ export const paralocaProfile: ClientProfile = {
     requiresAgeVerification: false,
     regulatedProductNotice:
       'Dispositifs médicaux et matériel de maintien à domicile. Se référer aux notices fabricants et aux recommandations des professionnels de santé.',
+    // These strings were asserting conformity and homologation the merchant has
+    // not evidenced (audit finding 8). A disclaimer may direct the customer to
+    // the manufacturer's documents; it may not itself claim certification.
     complianceDisclaimers: [
-      'Dispositifs et accessoires conformes aux normes et certifications applicables au Maroc',
-      'Garantie constructeur sur les équipements homologués',
+      'Se référer aux notices fabricants pour les normes et certifications applicables',
+      'Garantie constructeur selon les conditions du fabricant',
     ],
   },
   environment: {

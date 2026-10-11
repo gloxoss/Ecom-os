@@ -1,0 +1,124 @@
+{
+  "generatedAt": "2026-10-11T00:10:36.840Z",
+  "source": "chromium 153.0.8010.12 via installed chromium build C:\\Users\\OMEN\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe -> http://localhost:3100",
+  "targets": {
+    "/": {
+      "target": "/",
+      "capturedAt": "2026-10-11T00:10:35.665Z",
+      "contrast": {
+        "scope": "computed styles of rendered text on /",
+        "samples": 364,
+        "indeterminate": 0,
+        "worstRatio": 1,
+        "minimumRequired": 4.5,
+        "worst": {
+          "tag": "span",
+          "text": "C",
+          "ratio": 1,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        }
+      },
+      "touchTargets": {
+        "scope": "boundingBox() of interactive elements on /",
+        "samples": 34,
+        "smallestPx": 16.5,
+        "minimumRequired": 44,
+        "belowMinimum": 17
+      },
+      "keyboard": {
+        "scope": "real Tab key presses on /",
+        "tabPresses": 12,
+        "focusMoves": 12,
+        "visibleFocusIndicators": 12,
+        "focusedElements": [
+          "a",
+          "a:CatalogCatalog",
+          "a:MenuMenu",
+          "a:AboutUsAboutUs",
+          "a:ContactContact",
+          "a:SearchSearch",
+          "a:Cart(0)Cart(0)",
+          "a:Pâtisseries"
+        ]
+      },
+      "headers": {
+        "url": "http://localhost:3100/",
+        "status": 200,
+        "contentSecurityPolicy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://* http://*; connect-src 'self' ws://localhost:* wss://localhost:* https://*; frame-src 'self' https://js.stripe.com; font-src 'self' data: https://*; worker-src 'self' blob:",
+        "xFrameOptions": "DENY",
+        "xContentTypeOptions": "nosniff",
+        "referrerPolicy": "strict-origin-when-cross-origin",
+        "permissionsPolicy": "camera=(), microphone=(), geolocation=()",
+        "hstsMaxAgeSeconds": 15552000
+      },
+      "timings": {
+        "url": "chromium 153.0.8010.12 via installed chromium build C:\\Users\\OMEN\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe -> http://localhost:3100 /",
+        "domContentLoadedMs": 269.39999997615814,
+        "loadMs": 443.60000002384186,
+        "responseStartMs": 237.69999998807907,
+        "transferSizeBytes": 26557,
+        "resourceCount": 28
+      }
+    },
+    "/catalog": {
+      "target": "/catalog",
+      "capturedAt": "2026-10-11T00:10:36.437Z",
+      "contrast": {
+        "scope": "computed styles of rendered text on /catalog",
+        "samples": 249,
+        "indeterminate": 0,
+        "worstRatio": 1,
+        "minimumRequired": 4.5,
+        "worst": {
+          "tag": "span",
+          "text": "C",
+          "ratio": 1,
+          "color": "rgb(255, 255, 255)",
+          "background": "rgb(255, 255, 255)"
+        }
+      },
+      "touchTargets": {
+        "scope": "boundingBox() of interactive elements on /catalog",
+        "samples": 31,
+        "smallestPx": 19,
+        "minimumRequired": 44,
+        "belowMinimum": 20
+      },
+      "keyboard": {
+        "scope": "real Tab key presses on /catalog",
+        "tabPresses": 12,
+        "focusMoves": 12,
+        "visibleFocusIndicators": 12,
+        "focusedElements": [
+          "a",
+          "a:CatalogCatalog",
+          "a:MenuMenu",
+          "a:AboutUsAboutUs",
+          "a:ContactContact",
+          "a:SearchSearch",
+          "a:Cart(0)Cart(0)",
+          "a:Shop the collectionShop the collection"
+        ]
+      },
+      "headers": {
+        "url": "http://localhost:3100/catalog",
+        "status": 200,
+        "contentSecurityPolicy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://* http://*; connect-src 'self' ws://localhost:* wss://localhost:* https://*; frame-src 'self' https://js.stripe.com; font-src 'self' data: https://*; worker-src 'self' blob:",
+        "xFrameOptions": "DENY",
+        "xContentTypeOptions": "nosniff",
+        "referrerPolicy": "strict-origin-when-cross-origin",
+        "permissionsPolicy": "camera=(), microphone=(), geolocation=()",
+        "hstsMaxAgeSeconds": 15552000
+      },
+      "timings": {
+        "url": "chromium 153.0.8010.12 via installed chromium build C:\\Users\\OMEN\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe -> http://localhost:3100 /catalog",
+        "domContentLoadedMs": 190.80000001192093,
+        "loadMs": 243.69999998807907,
+        "responseStartMs": 177.5,
+        "transferSizeBytes": 21483,
+        "resourceCount": 30
+      }
+    }
+  }
+}
