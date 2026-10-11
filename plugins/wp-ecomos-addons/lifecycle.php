@@ -11,6 +11,43 @@ if (!defined('ABSPATH')) {
 }
 
 /**
+ * Whether a migration statement destroys or rewrites a core WordPress or
+ * WooCommerce table.
+ *
+ * The prefix is read from $wpdb instead of being hardcoded. An earlier revision
+ * matched only the literal `wp_` prefix, so on any install using a custom prefix
+ * (this project's test install uses `wpt_`) a migration carrying
+ * `DROP TABLE wpt_posts` sailed past the guard and deleted the posts table. The
+ * `wp_` form is kept as a second candidate so a dump restored under a different
+ * prefix is still caught.
+ *
+ * @param string $sql
+ * @return bool
+ */
+function ecomos_sql_targets_core_table(string $sql): bool {
+    global $wpdb;
+
+    $prefixes = array('wp_');
+    if (isset($wpdb) && is_object($wpdb) && !empty($wpdb->prefix)) {
+        $prefixes[] = $wpdb->prefix;
+    }
+
+    $tables = array();
+    foreach (array_unique($prefixes) as $prefix) {
+        foreach (array('posts', 'postmeta', 'wc_orders') as $core_table) {
+            $tables[] = preg_quote($prefix . $core_table, '/');
+        }
+    }
+
+    // A schema-qualified name (`other_db`.`wpt_posts`) is the same target, so the
+    // qualifier is allowed in the pattern rather than letting it slip through.
+    $pattern = '/\b(?:DROP|ALTER|TRUNCATE)\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:`?[\w$]+`?\s*\.\s*)?`?(?:'
+        . implode('|', $tables) . ')`?\b/i';
+
+    return (bool) preg_match($pattern, $sql);
+}
+
+/**
  * Retrieve installed addons registry from WordPress options.
  *
  * @return array<string, array>
@@ -90,8 +127,8 @@ function ecomos_addon_migrate_up(string $addon_id, array $migrations): array {
 
         $up_sql = trim($m['up'] ?? '');
         if ($up_sql) {
-            // Safety invariant: never allow DROP or ALTER on core WooCommerce tables
-            if (preg_match('/\b(DROP|ALTER)\s+TABLE\s+(wp_)?(posts|postmeta|wc_orders)\b/i', $up_sql)) {
+            // Safety invariant: never allow DROP/ALTER/TRUNCATE on core tables.
+            if (ecomos_sql_targets_core_table($up_sql)) {
                 return array(
                     'success' => false,
                     'error'   => "Prohibited SQL operation targeting core WooCommerce tables in migration {$version}",
@@ -151,7 +188,7 @@ function ecomos_addon_rollback_down(string $addon_id, array $migrations, string 
 
         $down_sql = trim($m['down'] ?? '');
         if ($down_sql) {
-            if (preg_match('/\b(DROP|ALTER)\s+TABLE\s+(wp_)?(posts|postmeta|wc_orders)\b/i', $down_sql)) {
+            if (ecomos_sql_targets_core_table($down_sql)) {
                 return array(
                     'success' => false,
                     'error'   => "Prohibited SQL operation targeting core WooCommerce tables in down migration {$version}",
