@@ -150,22 +150,29 @@ export function ProductTabsClient({ tabs, size = "lg", emptyLabel = "No products
           <Link key={card.slug} href={`/product/${card.slug}`} data-card className="group flex flex-col gap-5">
             <div className="relative flex items-center justify-center overflow-hidden rounded-2xl h-[300px] min-[480px]:h-[320px] md:h-[390px] lg:h-[320px] xl:h-[390px]">
               <div className="absolute inset-0 bg-input" />
-              <Image
-                src={card.image.url}
-                alt={card.image.altText}
-                fill
-                sizes="(max-width: 479px) 100vw, (max-width: 991px) 50vw, 25vw"
-                className="object-cover z-[1] transition-transform duration-500 ease-out group-hover:scale-[1.08]"
-              />
-              <div className="absolute bottom-5 right-5 z-[2] w-11 h-11 rounded-full overflow-hidden border border-border shadow-[0_2px_10px_0_rgba(0,0,0,0.11)]">
+              {/* A product may legitimately have no image — the panel behind stands in for
+                  it. Reading .url unguarded crashed the page for any catalogue without
+                  images. */}
+              {card.image && (
                 <Image
-                  src={card.hoverImage.url}
-                  alt={card.hoverImage.altText}
+                  src={card.image.url}
+                  alt={card.image.altText}
                   fill
-                  sizes="44px"
-                  className="object-cover"
+                  sizes="(max-width: 479px) 100vw, (max-width: 991px) 50vw, 25vw"
+                  className="object-cover z-[1] transition-transform duration-500 ease-out group-hover:scale-[1.08]"
                 />
-              </div>
+              )}
+              {card.hoverImage && (
+                <div className="absolute bottom-5 right-5 z-[2] w-11 h-11 rounded-full overflow-hidden border border-border shadow-[0_2px_10px_0_rgba(0,0,0,0.11)]">
+                  <Image
+                    src={card.hoverImage.url}
+                    alt={card.hoverImage.altText}
+                    fill
+                    sizes="44px"
+                    className="object-cover"
+                  />
+                </div>
+              )}
             </div>
             <div className="flex flex-col gap-[15px]">
               <div className="flex flex-col gap-[10px]">

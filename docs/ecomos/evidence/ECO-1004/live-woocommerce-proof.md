@@ -996,3 +996,52 @@ server-side data fetch to a self-signed certificate, and with `NODE_TLS_REJECT_U
 set only for the build and `next start` rather than propagated everywhere; it was not
 diagnosed. What is **observed** is the production CSP, HSTS, framing and content-type
 policy, and the per-request nonce.
+
+### Production render — the 500 was the same defect, now fixed
+
+The 500 recorded above was **not** the self-signed certificate. It was the identical
+unguarded image read, in a second component: `product-tabs-client.tsx` rendered
+`card.image.url` and `card.hoverImage.url` unconditionally, and the home page shows product
+tabs, so any catalogue without images took the page down. `product-card.tsx` already
+guarded; this one did not.
+
+With both guarded, against HTTPS WordPress and the full production configuration:
+
+```
+next build --webpack -> exit 0
+next start           -> / = 200, /catalog = 200, no errors in the server log
+
+HTTP/1.1 200 OK
+content-security-policy: default-src 'self';
+  script-src 'self' 'nonce-ODkzZWU5YmQtZjEwMi00OWQ4LWFkNmEtZmRjNDMzMDA2ZDkz' 'strict-dynamic'
+    https://js.stripe.com;
+  style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*;
+  connect-src 'self' https://api.stripe.com https://js.stripe.com;
+  frame-src https://js.stripe.com; font-src 'self';
+  object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+permissions-policy: camera=(), microphone=(), geolocation=()
+referrer-policy: strict-origin-when-cross-origin
+strict-transport-security: max-age=15552000; includeSubDomains
+x-content-type-options: nosniff
+x-frame-options: DENY
+
+nonce rotates per request: yes
+```
+
+So finding 5's remaining item is now established on a **working** production render, not an
+error response: the production build succeeds against a real HTTPS WooCommerce, the page
+serves 200, and the security policy is the real nonce-plus-`strict-dynamic` one, with a
+nonce that changes per request, `object-src 'none'`, `frame-ancestors 'none'`,
+`base-uri 'self'`, and HSTS including subdomains.
+
+Disclosed for reproducibility: the WordPress instance uses a self-signed certificate, so
+`NODE_TLS_REJECT_UNAUTHORIZED=0` was set for the build and server. That is a local-test
+concession and would not apply to a real deployment.
+
+### The lesson worth keeping
+
+The same defect class appeared **three times** — `related-products-client.tsx`,
+`product-tabs-client.tsx`, and the same pattern in the variation path — each crashing a
+whole page for a product with no image. The fixtures having no images is what exposed them;
+a catalogue with images would have hidden all three until launch. That is an argument for
+fixtures that exercise the empty case, not just the happy one.
