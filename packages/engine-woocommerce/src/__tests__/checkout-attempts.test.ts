@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import {
   CheckoutAttemptManager,
+  InMemoryAttemptStore,
+  JsonFileAttemptStore,
   globalAttemptManager,
 } from '../checkout-attempts';
 import {
@@ -13,9 +18,9 @@ import { WooCommerceEngine } from '../client';
 describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => {
   const originalFetch = global.fetch;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.stubEnv('WC_STORE_API_URL', 'https://paraloca.local/wp-json/wc/store/v1');
-    globalAttemptManager.clear();
+    await globalAttemptManager.clear();
   });
 
   afterEach(() => {
@@ -33,7 +38,7 @@ describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => 
       if (res.ok) {
         expect(res.isNew).toBe(true);
       }
-      expect(manager.getAttempt('att-1')?.status).toBe('PENDING');
+      expect((await manager.getAttempt('att-1'))?.status).toBe('PENDING');
     });
 
     it('rejects concurrent submission with pending status', async () => {
@@ -87,6 +92,98 @@ describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => 
       expect(fresh.ok).toBe(true);
       if (fresh.ok) {
         expect(fresh.isNew).toBe(true);
+      }
+    });
+
+    // Regression: the audited defect returned guest A's confirmed order and
+    // order key to guest B when B reused A's attempt key.
+    it('fails closed when a different owner reuses a confirmed attempt key', async () => {
+      const manager = new CheckoutAttemptManager();
+      await manager.startAttempt('shared-key', 'cart-guest-a');
+      await manager.confirmAttempt('shared-key', 1042, 'wc_order_secret_of_a', 'cart-guest-a');
+
+      const hijack = await manager.startAttempt('shared-key', 'cart-guest-b');
+
+      expect(hijack.ok).toBe(false);
+      if (!hijack.ok) {
+        expect(hijack.status).toBe('OWNER_MISMATCH');
+      }
+      // The other guest's order and order key must not leak in any form.
+      expect(JSON.stringify(hijack)).not.toContain('1042');
+      expect(JSON.stringify(hijack)).not.toContain('wc_order_secret_of_a');
+
+      // Guest A's own record is untouched and still replayable by A.
+      const ownerReplay = await manager.startAttempt('shared-key', 'cart-guest-a');
+      expect(ownerReplay.ok).toBe(true);
+      if (ownerReplay.ok && !ownerReplay.isNew) {
+        expect(ownerReplay.orderId).toBe(1042);
+      }
+    });
+
+    it('refuses to confirm an attempt owned by a different session', async () => {
+      const manager = new CheckoutAttemptManager();
+      await manager.startAttempt('att-owned', 'cart-owner');
+
+      await expect(
+        manager.confirmAttempt('att-owned', 5555, 'wc_order_x', 'cart-intruder')
+      ).rejects.toThrow(/different session/i);
+
+      expect((await manager.getAttempt('att-owned'))?.status).toBe('PENDING');
+    });
+
+    it('keeps checkout and RFQ keys in separate namespaces', async () => {
+      const store = new InMemoryAttemptStore();
+      const checkout = new CheckoutAttemptManager(1000 * 60 * 60, store, 'checkout');
+      const rfq = new CheckoutAttemptManager(1000 * 60 * 60, store, 'rfq');
+
+      await checkout.startAttempt('same-key', 'cart-1');
+      const rfqStart = await rfq.startAttempt('same-key', 'cart-1');
+
+      expect(rfqStart.ok).toBe(true);
+      if (rfqStart.ok) {
+        expect(rfqStart.isNew).toBe(true);
+      }
+    });
+
+    // Regression: process-local attempts meant a restart lost the confirmation
+    // and a retry could create a duplicate order.
+    it('replays a confirmation across a restart when the store is durable', async () => {
+      const dir = mkdtempSync(path.join(tmpdir(), 'ecomos-attempts-'));
+      const storePath = path.join(dir, 'attempts.json');
+      try {
+        const before = new CheckoutAttemptManager(1000 * 60 * 60, new JsonFileAttemptStore(storePath));
+        await before.startAttempt('restart-key', 'cart-restart');
+        await before.confirmAttempt('restart-key', 6060, 'wc_order_restart', 'cart-restart');
+
+        // New process, same durable store.
+        const after = new CheckoutAttemptManager(1000 * 60 * 60, new JsonFileAttemptStore(storePath));
+        const replay = await after.startAttempt('restart-key', 'cart-restart');
+
+        expect(replay.ok).toBe(true);
+        if (replay.ok && !replay.isNew) {
+          expect(replay.orderId).toBe(6060);
+          expect(replay.orderKey).toBe('wc_order_restart');
+        }
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('does not serve a durable record to a different owner after restart', async () => {
+      const dir = mkdtempSync(path.join(tmpdir(), 'ecomos-attempts-'));
+      const storePath = path.join(dir, 'attempts.json');
+      try {
+        const before = new CheckoutAttemptManager(1000 * 60 * 60, new JsonFileAttemptStore(storePath));
+        await before.startAttempt('restart-key-2', 'cart-guest-a');
+        await before.confirmAttempt('restart-key-2', 7070, 'wc_order_a2', 'cart-guest-a');
+
+        const after = new CheckoutAttemptManager(1000 * 60 * 60, new JsonFileAttemptStore(storePath));
+        const hijack = await after.startAttempt('restart-key-2', 'cart-guest-b');
+
+        expect(hijack.ok).toBe(false);
+        if (!hijack.ok) expect(hijack.status).toBe('OWNER_MISMATCH');
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
       }
     });
   });

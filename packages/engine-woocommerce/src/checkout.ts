@@ -16,6 +16,12 @@ export interface StoreCheckoutResult {
   status: string;
   customerId: number;
   paymentStatus: string;
+  /**
+   * The contact the order was actually placed with. On an idempotent replay this
+   * is the address stored at first submission, not whatever the retry supplied,
+   * so a replay cannot mint an access grant for a different email.
+   */
+  email?: string;
   raw?: unknown;
 }
 
@@ -56,8 +62,18 @@ export async function submitStoreCheckout(
     status,
     customerId,
     paymentStatus,
+    email: billingEmail(input),
     raw: data,
   };
+}
+
+/**
+ * The contact the order was placed with, stored on the attempt so a replay
+ * never rebuilds an access grant from a later request's supplied email.
+ */
+function billingEmail(input: StoreCheckoutInput): string | undefined {
+  const email = input.billing_address?.email;
+  return typeof email === 'string' && email.trim() ? email : undefined;
 }
 
 export async function executeIdempotentCheckout(
@@ -80,16 +96,23 @@ export async function executeIdempotentCheckout(
       status: 'processing',
       customerId: 0,
       paymentStatus: 'success',
+      email: check.email,
     };
   }
 
   try {
     const result = await submitStoreCheckout(cartToken, input);
-    await manager.confirmAttempt(attemptKey, result.orderId, result.orderKey);
+    await manager.confirmAttempt(
+      attemptKey,
+      result.orderId,
+      result.orderKey,
+      cartToken,
+      billingEmail(input)
+    );
     return result;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Checkout submission failed.';
-    await manager.failAttempt(attemptKey, message);
+    await manager.failAttempt(attemptKey, message, cartToken);
     throw err;
   }
 }
