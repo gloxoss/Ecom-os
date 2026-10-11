@@ -8,6 +8,7 @@ import {
   createDefaultRfqQuoteStore,
   getRfqQuoteStore,
   setRfqQuoteStoreForTesting,
+  WordPressRfqQuoteStore,
 } from './server-quote-store';
 import type { RfqQuote } from '../../../../../../packages/addons-rfq/src/index';
 
@@ -121,4 +122,221 @@ describe('RFQ server quote store durability (ECO-1005)', () => {
     await store.putQuote(sampleQuote);
     expect(await store.getQuote(sampleQuote.id)).toBe(sampleQuote);
   });
+
+  it('preserves multiple revisions and acceptance state across process restart', async () => {
+    const filePath = makeTempStorePath();
+    const storeBefore = new JsonFileRfqQuoteStore(filePath);
+
+    const quoteWithRevisions: RfqQuote = {
+      ...sampleQuote,
+      state: 'accepted',
+      currentRevisionId: 'rev_2',
+      expiresAt: '2026-11-01T00:00:00Z',
+      revisions: [
+        {
+          revisionId: 'rev_1',
+          revisionNumber: 1,
+          createdAt: '2026-10-10T12:00:00Z',
+          createdBy: { staffId: 'staff-1', staffName: 'Staff One' },
+          expiresAt: '2026-11-01T00:00:00Z',
+          currency: 'MAD',
+          lines: [{
+            productId: 50,
+            variationId: 501,
+            title: 'Handcrafted Brass Sconce',
+            quantity: 4,
+            unitPriceExclTax: 1000,
+            taxRate: 0.20,
+            taxAmount: 800,
+            totalExclTax: 4000,
+            totalInclTax: 4800,
+          }],
+          subtotalExclTax: 4000,
+          totalTax: 800,
+          totalInclTax: 4800,
+          termsAndConditions: 'Standard Terms',
+          isCurrent: false,
+        },
+        {
+          revisionId: 'rev_2',
+          revisionNumber: 2,
+          createdAt: '2026-10-10T14:00:00Z',
+          createdBy: { staffId: 'staff-2', staffName: 'Staff Two' },
+          expiresAt: '2026-11-01T00:00:00Z',
+          currency: 'MAD',
+          lines: [{
+            productId: 50,
+            variationId: 501,
+            title: 'Handcrafted Brass Sconce',
+            quantity: 4,
+            unitPriceExclTax: 900,
+            taxRate: 0.20,
+            taxAmount: 720,
+            totalExclTax: 3600,
+            totalInclTax: 4320,
+          }],
+          subtotalExclTax: 3600,
+          totalTax: 720,
+          totalInclTax: 4320,
+          termsAndConditions: 'Discounted Terms',
+          isCurrent: true,
+        },
+      ],
+    };
+
+    await storeBefore.putQuote(quoteWithRevisions);
+
+    // Brand new instance after restart
+    const storeAfter = new JsonFileRfqQuoteStore(filePath);
+    const reloaded = await storeAfter.getQuote(quoteWithRevisions.id);
+
+    expect(reloaded).toBeDefined();
+    expect(reloaded?.state).toBe('accepted');
+    expect(reloaded?.currentRevisionId).toBe('rev_2');
+    expect(reloaded?.revisions.length).toBe(2);
+    expect(reloaded?.revisions[0]?.revisionId).toBe('rev_1');
+    expect(reloaded?.revisions[0]?.totalInclTax).toBe(4800);
+    expect(reloaded?.revisions[0]?.isCurrent).toBe(false);
+    expect(reloaded?.revisions[1]?.revisionId).toBe('rev_2');
+    expect(reloaded?.revisions[1]?.totalInclTax).toBe(4320);
+    expect(reloaded?.revisions[1]?.isCurrent).toBe(true);
+  });
+
+  it('maps raw WordPress persistence revisions into strongly-typed domain objects', async () => {
+    const rawWpQuote = {
+      id: 'wp_quote_99',
+      quote_number: 'DEV-WP-99',
+      state: 'offer_created',
+      customer_name: 'Yassine Alami',
+      customer_email: 'yassine@example.ma',
+      contact_data: JSON.stringify({ name: 'Yassine Alami', email: 'yassine@example.ma', phone: '+212600112233' }),
+      items_data: JSON.stringify([{ productId: 101, title: 'Cedar Mirror', quantity: 2 }]),
+      current_revision_id: 'rev_1',
+      expires_at: '2026-11-15T00:00:00Z',
+      created_at: '2026-10-10T10:00:00Z',
+      updated_at: '2026-10-10T11:00:00Z',
+      revisions: [
+        {
+          revision_id: 'rev_1',
+          revision_number: 1,
+          created_at: '2026-10-10T11:00:00Z',
+          created_by_staff_id: 'staff_88',
+          created_by_staff_name: 'Karim Bennani',
+          lines_data: JSON.stringify([{
+            productId: 101,
+            title: 'Cedar Mirror',
+            quantity: 2,
+            unitPriceExclTax: 1500,
+            taxRate: 0.20,
+            taxAmount: 600,
+            totalExclTax: 3000,
+            totalInclTax: 3600,
+          }]),
+          subtotal_excl_tax: '3000.00',
+          total_tax: '600.00',
+          total_incl_tax: '3600.00',
+          currency: 'MAD',
+          expires_at: '2026-11-15T00:00:00Z',
+          terms: 'Standard warranty',
+          notes: 'Customer requested brass accents',
+          is_current: 1,
+        },
+      ],
+    };
+
+    const wpStore = new WordPressRfqQuoteStore('http://localhost:8080/wp-json/ecomos/v1/rfq', 'dXNlcjpwYXNz');
+    const mapped = (wpStore as any).map(rawWpQuote) as RfqQuote;
+
+    expect(mapped).toBeDefined();
+    expect(mapped.id).toBe('wp_quote_99');
+    expect(mapped.quoteNumber).toBe('DEV-WP-99');
+    expect(mapped.state).toBe('offer_created');
+    expect(mapped.customerName).toBe('Yassine Alami');
+    expect(mapped.contact.email).toBe('yassine@example.ma');
+    expect(mapped.items.length).toBe(1);
+    expect(mapped.revisions.length).toBe(1);
+
+    const rev = mapped.revisions[0]!;
+    expect(rev.revisionId).toBe('rev_1');
+    expect(rev.revisionNumber).toBe(1);
+    expect(rev.createdBy.staffId).toBe('staff_88');
+    expect(rev.createdBy.staffName).toBe('Karim Bennani');
+    expect(rev.lines.length).toBe(1);
+    expect(rev.lines[0]?.title).toBe('Cedar Mirror');
+    expect(rev.lines[0]?.unitPriceExclTax).toBe(1500);
+    expect(rev.subtotalExclTax).toBe(3000);
+    expect(rev.totalTax).toBe(600);
+    expect(rev.totalInclTax).toBe(3600);
+    expect(rev.currency).toBe('MAD');
+    expect(rev.termsAndConditions).toBe('Standard warranty');
+    expect(rev.staffNotes).toBe('Customer requested brass accents');
+    expect(rev.isCurrent).toBe(true);
+  });
+
+  it('translates domain errors on guest actions into honest UpstreamRfqError instances', async () => {
+    const inMemory = new InMemoryRfqQuoteStore();
+    const futureExpiry = new Date(Date.now() + 86400000).toISOString();
+    const pastExpiry = '2026-10-01T00:00:00Z';
+
+    const testQuote: RfqQuote = {
+      ...sampleQuote,
+      state: 'offer_created',
+      currentRevisionId: 'rev_2',
+      expiresAt: futureExpiry,
+      revisions: [
+        {
+          revisionId: 'rev_1',
+          revisionNumber: 1,
+          createdAt: '2026-10-10T12:00:00Z',
+          createdBy: { staffId: 'op', staffName: 'Op' },
+          expiresAt: futureExpiry,
+          currency: 'MAD',
+          lines: [],
+          subtotalExclTax: 100,
+          totalTax: 20,
+          totalInclTax: 120,
+          isCurrent: false,
+        },
+        {
+          revisionId: 'rev_2',
+          revisionNumber: 2,
+          createdAt: '2026-10-10T14:00:00Z',
+          createdBy: { staffId: 'op', staffName: 'Op' },
+          expiresAt: futureExpiry,
+          currency: 'MAD',
+          lines: [],
+          subtotalExclTax: 90,
+          totalTax: 18,
+          totalInclTax: 108,
+          isCurrent: true,
+        },
+      ],
+    };
+
+    await inMemory.putQuote(testQuote);
+
+    // 1. Accepting stale revision -> 409 STALE_REVISION
+    await expect(inMemory.acceptOffer(testQuote.id, 'rev_1')).rejects.toThrowError(
+      expect.objectContaining({ statusCode: 409, errorCode: 'STALE_REVISION' })
+    );
+
+    // 2. Accepting expired quote -> 410 QUOTE_EXPIRED
+    await inMemory.putQuote({
+      ...testQuote,
+      expiresAt: pastExpiry,
+    });
+    await expect(inMemory.acceptOffer(testQuote.id, 'rev_2')).rejects.toThrowError(
+      expect.objectContaining({ statusCode: 410, errorCode: 'QUOTE_EXPIRED' })
+    );
+
+    // 3. Illegal state transition -> 400 INVALID_STATE_TRANSITION
+    await inMemory.putQuote({
+      ...testQuote,
+      state: 'accepted',
+    });
+    await expect(inMemory.rejectQuote(testQuote.id, 'Too late')).rejects.toThrowError(
+      expect.objectContaining({ statusCode: 400, errorCode: 'INVALID_STATE_TRANSITION' })
+    );
+  });
 });
+

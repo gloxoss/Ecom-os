@@ -357,6 +357,16 @@ function ecomos_rfq_rest_add_offer($request) {
     $quote_id = $request->get_param('id');
     $params = $request->get_json_params();
 
+    $quote = ecomos_rfq_get_quote($quote_id);
+    if (!$quote) {
+        return new WP_Error('not_found', 'Quote not found', array('status' => 404));
+    }
+
+    $protected_states = array('accepted', 'converting', 'converted_to_order', 'rejected', 'cancelled', 'expired');
+    if (in_array($quote['state'], $protected_states, true)) {
+        return new WP_Error('invalid_state_transition', sprintf('Cannot add or amend offer for quote in protected state "%s"', $quote['state']), array('status' => 409));
+    }
+
     $user = wp_get_current_user();
     $offer_data = array(
         'lines'      => isset($params['lines']) ? $params['lines'] : array(),
@@ -410,6 +420,11 @@ function ecomos_rfq_rest_accept_offer($request) {
         return new WP_Error('not_found', 'Quote not found', array('status' => 404));
     }
 
+    $allowed_accept_states = array('offer_created', 'revised');
+    if (!in_array($quote['state'], $allowed_accept_states, true)) {
+        return new WP_Error('invalid_state_transition', sprintf('Quote in state "%s" cannot transition to accepted', $quote['state']), array('status' => 409));
+    }
+
     // Validate using offers guard if available
     if (function_exists('ecomos_rfq_can_accept_revision')) {
         $guard = ecomos_rfq_can_accept_revision($quote, $revision_id);
@@ -426,12 +441,12 @@ function ecomos_rfq_rest_accept_offer($request) {
         }
     }
 
-    $transitioned = ecomos_rfq_update_state($quote_id, 'accepted', null, array(
+    $transitioned = ecomos_rfq_update_state($quote_id, 'accepted', $allowed_accept_states, array(
         'updated_at' => current_time('mysql', 1),
     ));
 
     if (!$transitioned) {
-        return new WP_Error('update_failed', 'Could not transition quote to accepted', array('status' => 500));
+        return new WP_Error('conflict', 'Could not transition quote to accepted due to concurrent state modification', array('status' => 409));
     }
 
     if (function_exists('ecomos_rfq_notify_offer_accepted')) {
@@ -456,12 +471,18 @@ function ecomos_rfq_rest_reject_quote($request) {
         return new WP_Error('not_found', 'Quote not found', array('status' => 404));
     }
 
-    $transitioned = ecomos_rfq_update_state($quote_id, 'rejected', null, array(
-        'updated_at' => current_time('mysql', 1),
+    $allowed_reject_states = array('submitted', 'verified', 'offer_created', 'revised', 'revision_requested');
+    if (!in_array($quote['state'], $allowed_reject_states, true)) {
+        return new WP_Error('invalid_state_transition', sprintf('Quote in state "%s" cannot be rejected', $quote['state']), array('status' => 409));
+    }
+
+    $transitioned = ecomos_rfq_update_state($quote_id, 'rejected', $allowed_reject_states, array(
+        'rejection_reason' => $reason,
+        'updated_at'       => current_time('mysql', 1),
     ));
 
     if (!$transitioned) {
-        return new WP_Error('update_failed', 'Could not transition quote to rejected', array('status' => 500));
+        return new WP_Error('conflict', 'Could not transition quote to rejected due to concurrent state modification', array('status' => 409));
     }
 
     if (function_exists('ecomos_rfq_notify_offer_rejected')) {
@@ -486,12 +507,18 @@ function ecomos_rfq_rest_request_revision($request) {
         return new WP_Error('not_found', 'Quote not found', array('status' => 404));
     }
 
-    $transitioned = ecomos_rfq_update_state($quote_id, 'revision_requested', null, array(
-        'updated_at' => current_time('mysql', 1),
+    $allowed_revise_states = array('offer_created', 'revised');
+    if (!in_array($quote['state'], $allowed_revise_states, true)) {
+        return new WP_Error('invalid_state_transition', sprintf('Quote in state "%s" cannot be revised', $quote['state']), array('status' => 409));
+    }
+
+    $transitioned = ecomos_rfq_update_state($quote_id, 'revision_requested', $allowed_revise_states, array(
+        'customer_revision_notes' => $notes,
+        'updated_at'              => current_time('mysql', 1),
     ));
 
     if (!$transitioned) {
-        return new WP_Error('update_failed', 'Could not transition quote to revision_requested', array('status' => 500));
+        return new WP_Error('conflict', 'Could not transition quote to revision_requested due to concurrent state modification', array('status' => 409));
     }
 
     return rest_ensure_response(array(

@@ -131,8 +131,8 @@ function ecomos_rfq_create_staff_offer($quote_id, $staff, $offer_data) {
         return new WP_Error('not_found', 'Quote not found', array('status' => 404));
     }
 
-    $terminal_states = array('cancelled', 'rejected', 'converted_to_order');
-    if (in_array($quote['state'], $terminal_states, true)) {
+    $protected_states = array('cancelled', 'rejected', 'converted_to_order', 'accepted', 'converting', 'expired');
+    if (in_array($quote['state'], $protected_states, true)) {
         return new WP_Error('invalid_quote_state', sprintf('Cannot create offer on a %s quote', $quote['state']), array('status' => 409));
     }
 

@@ -176,15 +176,42 @@ function ecomos_rfq_update_state($quote_id, $new_state, $current_state_condition
     global $wpdb;
     $table = $wpdb->prefix . 'ecomos_rfq_quotes';
 
-    $where = array('id' => $quote_id);
-    if ($current_state_condition !== null) {
-        $where['state'] = $current_state_condition;
-    }
-
     $update_data = array_merge(array(
         'state'      => sanitize_text_field($new_state),
         'updated_at' => current_time('mysql', 1),
     ), $extra);
+
+    if (is_array($current_state_condition)) {
+        if (empty($current_state_condition)) {
+            return false;
+        }
+        $set_clauses = array();
+        $params = array();
+        foreach ($update_data as $col => $val) {
+            $set_clauses[] = "`{$col}` = %s";
+            $params[] = $val;
+        }
+        $set_str = implode(', ', $set_clauses);
+        $placeholders = implode(', ', array_fill(0, count($current_state_condition), '%s'));
+        $params[] = $quote_id;
+        foreach ($current_state_condition as $cond) {
+            $params[] = $cond;
+        }
+        $query = $wpdb->prepare(
+            "UPDATE `{$table}` SET {$set_str} WHERE `id` = %s AND `state` IN ({$placeholders})",
+            $params
+        );
+        $affected = $wpdb->query($query);
+        if ($affected === false || $affected === 0) {
+            return false;
+        }
+        return true;
+    }
+
+    $where = array('id' => $quote_id);
+    if ($current_state_condition !== null) {
+        $where['state'] = $current_state_condition;
+    }
 
     $affected = $wpdb->update($table, $update_data, $where);
     if ($affected === false || ($current_state_condition !== null && $affected === 0)) {

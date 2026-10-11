@@ -48,6 +48,13 @@ test('wp-ecomos-rfq routes.php endpoint definitions and security callbacks', () 
 
   // Verify no-store privacy header
   assert.ok(routesCode.includes("'no-store, private'"), 'Must include no-store, private header on responses');
+
+  // Verify terminal and protected state guards on offer and guest actions
+  assert.ok(routesCode.includes('Cannot add or amend offer for quote in protected state'), 'Must protect quotes from offer amendment');
+  assert.ok(routesCode.includes('$allowed_accept_states = array(\'offer_created\', \'revised\')'), 'Must limit accept to valid offer states');
+  assert.ok(routesCode.includes('$allowed_reject_states = array(\'submitted\', \'verified\', \'offer_created\', \'revised\', \'revision_requested\')'), 'Must protect terminal quotes from rejection');
+  assert.ok(routesCode.includes('$allowed_revise_states = array(\'offer_created\', \'revised\')'), 'Must limit revise to valid offer states');
+  assert.ok(routesCode.includes('Could not transition quote to accepted due to concurrent state modification'), 'Must enforce atomic CAS transition on accept');
 });
 
 test('wp-ecomos-rfq.php entrypoint and activation hooks', () => {

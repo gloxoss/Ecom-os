@@ -221,4 +221,90 @@ describe('ECO-701: RFQ State Machine and Permission Model', () => {
       transition(emptyQuote, 'submitted', guestActor);
     }).toThrowError(IllegalTransitionError);
   });
+
+  it('enforces terminal state immutability: rejected, converted, and expired cannot transition further', () => {
+    const convertedQuote = createMockQuote({ state: 'converted', convertedOrderId: 'order_123' });
+    const rejectedQuote = createMockQuote({ state: 'rejected', rejectionReason: 'Declined' });
+    const expiredQuote = createMockQuote({ state: 'expired' });
+
+    const allTargetStates: ('draft' | 'submitted' | 'verified' | 'offer_created' | 'revised' | 'revision_requested' | 'accepted' | 'rejected' | 'expired' | 'converted')[] = [
+      'draft', 'submitted', 'verified', 'offer_created', 'revised', 'revision_requested', 'accepted', 'rejected', 'expired', 'converted',
+    ];
+
+    for (const target of allTargetStates) {
+      expect(canTransition('converted', target, operatorActor)).toBe(false);
+      expect(canTransition('converted', target, guestActor)).toBe(false);
+      expect(canTransition('rejected', target, operatorActor)).toBe(false);
+      expect(canTransition('rejected', target, guestActor)).toBe(false);
+      expect(canTransition('expired', target, operatorActor)).toBe(false);
+      expect(canTransition('expired', target, guestActor)).toBe(false);
+
+      expect(() => transition(convertedQuote, target, operatorActor)).toThrowError(IllegalTransitionError);
+      expect(() => transition(rejectedQuote, target, operatorActor)).toThrowError(IllegalTransitionError);
+      expect(() => transition(expiredQuote, target, operatorActor)).toThrowError(IllegalTransitionError);
+    }
+  });
+
+  it('preserves immutable revision history across successive revisions', () => {
+    let quote = createMockQuote({ state: 'offer_created' });
+    const futureExpiry = new Date(Date.now() + 86400000 * 14).toISOString();
+
+    const rev1Lines = [{
+      productId: 101,
+      title: 'Item A',
+      quantity: 2,
+      unitPriceExclTax: 500,
+      taxRate: 0.20,
+      taxAmount: 200,
+      totalExclTax: 1000,
+      totalInclTax: 1200,
+    }];
+
+    // First revision
+    quote = transition(quote, 'revised', operatorActor, {
+      expiresAt: futureExpiry,
+      currency: 'MAD',
+      lines: rev1Lines,
+      termsAndConditions: 'Standard Terms V1',
+      staffNotes: 'First offer',
+    });
+
+    const rev1Snapshot = JSON.parse(JSON.stringify(quote.revisions[0]));
+
+    // Second revision
+    const rev2Lines = [{
+      productId: 101,
+      title: 'Item A',
+      quantity: 2,
+      unitPriceExclTax: 450,
+      taxRate: 0.20,
+      taxAmount: 180,
+      totalExclTax: 900,
+      totalInclTax: 1080,
+    }];
+
+    quote = transition(quote, 'revised', operatorActor, {
+      expiresAt: futureExpiry,
+      currency: 'MAD',
+      lines: rev2Lines,
+      termsAndConditions: 'Discounted Terms V2',
+      staffNotes: 'Second offer with discount',
+    });
+
+    expect(quote.revisions.length).toBe(2);
+    expect(quote.currentRevisionId).toBe('rev_2');
+
+    // Invariant: older revision properties remain completely immutable (except isCurrent flag updated to false)
+    expect(quote.revisions[0]?.revisionId).toBe(rev1Snapshot.revisionId);
+    expect(quote.revisions[0]?.lines).toEqual(rev1Snapshot.lines);
+    expect(quote.revisions[0]?.totalInclTax).toBe(rev1Snapshot.totalInclTax);
+    expect(quote.revisions[0]?.termsAndConditions).toBe('Standard Terms V1');
+    expect(quote.revisions[0]?.isCurrent).toBe(false);
+
+    // Active revision is current
+    expect(quote.revisions[1]?.revisionId).toBe('rev_2');
+    expect(quote.revisions[1]?.totalInclTax).toBe(1080);
+    expect(quote.revisions[1]?.isCurrent).toBe(true);
+  });
 });
+

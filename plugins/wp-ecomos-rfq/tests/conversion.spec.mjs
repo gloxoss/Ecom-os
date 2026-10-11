@@ -40,6 +40,12 @@ test('wp-ecomos-rfq conversion.php WooCommerce order creation & idempotency cont
 
   // Event emission hook
   assert.ok(code.includes("do_action('ecomos_rfq_quote_converted'"), 'Must emit ecomos_rfq_quote_converted action hook');
+
+  // Atomic single-conversion locking & cleanup
+  assert.ok(code.includes('function ecomos_rfq_claim_quote_for_conversion'), 'Must define atomic conversion claim');
+  assert.ok(code.includes('function ecomos_rfq_release_conversion_claim'), 'Must define conversion claim release');
+  assert.ok(code.includes('function ecomos_rfq_discard_unlinked_order'), 'Must discard unlinked orders on write failure');
+  assert.ok(code.includes("'conversion_in_progress'"), 'Must reject concurrent in-progress conversion');
 });
 
 test('wp-ecomos-rfq routes.php includes /convert endpoint with permission guard', () => {

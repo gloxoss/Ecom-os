@@ -170,4 +170,184 @@ describe('RFQ submit/offers workflow contract (ECO-1005)', () => {
     // Invariant: a blocked route performs no persistence side effect.
     expect(await getRfqQuoteStore().listQuoteIds()).toEqual([]);
   });
+
+  it('rejects acceptance of a stale or superseded offer revision with HTTP 409', async () => {
+    registry.enable('quotes');
+
+    const submitted = await (
+      await submitRfq(submitRequest(submitPayload({ idempotencyKey: 'stale-rev-key', email: 'rev-guest@example.ma' })))
+    ).json();
+
+    const store = getRfqQuoteStore();
+    const quote = await store.getQuote(submitted.quoteId);
+    expect(quote).toBeDefined();
+
+    const futureExpiry = new Date(Date.now() + 86400000).toISOString();
+    quote!.state = 'offer_created';
+    quote!.expiresAt = futureExpiry;
+    quote!.currentRevisionId = 'rev_2';
+    quote!.revisions = [
+      {
+        revisionId: 'rev_1',
+        revisionNumber: 1,
+        createdAt: new Date().toISOString(),
+        createdBy: { staffId: 'staff-1', staffName: 'Staff' },
+        expiresAt: futureExpiry,
+        currency: 'MAD',
+        lines: [],
+        subtotalExclTax: 1000,
+        totalTax: 200,
+        totalInclTax: 1200,
+        isCurrent: false,
+      },
+      {
+        revisionId: 'rev_2',
+        revisionNumber: 2,
+        createdAt: new Date().toISOString(),
+        createdBy: { staffId: 'staff-1', staffName: 'Staff' },
+        expiresAt: futureExpiry,
+        currency: 'MAD',
+        lines: [],
+        subtotalExclTax: 900,
+        totalTax: 180,
+        totalInclTax: 1080,
+        isCurrent: true,
+      },
+    ];
+    await store.putQuote(quote!);
+
+    // Guest attempts to accept superseded rev_1
+    const acceptStaleRes = await offerAction(
+      new Request('http://localhost:3000/api/rfq/offers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'accept',
+          quoteId: submitted.quoteId,
+          accessSecret: submitted.accessSecret,
+          revisionId: 'rev_1',
+        }),
+      })
+    );
+
+    expect(acceptStaleRes.status).toBe(409);
+    const staleBody = await acceptStaleRes.json();
+    expect(staleBody.code).toBe('STALE_REVISION');
+
+    // Accepting current rev_2 succeeds
+    const acceptCurrentRes = await offerAction(
+      new Request('http://localhost:3000/api/rfq/offers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'accept',
+          quoteId: submitted.quoteId,
+          accessSecret: submitted.accessSecret,
+          revisionId: 'rev_2',
+        }),
+      })
+    );
+
+    expect(acceptCurrentRes.status).toBe(200);
+    const acceptBody = await acceptCurrentRes.json();
+    expect(acceptBody.success).toBe(true);
+    expect(acceptBody.state).toBe('accepted');
+    expect(acceptBody.acceptedRevisionId).toBe('rev_2');
+  });
+
+  it('rejects acceptance of an expired quote offer with HTTP 410', async () => {
+    registry.enable('quotes');
+
+    const submitted = await (
+      await submitRfq(submitRequest(submitPayload({ idempotencyKey: 'expired-quote-key', email: 'expired-guest@example.ma' })))
+    ).json();
+
+    const store = getRfqQuoteStore();
+    const quote = await store.getQuote(submitted.quoteId);
+    expect(quote).toBeDefined();
+
+    const pastExpiry = '2026-10-01T00:00:00Z';
+    quote!.state = 'offer_created';
+    quote!.expiresAt = pastExpiry;
+    quote!.currentRevisionId = 'rev_1';
+    quote!.revisions = [
+      {
+        revisionId: 'rev_1',
+        revisionNumber: 1,
+        createdAt: '2026-09-25T00:00:00Z',
+        createdBy: { staffId: 'staff-1', staffName: 'Staff' },
+        expiresAt: pastExpiry,
+        currency: 'MAD',
+        lines: [],
+        subtotalExclTax: 500,
+        totalTax: 100,
+        totalInclTax: 600,
+        isCurrent: true,
+      },
+    ];
+    await store.putQuote(quote!);
+
+    const acceptExpiredRes = await offerAction(
+      new Request('http://localhost:3000/api/rfq/offers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'accept',
+          quoteId: submitted.quoteId,
+          accessSecret: submitted.accessSecret,
+          revisionId: 'rev_1',
+        }),
+      })
+    );
+
+    expect(acceptExpiredRes.status).toBe(410);
+    const expiredBody = await acceptExpiredRes.json();
+    expect(expiredBody.code).toBe('QUOTE_EXPIRED');
+  });
+
+  it('enforces terminal state guards: accepted quote cannot be rejected or revised', async () => {
+    registry.enable('quotes');
+
+    const submitted = await (
+      await submitRfq(submitRequest(submitPayload({ idempotencyKey: 'terminal-guard-key', email: 'term-guest@example.ma' })))
+    ).json();
+
+    const store = getRfqQuoteStore();
+    const quote = await store.getQuote(submitted.quoteId);
+    expect(quote).toBeDefined();
+
+    quote!.state = 'accepted';
+    await store.putQuote(quote!);
+
+    // Attempt to reject accepted quote
+    const rejectRes = await offerAction(
+      new Request('http://localhost:3000/api/rfq/offers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'reject',
+          quoteId: submitted.quoteId,
+          accessSecret: submitted.accessSecret,
+          reason: 'Try to reject after accepted',
+        }),
+      })
+    );
+    expect(rejectRes.status).toBe(400);
+
+    // Attempt to revise accepted quote
+    const reviseRes = await offerAction(
+      new Request('http://localhost:3000/api/rfq/offers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'revise',
+          quoteId: submitted.quoteId,
+          accessSecret: submitted.accessSecret,
+          notes: 'Try to revise after accepted',
+        }),
+      })
+    );
+    expect(reviseRes.status).toBe(400);
+  });
 });
+
