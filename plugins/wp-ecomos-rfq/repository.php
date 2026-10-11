@@ -140,7 +140,11 @@ function ecomos_rfq_add_revision($quote_id, $data) {
         'subtotal_excl_tax'    => $subtotal,
         'total_tax'            => $tax,
         'total_incl_tax'       => $total,
-        'currency'             => isset($data['currency']) ? sanitize_text_field($data['currency']) : 'USD',
+        // Never default to a hardcoded currency: a quote priced in the wrong currency
+        // becomes an order priced in the wrong currency. Fall back to the store's own.
+        'currency'             => !empty($data['currency'])
+            ? sanitize_text_field($data['currency'])
+            : (function_exists('get_woocommerce_currency') ? get_woocommerce_currency() : ''),
         'expires_at'           => $data['expires_at'],
         'terms'                => isset($data['terms']) ? sanitize_textarea_field($data['terms']) : null,
         'notes'                => isset($data['notes']) ? sanitize_textarea_field($data['notes']) : null,

@@ -47,7 +47,10 @@ function ecomos_rfq_get_schema_queries($prefix, $charset_collate) {
         subtotal_excl_tax decimal(12,2) NOT NULL DEFAULT '0.00',
         total_tax decimal(12,2) NOT NULL DEFAULT '0.00',
         total_incl_tax decimal(12,2) NOT NULL DEFAULT '0.00',
-        currency varchar(8) NOT NULL DEFAULT 'USD',
+        -- Deliberately not defaulted to a hardcoded currency: an empty value makes the
+        -- conversion fall back to the store currency instead of silently pricing a
+        -- converted order in the wrong one.
+        currency varchar(8) NOT NULL DEFAULT '',
         expires_at datetime NOT NULL,
         terms text DEFAULT NULL,
         notes text DEFAULT NULL,

@@ -323,7 +323,12 @@ function ecomos_rfq_convert_quote_to_order($quote_id, $options = array()) {
     }
 
     $contact = isset($quote['contact']) && is_array($quote['contact']) ? $quote['contact'] : array();
-    $currency = isset($current_rev['currency']) ? $current_rev['currency'] : 'MAD';
+    // A revision stored without a currency leaves the column empty rather than unset,
+    // so isset() alone is not enough: an empty value used to be handed to
+    // set_currency() and WooCommerce fell back to USD. Fall back to the store currency
+    // instead of a hardcoded one, so a converted order is never priced in the wrong
+    // currency.
+    $currency = !empty($current_rev['currency']) ? $current_rev['currency'] : get_woocommerce_currency();
     $order_id = null;
     $order = null;
 
