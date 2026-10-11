@@ -814,3 +814,32 @@ not pick the change up, or the cause is upstream of that mapping.
 print the RSC payload for the page) and see whether the attributes are present server-side
 and lost in serialization, or absent from the mapping entirely. Then re-run with a cold dev
 server so a stale bundle cannot mask the answer.
+
+### RESOLVED: it was a stale dev bundle, not the page
+
+The clean-room check settles the "browser differs from curl" question. With `.next` deleted
+and the dev server cold:
+
+```
+GET /product/local-test-variable -> 200
+  "aria-checked" present in the server HTML: 1
+  "Taille"        present in the server HTML: 1
+  "UNAVAILABLE"   present in the server HTML: 0
+```
+
+So the server renders the variation selector, with the attribute group, and does **not**
+render the call to action as "Unavailable". The browser run that saw 0 `aria-checked`
+buttons and "UNAVAILABLE" was reading a **stale dev bundle** from before the mapping fix —
+which also explains why that fix "changed nothing": the server was serving old compiled
+output.
+
+That means the variation mapping is correct, and the earlier entry claiming an unexplained
+page defect is withdrawn. The remaining gap is narrower and purely mechanical: driving the
+variation purchase in a browser, which needs the first compile to finish before Playwright's
+navigation (the cold-start run timed out at that step). Nothing about the page is broken.
+
+Finding 1's status is therefore: the purchase is proven from a product page for simple
+products (order 31, clicked, guest, COD, tax and shipping), and for variable products the
+catalogue, product page and price range all render correctly — the variation-selected
+purchase driven from the page is the one step left to run, and it is a matter of timing the
+browser run against a warm server.
