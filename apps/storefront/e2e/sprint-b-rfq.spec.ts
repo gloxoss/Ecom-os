@@ -130,6 +130,7 @@ suite('Sprint B ECO-1202: Full Browser Quotation Journeys, Local Sink, and RFQ O
 
       // 2. Render localized Arabic variant
       const htmlAr = renderToStaticMarkup(
+        // eslint-disable-next-line react/no-children-prop -- loosely typed test fixture
         React.createElement(ClientShell, {
           locale: 'ar',
           quoteEnabled: true,
@@ -229,6 +230,7 @@ suite('Sprint B ECO-1202: Full Browser Quotation Journeys, Local Sink, and RFQ O
       });
 
       // Render QuoteBuilder component view with assembled basket to verify DOM integrity
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
       const builderHtml = renderToStaticMarkup(React.createElement(QuoteBuilder, { initialBasket: basket } as any));
       assert.ok(builderHtml.includes('Demande de devis'), 'QuoteBuilder header must render');
       assert.ok(builderHtml.includes('MED-BED-E3'), 'QuoteBuilder must display SKU');
@@ -941,6 +943,7 @@ suite('Sprint B ECO-1202: Full Browser Quotation Journeys, Local Sink, and RFQ O
 
       // B. ClientShell: pro-devis banner link is omitted
       const shellHtmlOff = renderToStaticMarkup(
+        // eslint-disable-next-line react/no-children-prop -- loosely typed test fixture
         React.createElement(ClientShell, {
           locale: 'fr',
           quoteEnabled: false,
@@ -1040,6 +1043,7 @@ suite('Sprint B ECO-1202: Full Browser Quotation Journeys, Local Sink, and RFQ O
   suite('7. End-to-End Quotation Route & Domain Contract Workflow', () => {
     testCase(
       'Quotation contract workflow: dual entry, >=3 products, guest submission/reopen, staff revision, protected document route, guest accept, single conversion locking, and notification sink',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
       async (pwArgs?: any) => {
         const page = pwArgs?.page;
         const request = pwArgs?.request;
@@ -1353,6 +1357,7 @@ suite('Sprint B ECO-1202: Full Browser Quotation Journeys, Local Sink, and RFQ O
 
         // 10. Live Browser DOM Interaction (if Playwright page is available)
         if (page && request) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
           const storefrontLive = await request.get('/', { timeout: 5000 }).then((r: any) => r.ok()).catch(() => false);
           if (storefrontLive) {
             await page.goto('/devis');

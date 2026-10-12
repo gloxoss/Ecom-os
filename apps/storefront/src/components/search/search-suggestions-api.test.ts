@@ -33,11 +33,13 @@ describe('Search suggestions API route & fetcher', () => {
             price: { amount_minor: 12000, currency: 'MAD' },
             images: [],
             categories: ['Soins du visage'],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
           } as any,
         ],
         total: 1,
       }),
       listCategories: async () => [],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
     } as any);
 
     const req = new NextRequest('http://localhost:3000/api/search/suggestions?q=creme');
@@ -52,8 +54,10 @@ describe('Search suggestions API route & fetcher', () => {
     vi.mocked(getEngine).mockResolvedValue({
       listProducts: async () => ({ items: [], total: 0 }),
       listCategories: async () => [
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
         { id: 'cat-1', name: 'Pâtisseries', slug: 'patisseries' } as any,
       ],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
     } as any);
 
     const req = new NextRequest('http://localhost:3000/api/search/suggestions?q=patisseries');
@@ -77,6 +81,7 @@ describe('Search suggestions API route & fetcher', () => {
     vi.mocked(getEngine).mockResolvedValue({
       listProducts: async () => ({ items: [], total: 0 }),
       listCategories: async () => [],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
     } as any);
     const req = new NextRequest('http://localhost:3000/api/search/suggestions?q=creme');
     const res = await GET(req);

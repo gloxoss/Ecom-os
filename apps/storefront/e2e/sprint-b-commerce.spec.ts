@@ -120,6 +120,7 @@ async function hposGetOrder(orderId: number): Promise<HposOrder | null> {
     headers: { Authorization: hposAuth(), 'Content-Type': 'application/json' },
   });
   if (!res.ok) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
   const o = (await res.json()) as Record<string, any>;
   const toMinor = (v: unknown): number => Math.round(parseFloat(String(v ?? '0')) * 100);
   return {
@@ -130,6 +131,7 @@ async function hposGetOrder(orderId: number): Promise<HposOrder | null> {
     currency: String(o.currency ?? ''),
     email: String(o.billing?.email ?? ''),
     lines: Array.isArray(o.line_items)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
       ? o.line_items.map((l: Record<string, any>) => ({
           productId: Number(l.product_id ?? 0),
           variationId: Number(l.variation_id ?? 0),
@@ -147,6 +149,7 @@ async function hposRecentIds(sinceMinutes: number): Promise<number[]> {
     headers: { Authorization: hposAuth(), 'Content-Type': 'application/json' },
   });
   if (!res.ok) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
   const orders = (await res.json()) as Array<Record<string, any>>;
   const cutoff = Date.now() - sinceMinutes * 60 * 1000;
   return orders

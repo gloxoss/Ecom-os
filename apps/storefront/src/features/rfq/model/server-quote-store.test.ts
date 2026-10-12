@@ -245,6 +245,7 @@ describe('RFQ server quote store durability (ECO-1005)', () => {
     };
 
     const wpStore = new WordPressRfqQuoteStore('http://localhost:8080/wp-json/ecomos/v1/rfq', 'dXNlcjpwYXNz');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
     const mapped = (wpStore as any).map(rawWpQuote) as RfqQuote;
 
     expect(mapped).toBeDefined();

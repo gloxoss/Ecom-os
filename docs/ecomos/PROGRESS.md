@@ -127,3 +127,13 @@ All 60 canonical tasks across all 10 phases (Phases 0 through 9) and supporting 
 
 **Release Status**: **NOT CERTIFIED.** An earlier line here read "Certified ready for human operator launch"; that is withdrawn (`release/CORRECTION_2026-10-11.md`). Guest purchase, RFQ workflow and release readiness remain unproven pending the exit criteria in that record. Production cutover still requires explicit human authorization.
 
+
+## 2026-10-12 — ECO-1401..1405 and lint repair
+
+Read with `release/CORRECTION_2026-10-11.md` and `release/READINESS_2026-10-11.md`.
+
+- **ECO-1401..1405 landed** (tip `1e939b6`): per-purchase checkout attempt IDs, unknown outcomes kept as PENDING, multi-page order correlation, search autocomplete mounted with no demo data, page-driven RFQ workflow, stricter migration core-table guard, local release candidate v1.0.0-rc1.
+- **Lint is now clean.** `eslint` in `apps/storefront` reports 0 errors (35 unused-variable warnings remain). The 48 `no-explicit-any` errors in the RFQ routes came from one error-parsing block pasted six times; it is now `features/rfq/model/upstream-error.ts`. Test files carry one-line, commented exemptions for loosely typed fixtures.
+- **Checks run on this tree:** vitest 604/604 (67 files), `tsc --noEmit` 0 errors, `next build --webpack` exit 0.
+- **Environment note:** the `pnpm` shim in the shell pointed into a missing Codex runtime, so checks were run through `node_modules/.bin` directly. Repair the shim before relying on `pnpm -r`.
+- **Still open, unchanged:** live browser journeys (needs `wp-graphql-woocommerce` and a running staging server), storefront RFQ routes writing to WordPress, a second isolated client deployment, owner-approved merchant facts and medical claims (`clients/paraloca/content-approval.md`), hosting plan for `paraloca.ma`, production TLS/CSP, one high dev dependency advisory. Release status stays **NOT CERTIFIED for production**.

@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { readUpstreamError } from '@/features/rfq/model/upstream-error';
 import { guardAddonRoute } from '../../../../lib/addon-route-guard';
 import { getRfqQuoteStore } from '../../../../features/rfq/model/server-quote-store';
 import {
@@ -53,14 +54,7 @@ export async function GET(req: Request) {
   try {
     quote = await getRfqQuoteStore().getQuote(quoteId, token);
   } catch (err: unknown) {
-    const status = (err && typeof err === 'object' && 'statusCode' in err && typeof (err as any).statusCode === 'number')
-      ? (err as any).statusCode
-      : 502;
-    const code = (err && typeof err === 'object' && 'errorCode' in err && typeof (err as any).errorCode === 'string')
-      ? (err as any).errorCode
-      : (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
-        ? (err as any).code
-        : 'UPSTREAM_ERROR';
+    const { status, code } = readUpstreamError(err);
     const message = (err instanceof Error) ? err.message : 'Upstream error fetching quote';
     return new Response(
       JSON.stringify({ success: false, code, error: message }),
@@ -141,14 +135,7 @@ export async function POST(req: Request) {
   try {
     quote = await store.getQuote(quoteId, String(accessSecret).trim());
   } catch (err: unknown) {
-    const status = (err && typeof err === 'object' && 'statusCode' in err && typeof (err as any).statusCode === 'number')
-      ? (err as any).statusCode
-      : 502;
-    const code = (err && typeof err === 'object' && 'errorCode' in err && typeof (err as any).errorCode === 'string')
-      ? (err as any).errorCode
-      : (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
-        ? (err as any).code
-        : 'UPSTREAM_ERROR';
+    const { status, code } = readUpstreamError(err);
     const message = (err instanceof Error) ? err.message : 'Upstream error fetching quote';
     return new Response(
       JSON.stringify({ success: false, code, error: message }),
@@ -232,14 +219,7 @@ export async function POST(req: Request) {
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     } catch (err: unknown) {
-      const status = (err && typeof err === 'object' && 'statusCode' in err && typeof (err as any).statusCode === 'number')
-        ? (err as any).statusCode
-        : 400;
-      const code = (err && typeof err === 'object' && 'errorCode' in err && typeof (err as any).errorCode === 'string')
-        ? (err as any).errorCode
-        : (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
-          ? (err as any).code
-          : undefined;
+      const { status, code } = readUpstreamError(err, 400, undefined);
       const message = err instanceof Error ? err.message : 'Invalid state transition';
       return new Response(
         JSON.stringify({ success: false, ...(code ? { code } : {}), error: message }),
@@ -265,14 +245,7 @@ export async function POST(req: Request) {
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     } catch (err: unknown) {
-      const status = (err && typeof err === 'object' && 'statusCode' in err && typeof (err as any).statusCode === 'number')
-        ? (err as any).statusCode
-        : 400;
-      const code = (err && typeof err === 'object' && 'errorCode' in err && typeof (err as any).errorCode === 'string')
-        ? (err as any).errorCode
-        : (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
-          ? (err as any).code
-          : undefined;
+      const { status, code } = readUpstreamError(err, 400, undefined);
       const message = err instanceof Error ? err.message : 'Invalid state transition';
       return new Response(
         JSON.stringify({ success: false, ...(code ? { code } : {}), error: message }),
@@ -298,14 +271,7 @@ export async function POST(req: Request) {
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     } catch (err: unknown) {
-      const status = (err && typeof err === 'object' && 'statusCode' in err && typeof (err as any).statusCode === 'number')
-        ? (err as any).statusCode
-        : 400;
-      const code = (err && typeof err === 'object' && 'errorCode' in err && typeof (err as any).errorCode === 'string')
-        ? (err as any).errorCode
-        : (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
-          ? (err as any).code
-          : undefined;
+      const { status, code } = readUpstreamError(err, 400, undefined);
       const message = err instanceof Error ? err.message : 'Invalid state transition';
       return new Response(
         JSON.stringify({ success: false, ...(code ? { code } : {}), error: message }),
