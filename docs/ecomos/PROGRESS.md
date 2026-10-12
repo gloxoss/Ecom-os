@@ -145,3 +145,10 @@ Read with `release/CORRECTION_2026-10-11.md` and `release/READINESS_2026-10-11.m
 - **Fixed here:** order recovery used to return `null` after scanning its cap (default 10 pages x 100 = 1,000 orders; max 50 pages = 5,000). It now throws, so checkout keeps the attempt PENDING. Two tests added. Docs that claimed a 50-page default or "production seeding" were corrected.
 - **Still open from the audit:** search turns upstream failures into HTTP 200 empty groups (should signal unavailable); no exact-SHA independent verdict exists for `2c0ba95` or `20189eb`; eight merchant approvals still UNAPPROVED.
 - **Rule going forward:** final gate runs on one pinned integrated SHA with a distinct verifier, each condition recorded PASS/FAIL/BLOCKED/NOT RUN. Do not clear other workers' untracked files or the dirty `plugins/wordpress-mcp` to get a clean status.
+
+## 2026-10-12 — local CI-equivalent pass
+
+- `brand-config` and `ecom-engine` pinned `"typescript": "latest"`, which resolved to 7.0.2 and broke `pnpm -r typecheck` (TS 7 removed `baseUrl`). Both now use `^5.9.3` like the rest; lockfile updated offline.
+- Search suggestions now return 503 (not an empty 200) when the upstream lookup fails.
+- Ran the CI commands locally on this tree: `pnpm -r lint` 0 errors (35 warnings), `pnpm -r typecheck` 0 errors, `pnpm test` 607/607, `pnpm hub:test` 0 fail, `pnpm --filter storefront build` exit 0. This is a local run, not the GitHub workflow, and not a pinned-SHA verifier gate.
+- Shell note: the `pnpm` on PATH points to a replaced Codex runtime folder (`ad3b…`). The newer folder (`cfb3…`) works via `corepack pnpm` with `COREPACK_ENABLE_NETWORK=0`. PATH was not changed.
