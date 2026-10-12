@@ -117,36 +117,47 @@ export function correlationMarker(attemptKey: string): string {
  */
 export async function findOrderByAttemptCorrelation(
   attemptKey: string,
-  opts: { email?: string | undefined; perPage?: number | undefined } = {}
+  opts: { email?: string | undefined; perPage?: number | undefined; maxPages?: number | undefined } = {}
 ): Promise<OrderCorrelation | null> {
   if (!attemptKey) throw new Error('Invalid checkout attempt key.');
   const marker = correlationMarker(attemptKey);
   const perPage = Math.min(Math.max(opts.perPage ?? 100, 1), 100);
-  const rawOrders = (await restFetch(`/orders?per_page=${perPage}&orderby=date&order=desc`)) as unknown;
-  if (!Array.isArray(rawOrders)) {
-    throw new Error('Malformed WooCommerce orders response during correlation lookup.');
-  }
-  const orders = rawOrders as Array<Record<string, unknown>>;
-  for (const order of orders) {
-    if (!order || typeof order !== 'object') continue;
-    const note = typeof order.customer_note === 'string' ? order.customer_note : '';
-    if (!note.includes(marker)) continue;
-    if (opts.email) {
-      const billing = order.billing as Record<string, unknown> | undefined;
-      const orderEmail = typeof billing?.email === 'string' ? billing.email : '';
-      if (orderEmail.toLowerCase() !== opts.email.toLowerCase()) continue;
+  const maxPages = Math.min(Math.max(opts.maxPages ?? 10, 1), 50);
+
+  for (let page = 1; page <= maxPages; page++) {
+    const rawOrders = (await restFetch(
+      `/orders?per_page=${perPage}&page=${page}&orderby=date&order=desc`
+    )) as unknown;
+    if (!Array.isArray(rawOrders)) {
+      throw new Error('Malformed WooCommerce orders response during correlation lookup.');
     }
-    if (order.id === undefined || order.id === null) continue;
-    const key = typeof order.order_key === 'string' ? order.order_key : typeof order.key === 'string' ? order.key : '';
-    if (!key) continue;
-    return {
-      orderId: order.id as string | number,
-      orderKey: key,
-      ...(opts.email ? { email: opts.email } : {}),
-    };
+    const orders = rawOrders as Array<Record<string, unknown>>;
+    for (const order of orders) {
+      if (!order || typeof order !== 'object') continue;
+      const note = typeof order.customer_note === 'string' ? order.customer_note : '';
+      if (!note.includes(marker)) continue;
+      if (opts.email) {
+        const billing = order.billing as Record<string, unknown> | undefined;
+        const orderEmail = typeof billing?.email === 'string' ? billing.email : '';
+        if (orderEmail.toLowerCase() !== opts.email.toLowerCase()) continue;
+      }
+      if (order.id === undefined || order.id === null) continue;
+      const key = typeof order.order_key === 'string' ? order.order_key : typeof order.key === 'string' ? order.key : '';
+      if (!key) continue;
+      return {
+        orderId: order.id as string | number,
+        orderKey: key,
+        ...(opts.email ? { email: opts.email } : {}),
+      };
+    }
+    if (orders.length < perPage) {
+      break;
+    }
   }
   return null;
 }
+
+const inFlightCheckoutAttempts = new Set<string>();
 
 export async function executeIdempotentCheckout(
   attemptKey: string,
@@ -159,6 +170,9 @@ export async function executeIdempotentCheckout(
   let check = await manager.startAttempt(attemptKey, cartToken, payloadHash);
 
   if (!check.ok && check.status === 'PENDING' && opts.lookupOrder) {
+    if (inFlightCheckoutAttempts.has(attemptKey)) {
+      throw new Error(check.error || BUSY_ATTEMPT_ERROR);
+    }
     // A previous submission may have created the WooCommerce order while its
     // response was lost. Never retry blindly: reconcile the authoritative
     // order first, and only submit when none exists.
@@ -192,22 +206,25 @@ export async function executeIdempotentCheckout(
       };
     }
 
-    // Directive item 3: On PENDING state, a lookup miss must not supersede an active purchase owner!
-    // If the attempt is still within its active processing window, an active worker
-    // is currently executing the submission. Fail closed with busy error.
-    const existing = await manager.getAttempt(attemptKey);
-    const activeLockMs = opts.activeLockTimeoutMs ?? 15000;
-    const age = existing ? Date.now() - existing.updatedAt : 0;
-    if (existing && age < activeLockMs) {
+    // On PENDING state with lookup miss: an active remote operation must never be
+    // retired merely because an arbitrary window elapsed. Only explicit overrides
+    // (e.g. stranded attempt recovery after verified process restart) may retry.
+    if (opts.activeLockTimeoutMs !== undefined) {
+      const existing = await manager.getAttempt(attemptKey);
+      const age = existing ? Date.now() - existing.updatedAt : 0;
+      if (existing && age >= opts.activeLockTimeoutMs) {
+        await manager.markFailedRetryable(
+          attemptKey,
+          cartToken,
+          'Earlier submission left no confirmed order; retrying once.'
+        );
+        check = await manager.startAttempt(attemptKey, cartToken, payloadHash);
+      } else {
+        throw new Error(check.error || BUSY_ATTEMPT_ERROR);
+      }
+    } else {
       throw new Error(check.error || BUSY_ATTEMPT_ERROR);
     }
-
-    await manager.markFailedRetryable(
-      attemptKey,
-      cartToken,
-      'Earlier submission left no confirmed order; retrying once.'
-    );
-    check = await manager.startAttempt(attemptKey, cartToken, payloadHash);
   }
 
   if (!check.ok) {
@@ -226,6 +243,7 @@ export async function executeIdempotentCheckout(
     };
   }
 
+  inFlightCheckoutAttempts.add(attemptKey);
   try {
     const result = await submitStoreCheckout(cartToken, input, attemptKey);
     try {
@@ -243,9 +261,8 @@ export async function executeIdempotentCheckout(
       return result;
     }
   } catch (err: unknown) {
-    // Directive item 2: A lost response or failed local confirmation can follow
-    // successful Woo order creation. Preserve unknown outcomes and reconcile before
-    // permitting another POST.
+    // A lost response or failed local confirmation can follow successful Woo order creation.
+    // Preserve unknown outcomes and reconcile before permitting another POST.
     if (opts.lookupOrder) {
       try {
         const contact = billingEmail(input);
@@ -273,16 +290,24 @@ export async function executeIdempotentCheckout(
         }
       } catch {
         // Recovery lookup threw: outcome is truly UNKNOWN.
-        // DO NOT mark attempt FAILED (which would allow an immediate retry to POST again).
         const msg = err instanceof Error ? err.message : 'Checkout submission failed.';
         throw new Error(
           `Checkout outcome is unknown: ${msg}. Order recovery could not verify outcome; refusing to retry blindly.`
         );
       }
+      // Recovery lookup completed without finding matching order yet.
+      // Outcome is unknown: response was lost, and remote order may be in flight or delayed.
+      // Retain the attempt as PENDING without marking it FAILED to prevent duplicate submissions.
+      const msg = err instanceof Error ? err.message : 'Checkout submission failed.';
+      throw new Error(
+        `Checkout outcome is unknown: ${msg}. Order recovery returned no matching order; preserving pending attempt to prevent duplicate order creation.`
+      );
     }
     const message = err instanceof Error ? err.message : 'Checkout submission failed.';
     await manager.failAttempt(attemptKey, message, cartToken);
     throw err;
+  } finally {
+    inFlightCheckoutAttempts.delete(attemptKey);
   }
 }
 

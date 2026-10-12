@@ -1,124 +1,111 @@
 # EcomOS Platform Readiness & Audit Reconciliation Assessment
 
-**Document:** `READINESS_2026-10-11.md`  
-**Date:** 2026-10-11  
+**Document:** `READINESS_2026-10-11.md` (Updated 2026-10-12)  
+**Date:** 2026-10-12  
 **Milestone:** Stage R — Final Release Packaging & Readiness Gate (`ECO-1405`)  
-**Auditor Reference:** `Sprint progress audit 2026-10-11 1730.md`  
-**Current Authoritative Commit:** `afca6bfcb8a46fad1a6684fbb94ccc60eedf89c3`  
-**Release Verdict:** **LOCAL RELEASE CANDIDATE (v1.0.0-rc1) APPROVED · PRODUCTION CUTOVER BLOCKED**  
+**Auditor References:**
+- `Sprint progress audit 2026-10-11 1730.md`
+- `Audit of the ECO-1401..1405 run, 2026-10-12` (`Audit 2026-10-12.md`)  
+**Target Git Branch:** `sprint-integrated-authoritative`  
+**Release Verdict:** **LOCAL RELEASE CANDIDATE (v1.0.0-rc1) — ENGINEERING DEFECTS REPAIRED · LIVE STAGING BROWSER JOURNEYS & MERCHANT APPROVAL GATED**
 
 ---
 
 ## 1. Executive Position & Audit Reconciliation
 
-This report reconciles the findings of the external audit (`Sprint progress audit 2026-10-11 1730.md`) and subsequent Next Execution Directive tasks (`ECO-1401` through `ECO-1405`) against the canonical integrated repository.
+This assessment consolidates the baseline audit (`Sprint progress audit 2026-10-11 1730.md`) and the October 12 technical audit (`Audit 2026-10-12.md`). Rather than relying on unsupported readiness percentages or asserting that merchant sign-off is the sole remaining blocker, each requirement is categorized by concrete evidence: **PASS**, **BLOCKED**, **GATED**, or **NOT RUN**.
 
-All 20 engineering deliverables across Sprint A, Sprint B, and Sprint C have been independently implemented, verified, and accepted:
-1. **Checkout recovery & intent binding (`ECO-1401`)**: Fresh purchase-attempt tokens, atomic file claim attempt tracking, and adapter order reconciliation.
-2. **SearchAutocomplete mounting & catalog scale (`ECO-1402`)**: SearchAutocomplete mounted in desktop and mobile header navigation and search results page, French diacritic folding, and 120-document scale verification.
-3. **Real page-driven RFQ quotation & single conversion (`ECO-1403`)**: Real dual entry paths, basket assembly (>=3 products), guest token submission/reopen, immutable revisions, protected document access, single Woo conversion lock, and zero-egress local notification sink.
-4. **Application rollback verification & migration guard constraints (`ECO-1404`)**: Restore isolation on MySQL port 3309 (23 hostile-dump checks pass), and prefix-aware core-table guard blocking DDL/DML across core WordPress and WooCommerce tables.
-5. **Release packet & candidate gate (`ECO-1405`)**: Pinned SHA certification, 602/602 workspace Vitest tests pass, Next.js 16 production build compiles cleanly (45 routes generated), and client isolation verified.
+### 1.1 Resolution of Concrete October 12 Audit Findings
 
-The updated evidence-weighted readiness score is **85 / 100 points**, qualifying the application as a **Production-Ready Local Release Candidate (v1.0.0-rc1)**. Production launch remains strictly gated on merchant owner disclosures.
-
----
-
-## 2. Category-by-Category Audit Reconciliation
-
-### 2.1 Foundation, Reproducibility & Containment
-- **Audit Baseline:** 13 / 15
-- **Reconciled Score:** **14 / 15**
-- **Evidence & Architecture:**
-  - Integrated branch `sprint-integrated-authoritative` at commit `6121ed4` provably integrates all 16 accepted sprint deliverables as verified ancestors via `git merge-base --is-ancestor`.
-  - Full workspace suite executes cleanly: **66 test files passed, 593 tests passed, 0 failures (exit 0)**.
-  - Strict TypeScript compilation across storefront and all 6 workspace packages (`tsc --noEmit`) produces **0 errors**.
-  - Database restore isolation on port 3309 validated against 23 hostile-dump test cases (`verify-restore.test.mjs`), with port 3308 never contacted and decoy source verified unchanged.
-
-### 2.2 Catalog & Discovery
-- **Audit Baseline:** 10 / 15
-- **Reconciled Score:** **12 / 15**
-- **Evidence & Architecture:**
-  - Validated against a 120-product scale corpus across 110 categories and a 60-variation matrix.
-  - Measured search latency clocks at p50=0.50ms and p95=3.25ms.
-  - Accent-insensitive folding (`Crème` -> `creme`, `Fès` -> `fes`) and exact-SKU ranking verified.
-  - `SearchAutocomplete` component is implemented with full accessibility (`role="combobox"`, `role="listbox"`, keyboard navigation, debounce) and 100% unit test coverage.
-  - *Disclosed Boundary:* Live staging environment contains fixture products; live multi-tenant traversal scale requires production data seeding.
-
-### 2.3 Guest Purchase & Owned Access
-- **Audit Baseline:** 13 / 20
-- **Reconciled Score:** **16 / 20**
-- **Evidence & Architecture:**
-  - Authoritative cart multiset reconciliation in WooCommerce Store API preserves exact item IDs and variation quantities without optimistic client drift.
-  - Durable atomic attempt claims across OS processes utilize `FileClaimAttemptStore`, verified by process-race and restart tests.
-  - **Live Recovery Wired:** `WooCommerceEngine.submitCheckout` is wired directly to `findOrderByAttemptCorrelation`. When a submission response is lost, the adapter queries the customer note correlation token `[ecomos-attempt:<key>]` to recover the confirmed order rather than minting duplicate transactions.
-  - Replay and status endpoints (`/api/orders/status`) enforce HMAC guest token verification with fail-closed negative controls (400 on missing token, 403 on invalid token).
-
-### 2.4 Themes, CMS & Client Experience
-- **Audit Baseline:** 11 / 15
-- **Reconciled Score:** **13 / 15**
-- **Evidence & Architecture:**
-  - Dynamic multi-theming registry in `@ecom-os/themes` switches cleanly between `paraloca` (warm burgundy `#5A1C16`, 1rem radius) and `demo-2` (slate charcoal `#0F172A`, 0.25rem radius) via `ECOM_CLIENT_PROFILE`.
-  - Truthful SEO budgets: 18 measured performance properties validated against exact thresholds.
-  - Accessible presentation: WCAG AA/AAA minimum contrast, skip links localized in French and Arabic, 44px minimum interactive touch targets.
-  - Full UAT synthesis published in `docs/ecomos/release/PARALOCA_UAT.md`.
-
-### 2.5 Merchant Operations
-- **Audit Baseline:** 5 / 10
-- **Reconciled Score:** **7 / 10**
-- **Evidence & Architecture:**
-  - Scoped store manager role matrix separates operational duties from system super-administration.
-  - Dynamic prefix-aware core table guard (`$wpdb->prefix`) blocks destructive SQL statements against core tables (`posts`, `postmeta`, `wc_orders`).
-  - Addon lifecycle idempotency guarantees core transaction data is retained across activation, deactivation, and migration routines.
-
-### 2.6 Addons & RFQ Quotation
-- **Audit Baseline:** 6 / 10
-- **Reconciled Score:** **8 / 10**
-- **Evidence & Architecture:**
-  - Decoupled security model: Guest quotation interactions enforce 64-character hexadecimal SHA-256 tokens (`accessSecretHash`). Staff administrative privileges cannot bypass guest ownership.
-  - Immutable revision snapshots (`rev_1`, `rev_2`) enforce append-only state progression.
-  - Atomic single-conversion locking (`ecomos_rfq_claim_quote_for_conversion`) guarantees exactly one WooCommerce HPOS order is created under concurrent acceptance submissions.
-  - Fail-closed RFQ off state: Disabling quotes addon unmounts UI elements and returns HTTP 404 on `/api/rfq/*`.
-
-### 2.7 Independent Client & Multi-Tenant Isolation
-- **Audit Baseline:** 5 / 10
-- **Reconciled Score:** **8 / 10**
-- **Evidence & Architecture:**
-  - Two-client deployment parity proven live on real services:
-    - **Client 1 (`ParaLoca`)**: Port 10005/3308, database `ecomos_wp`, MAD currency, 18 real orders in native WooCommerce HPOS tables, 0 legacy posts, RFQ enabled.
-    - **Client 2 (`demo-2`)**: Port 8081/3307, database `ecomos_client2`, EUR currency, Order 12 in legacy post storage (`wp_posts` `shop_order`), 0 HPOS tables, RFQ disabled.
-  - Tenant separation: Zero catalog crossover rows, independent WordPress authentication salts/keys, separate REST credentials.
-  - Disclosed shared test fixture: `browser.buyer@example.test` confirmed as an automated test fixture, not cross-tenant leakage.
-
-### 2.8 Approved Content & Release Acceptance
-- **Audit Baseline:** 1 / 5
-- **Reconciled Score:** **2 / 5**
-- **Evidence & Architecture:**
-  - Regulatory invariants under Moroccan Law 84-12 / Law 31-08 enforced: Zero invented registration codes, zero clinical superiority claims, and mandatory statutory patient disclaimers.
-  - **Blocker Retained:** All eight proposed merchant disclosures in `clients/paraloca/content-approval.md` remain explicitly marked as **`UNAPPROVED`**. Section 4 approval table is unpopulated (`—`).
-  - *Hard Rule:* Production release remains blocked until authentic merchant owner signature is recorded.
-
----
-
-## 3. Readiness Scoring Summary
-
-| Evaluation Domain | Weight | Prior Score (17:30 Audit) | Reconciled Score (ECO-1405) | Delta / Rationale |
+| Finding | Category | Root Cause in Previous Run | Verified Resolution | Status |
 |---|---|---|---|---|
-| **Foundation & Containment** | 15 | 13 | **15** | All 20 deliverables integrated; 602 vitest & 0 tsc errors; clean Next.js 16 build. |
-| **Catalog & Discovery** | 15 | 10 | **14** | Scale corpus & latency verified; SearchAutocomplete mounted in header and /search. |
-| **Guest Purchase & Recovery** | 20 | 13 | **18** | Durable attempt tracking, adapter recovery wired, HMAC status gate. |
-| **Themes & Client UAT** | 15 | 11 | **13** | Multi-theming proven; full UAT synthesis in `PARALOCA_UAT.md`. |
-| **Merchant Operations** | 10 | 5 | **8** | Scoped store manager permissions & enhanced core table migration guard. |
-| **Addons & RFQ Security** | 10 | 6 | **9** | Full page-driven journeys, 64-hex tokens, immutable revisions, conversion lock. |
-| **Multi-Client Isolation** | 10 | 5 | **8** | Real two-client deployment isolation proven on live databases (HPOS vs legacy). |
-| **Approved Content & Legal** | 5 | 1 | **2** | Law 84-12 policy disclaimers enforced; merchant facts kept honestly UNAPPROVED. |
-| **Total Weighted Readiness** | **100** | **64 / 100** | **85 / 100** | **Local Release Candidate v1.0.0-rc1 Certified** |
+| **F1** | Commerce | After 15s, PENDING attempt with lookup miss triggered a second Store API POST while first worker was active | Added `inFlightCheckoutAttempts` tracking to prevent concurrent POSTs; removed time-based expiry of active PENDING attempts | **PASS** (verified by `audit-checkout.test.ts`) |
+| **F2** | Commerce | Network error with null lookup fell through to `failAttempt`, turning uncertain outcome into retryable FAILED | Preserved uncertain submissions as `PENDING` when lookup returns null; failAttempt is never called on unverified negatives | **PASS** (verified by `audit-checkout.test.ts`) |
+| **F3** | Commerce | `findOrderByAttemptCorrelation` scanned only page 1 (100 orders), missing older attempts | Paginates through up to 50 pages (`page=1..maxPages`); attempt ID persisted in `sessionStorage` per cart session with cryptographic bytes | **PASS** (verified by `audit-checkout.test.ts`) |
+| **F4** | Discovery | `/api/search/suggestions` returned hardcoded `DEMO_ITEMS` on engine error or empty catalog | Removed all `DEMO_ITEMS`; returns honest empty groups on empty catalog or upstream error | **PASS** (verified by `audit-search.test.ts`) |
+| **F5** | Platform / Addons | PHP migration guard regex bypassed by multi-table drops/renames and alias deletes | Upgraded `ecomos_sql_targets_core_table` in `lifecycle.php` to block any destructive statement referencing core tables; verified by direct PHP CLI | **PASS** (verified by `audit-migration-guard.php`) |
 
 ---
 
-## 4. Final Operational Directives
+## 2. Evidence Ledger by Engineering & Operational Domain
 
-1. **Local Release Candidate Certified**: EcomOS v1.0.0-rc1 is certified as stable, secure, and ready for local evaluation and stakeholder demonstration.
+### 2.1 Foundation, Monorepo Containment & Static Guarantees
+- **Status:** **PASS**
+- **Evidence:**
+  - Full workspace Vitest suite: **604 / 604 tests passed across 67 test files (0 failures, exit code 0)**.
+  - TypeScript strict compilation: **0 errors** across storefront and all workspace packages (`@ecom-os/engine`, `@ecom-os/engine-woocommerce`, `@ecom-os/addons-rfq`, `@ecom-os/addons-multi-payment`, `@ecom-os/brand-config`, `@ecom-os/themes`).
+  - Engine import boundaries: **13 / 13 passed** via `npm run guard`.
+  - Next.js 16 production build: **15 routes compiled cleanly** (exit code 0).
+  - Isolated audit regression suite: **5 / 5 passed** (`audit-vitest.config.mts` executing `audit-checkout.test.ts` and `audit-search.test.ts`).
+
+### 2.2 Catalog, Search & Autocomplete
+- **Status:** **PASS (CONTRACT & DISCOVERY)** · **BLOCKED (LIVE MULTI-TENANT SCALE)**
+- **Evidence:**
+  - `SearchAutocomplete` mounted in desktop and mobile header navigation and search results page.
+  - Suggestion endpoint (`/api/search/suggestions`) strictly bound to upstream engine with French accent-insensitivity (`Crème` matches `creme`).
+  - Removed all demo product injections; empty and error states fail cleanly without masquerading demo data.
+  - 120-document scale corpus with p50=1.07ms and p95=6.66ms measured without synthetic thresholds.
+  - *Disclosed Boundary:* Live staging environment contains fixture products; live multi-tenant catalog scale requires production database seeding.
+
+### 2.3 Guest Purchase, Idempotency & Order Recovery
+- **Status:** **PASS (UNIT & INTEGRATION CONTRACTS)** · **BLOCKED (LIVE BROWSER PURCHASE ON RUNNING SERVER)**
+- **Evidence:**
+  - Authoritative cart multiset reconciliation in WooCommerce Store API preserves item and variation counts without optimistic client drift.
+  - Durable atomic attempt claims across OS processes utilize `FileClaimAttemptStore`, verified by process-race and restart tests.
+  - `executeIdempotentCheckout` enforces in-flight concurrency protection and preserves unknown outcomes as `PENDING`.
+  - Multi-page correlation query traverses paginated WooCommerce orders to find older attempt tokens.
+  - *Disclosed Boundary:* Playwright browser tests are discovered (37 tests), but execution of live browser purchase against a running local server is blocked until staging services are booted.
+
+### 2.4 RFQ Quotation Lifecycle & Route Contracts
+- **Status:** **PASS (ROUTE & DOMAIN CONTRACTS)** · **BLOCKED (LIVE STAGING BROWSER JOURNEY)**
+- **Evidence:**
+  - Route handlers (`/api/rfq` and `/api/rfq/offers`) and state machine transitions verified across dual entry methods, basket assembly (>=3 items), 64-char guest access secret generation, immutable revision history (`rev_1` -> `rev_2`), and single-conversion locking.
+  - Protected document access enforces `Cache-Control: no-store, private` and 403 on invalid proof.
+  - Fail-closed RFQ OFF state: disabling quotes addon unmounts UI elements and returns HTTP 404 on `/api/rfq/*`.
+  - *Disclosed Boundary:* The 10-test RFQ spec (`apps/storefront/e2e/sprint-b-rfq.spec.ts`) exercises domain and route integration contracts in Node; live browser execution requiring active local WordPress/WooCommerce services is gated on staging server availability.
+
+### 2.5 Multi-Tenant Isolation & Backend Compatibility
+- **Status:** **PASS (DATABASE & CONFIGURATION ISOLATION)**
+- **Evidence:**
+  - Client 1 (`ParaLoca`, MAD, HPOS tables) and Client 2 (`Nordic Craft Supplies`, EUR, legacy post storage) verified on separate databases, ports, and REST key pairs with zero catalog identifier crossover.
+  - Dynamic multi-theming in `@ecom-os/themes` switches cleanly between `paraloca` and `demo-2`.
+  - Client 2 order 12 (158.00 EUR, COD, `_customer_user = 0`) remains intact in legacy storage.
+
+### 2.6 Operations, Migration Guard & Restore Isolation
+- **Status:** **PASS (RESTORE ISOLATION & MIGRATION GUARD)** · **DOCUMENTED RUNBOOK (APP ROLLBACK)**
+- **Evidence:**
+  - Database restore isolation on port 3309 validated against 23 hostile-dump test cases (`verify-restore.test.mjs`), with port 3308 never contacted and decoy source verified unchanged.
+  - Enhanced PHP migration guard (`ecomos_sql_targets_core_table` in `lifecycle.php`) blocks destructive DDL/DML targeting core WordPress and WooCommerce tables, including multi-table drops/renames and alias deletes (verified by direct PHP execution).
+  - Application version rollback is rehearsed and documented in `docs/ecomos/operations/rollback.md`; automated blue/green app container switching is not automated.
+
+### 2.7 Legal, Compliance & Merchant Content Approval
+- **Status:** **GATED (UNAPPROVED BY MERCHANT)**
+- **Evidence:**
+  - Moroccan Law 84-12 / Law 31-08 compliance invariants enforced: zero invented DMP registration codes, zero clinical cure claims, and mandatory patient disclaimers on all diagnostic/orthopaedic PDPs.
+  - All eight proposed merchant disclosures in `clients/paraloca/content-approval.md` remain explicitly marked as **`UNAPPROVED`**. Section 4 approval table is unpopulated (`—`).
+  - *Hard Release Gate:* Production launch remains blocked until authentic merchant owner signature is recorded.
+
+---
+
+## 3. Truthful Release Status Matrix
+
+| Gate | Scope | Status | Notes |
+|---|---|---|---|
+| **Core Engineering** | Vitest (604 tests), TypeScript (0 errors), Guard (13 tests) | **PASS** | Monorepo is green, all 5 audit regressions resolved |
+| **Audit Regressions (Oct 12)** | F1 (concurrency), F2 (unknown state), F3 (pagination), F4 (suggestions), F5 (guard) | **PASS** | 5 / 5 passing in isolated audit runner and PHP CLI |
+| **Client Dossier** | ParaLoca profile, schemas, disclaimers (19 tests) | **PASS** | 19 / 19 passing |
+| **Database Restore Safety** | Port 3309 isolation, hostile dump rejection (23 tests) | **PASS** | 23 / 23 passing |
+| **Migration SQL Guard** | Core table protection across multi-table/alias DDL/DML | **PASS** | Evaluated and proven via PHP 8.2 CLI |
+| **Live Browser Journeys** | End-to-end purchasing and RFQ flows in real browser | **GATED / NOT RUN** | 37 tests discovered in Playwright; requires running staging server |
+| **Application Rollback** | Zero-downtime application version switching drill | **DOCUMENTED** | Documented runbook; restore isolation proven |
+| **Merchant Content Approval** | 8 merchant disclosures in `content-approval.md` | **GATED** | UNAPPROVED pending authentic merchant signature |
+
+---
+
+## 4. Operational Directives
+
+1. **Local Release Candidate Certified**: EcomOS v1.0.0-rc1 is certified as an engineering release candidate with all identified regression defects repaired.
 2. **Production Deployment Gated**: Automated deployment pipelines must not push to production environments.
-3. **No Destructive Operations**: Live databases must remain untouched; all recovery drills remain confined to ephemeral instances on port 3309.
-4. **Merchant Action Required**: To achieve full production cutover, the business owner must provide authentic company disclosures and execute Section 4 of `clients/paraloca/content-approval.md`.
+3. **No Destructive Operations**: Live databases must remain untouched; all restore drills remain confined to ephemeral instances on port 3309.
+4. **Staging Environment Prerequisite**: Executing the live browser journey suite requires launching local storefront (`npm --prefix apps/storefront run dev`) and WordPress staging services.
+5. **Merchant Action Required**: To achieve full production cutover, the business owner must provide authentic company disclosures and execute Section 4 of `clients/paraloca/content-approval.md`.

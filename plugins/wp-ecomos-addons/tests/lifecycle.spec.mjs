@@ -34,8 +34,7 @@ test('Core WordPress and WooCommerce migration guard contract', () => {
 
   // Must guard destructive DDL/DML operations
   assert.match(content, /DROP\\s\+\(\?:DATABASE\|SCHEMA\)/, 'Must prohibit DROP DATABASE / SCHEMA');
-  assert.match(content, /RENAME\\s\+TABLE/, 'Must prohibit RENAME TABLE targeting core');
-  assert.match(content, /DELETE.*FROM/, 'Must prohibit DELETE FROM targeting core');
+  assert.match(content, /DROP\|ALTER\|TRUNCATE\|RENAME\|DELETE/, 'Must prohibit destructive DDL/DML targeting core');
   assert.match(content, /Prohibited SQL operation targeting core WooCommerce tables/, 'Must return explicit error on dangerous SQL');
 });
 
@@ -56,16 +55,15 @@ test('Simulated migration guard regex against prohibited and permitted SQL', () 
     }
   }
   const disjunction = `(?:${tables.join('|')})`;
-  const ddlPattern = new RegExp(`\\b(?:DROP|ALTER|TRUNCATE)\\s+(?:TABLE\\s+)?(?:IF\\s+EXISTS\\s+)?(?:\`?[\\w$]+\`?\\s*\\.\\s*)?\`?${disjunction}\`?\\b`, 'i');
-  const renamePattern = new RegExp(`\\bRENAME\\s+TABLE\\s+(?:(?:\`?[\\w$]+\`?\\s*\\.\\s*)?\`?${disjunction}\`?\\s+TO\\b|.*?\\bTO\\s+(?:\`?[\\w$]+\`?\\s*\\.\\s*)?\`?${disjunction}\`?\\b)`, 'i');
-  const deletePattern = new RegExp(`\\bDELETE\\s+(?:LOW_PRIORITY\\s+|QUICK\\s+|IGNORE\\s+)?FROM\\s+(?:\`?[\\w$]+\`?\\s*\\.\\s*)?\`?${disjunction}\`?\\b`, 'i');
+  const destructiveOp = /\b(?:DROP|ALTER|TRUNCATE|RENAME|DELETE)\b/i;
+  const coreTarget = new RegExp(`(?:^|[^\\\`\\w$])(?:\\\`?[\\w$]+\\\`?\\s*\\.\\s*)?\\\`?${disjunction}\\\`?(?:[^\\\`\\w$]|$)`, 'i');
   const dropDbPattern = /\bDROP\s+(?:DATABASE|SCHEMA)\b/i;
 
   const isGuarded = (sql) => {
-    return dropDbPattern.test(sql) || ddlPattern.test(sql) || renamePattern.test(sql) || deletePattern.test(sql);
+    return dropDbPattern.test(sql) || (destructiveOp.test(sql) && coreTarget.test(sql));
   };
 
-  // Prohibited statements must be rejected
+  // Prohibited single-table statements must be rejected
   assert.equal(isGuarded('DROP TABLE wp_posts'), true);
   assert.equal(isGuarded('DROP TABLE `other_db`.`wpt_posts`'), true);
   assert.equal(isGuarded('DROP TABLE IF EXISTS wpt_options'), true);
@@ -77,11 +75,17 @@ test('Simulated migration guard regex against prohibited and permitted SQL', () 
   assert.equal(isGuarded('DROP DATABASE ecomos_production'), true);
   assert.equal(isGuarded('DROP SCHEMA ecomos_live'), true);
 
+  // Prohibited multi-table and alias-style statements must be rejected (Finding F5)
+  assert.equal(isGuarded('DROP TABLE wpt_ecomos_tmp, wpt_posts'), true);
+  assert.equal(isGuarded('DELETE p FROM wpt_posts AS p'), true);
+  assert.equal(isGuarded('RENAME TABLE wpt_ecomos_tmp TO wpt_ecomos_old, wpt_posts TO wpt_posts_old'), true);
+
   // Permitted statements on addon-owned tables must pass
   assert.equal(isGuarded('CREATE TABLE wpt_ecomos_reports (id INT PRIMARY KEY)'), false);
   assert.equal(isGuarded('ALTER TABLE wpt_ecomos_reports ADD COLUMN created_at DATETIME'), false);
   assert.equal(isGuarded('DROP TABLE wpt_ecomos_reports'), false);
   assert.equal(isGuarded('TRUNCATE TABLE wpt_ecomos_reports'), false);
+  assert.equal(isGuarded('SELECT * FROM wpt_posts'), false);
 });
 
 test('Data retention on deactivation contract', () => {
@@ -100,3 +104,59 @@ test('wp-ecomos-addons.php entrypoint includes lifecycle.php', () => {
   const content = fs.readFileSync(mainPluginPath, 'utf8');
   assert.match(content, /require_once.*lifecycle\.php/, 'Main plugin must require lifecycle.php');
 });
+
+test('Actual PHP ecomos_sql_targets_core_table evaluation across multi-table and alias SQL forms', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const phpCandidates = [
+    process.env.PHP_BIN,
+    'C:/Users/OMEN/AppData/Roaming/Local/lightning-services/php-8.2.29+0/bin/win64/php.exe',
+    'php',
+  ].filter(Boolean);
+
+  let phpBin = null;
+  for (const candidate of phpCandidates) {
+    try {
+      execFileSync(candidate, ['-v'], { stdio: 'pipe' });
+      phpBin = candidate;
+      break;
+    } catch {
+      // try next
+    }
+  }
+
+  if (!phpBin) {
+    // If no PHP CLI found, skip execution
+    return;
+  }
+
+  const lifecyclePhp = path.join(pluginDir, 'lifecycle.php').replace(/\\/g, '/');
+  const phpScript = `
+define('ABSPATH', 1);
+$wpdb = (object) ['prefix' => 'wpt_'];
+require '${lifecyclePhp}';
+$cases = [
+  'DROP TABLE wpt_posts' => true,
+  'DROP TABLE wpt_ecomos_tmp, wpt_posts' => true,
+  'DELETE p FROM wpt_posts AS p' => true,
+  'RENAME TABLE wpt_ecomos_tmp TO wpt_ecomos_old, wpt_posts TO wpt_posts_old' => true,
+  'DROP TABLE wpt_ecomos_tmp' => false,
+  'SELECT * FROM wpt_posts' => false,
+];
+$results = [];
+foreach ($cases as $sql => $expected) {
+  $actual = ecomos_sql_targets_core_table($sql);
+  if ($actual !== $expected) {
+    $results[] = "FAIL: $sql (expected " . var_export($expected, true) . ", got " . var_export($actual, true) . ")";
+  }
+}
+if (!empty($results)) {
+  fwrite(STDERR, implode("\\n", $results) . "\\n");
+  exit(1);
+}
+echo "ALL_PASSED";
+`;
+
+  const output = execFileSync(phpBin, ['-r', phpScript], { encoding: 'utf8' });
+  assert.match(output, /ALL_PASSED/, 'PHP lifecycle guard function must pass all test cases');
+});
+

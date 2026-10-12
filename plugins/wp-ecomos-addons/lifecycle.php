@@ -74,24 +74,14 @@ function ecomos_sql_targets_core_table(string $sql): bool {
 
     $table_disjunction = '(?:' . implode('|', $tables) . ')';
 
-    // 2. Prohibit DROP / ALTER / TRUNCATE on core tables (schema-qualified tolerated)
-    $ddl_pattern = '/\b(?:DROP|ALTER|TRUNCATE)\s+(?:TABLE\s+)?(?:IF\s+EXISTS\s+)?(?:`?[\w$]+`?\s*\.\s*)?`?'
-        . $table_disjunction . '`?\b/i';
-    if (preg_match($ddl_pattern, $sql)) {
-        return true;
-    }
-
-    // 3. Prohibit RENAME TABLE where source or target is a core table
-    $rename_pattern = '/\bRENAME\s+TABLE\s+(?:(?:`?[\w$]+`?\s*\.\s*)?`?' . $table_disjunction . '`?\s+TO\b|.*?\bTO\s+(?:`?[\w$]+`?\s*\.\s*)?`?' . $table_disjunction . '`?\b)/i';
-    if (preg_match($rename_pattern, $sql)) {
-        return true;
-    }
-
-    // 4. Prohibit DELETE FROM on core tables
-    $delete_pattern = '/\bDELETE\s+(?:LOW_PRIORITY\s+|QUICK\s+|IGNORE\s+)?FROM\s+(?:`?[\w$]+`?\s*\.\s*)?`?'
-        . $table_disjunction . '`?\b/i';
-    if (preg_match($delete_pattern, $sql)) {
-        return true;
+    // 2. Prohibit any destructive statement (DROP, ALTER, TRUNCATE, RENAME, DELETE) that references a core table.
+    // Catches comma-separated multi-table drops (DROP TABLE t1, t2), multi-table renames (RENAME TABLE t1 TO t2, t3 TO t4),
+    // and alias-style deletions (DELETE a FROM table AS a).
+    if (preg_match('/\b(?:DROP|ALTER|TRUNCATE|RENAME|DELETE)\b/i', $sql)) {
+        $target_pattern = '/(?:^|[^`\w$])(?:`?[\w$]+`?\s*\.\s*)?`?' . $table_disjunction . '`?(?:[^`\w$]|$)/i';
+        if (preg_match($target_pattern, $sql)) {
+            return true;
+        }
     }
 
     return false;

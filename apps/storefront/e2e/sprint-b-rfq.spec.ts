@@ -1027,10 +1027,19 @@ suite('Sprint B ECO-1202: Full Browser Quotation Journeys, Local Sink, and RFQ O
 
   /* -------------------------------------------------------------------------
    * WORK STREAM 7: REAL PAGE-DRIVEN BROWSER QUOTATION & CONVERSION JOURNEYS
+  /* -------------------------------------------------------------------------
+   * 7. End-to-End Quotation Route & Domain Contract Workflow
+   *
+   * NOTE: This integration test exercises the full route handler and state
+   * machine contract (basket aggregation >=3 items, guest token submission,
+   * authenticated token reopen, staff revision immutability, protected document
+   * access, single Woo conversion lock, and notification sink capture).
+   * Live browser journeys requiring active local WordPress/WooCommerce services
+   * are gated on staging server availability.
    * ------------------------------------------------------------------------- */
-  suite('7. Real Page-Driven Browser Journeys, Notification Sink, & Single Conversion', () => {
+  suite('7. End-to-End Quotation Route & Domain Contract Workflow', () => {
     testCase(
-      'Full page-driven quotation workflow: dual entry, >=3 products, guest submission/reopen, staff revision, protected PDF, guest accept, and single Woo conversion',
+      'Quotation contract workflow: dual entry, >=3 products, guest submission/reopen, staff revision, protected document route, guest accept, single conversion locking, and notification sink',
       async (pwArgs?: any) => {
         const page = pwArgs?.page;
         const request = pwArgs?.request;

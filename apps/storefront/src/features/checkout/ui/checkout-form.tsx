@@ -34,13 +34,40 @@ export function CheckoutForm({ cartId, action, gateways, shippingMethods, capabi
   const stateOptions = CHECKOUT_STATES[country] ?? {};
   const [state, formAction, isPending] = useActionState(action, null);
 
-  // Fresh cryptographically secure purchase-attempt ID per legitimate new purchase intent.
-  // Retained across retries/re-submissions of this form.
+  // Fresh purchase-attempt ID per legitimate new purchase intent.
+  // Retained across retries and page reloads for this cart session.
   const [purchaseAttemptId] = useState(() => {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-      return `att_${crypto.randomUUID()}`;
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      try {
+        const stored = window.sessionStorage.getItem(`ecomos_attempt_${cartId}`);
+        if (stored) return stored;
+      } catch {
+        // sessionStorage restricted
+      }
     }
-    return `att_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    let id: string;
+    if (typeof crypto !== 'undefined') {
+      if (typeof crypto.randomUUID === 'function') {
+        id = `att_${crypto.randomUUID()}`;
+      } else if (typeof crypto.getRandomValues === 'function') {
+        const bytes = new Uint8Array(16);
+        crypto.getRandomValues(bytes);
+        const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+        id = `att_${hex}`;
+      } else {
+        id = `att_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+      }
+    } else {
+      id = `att_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    }
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      try {
+        window.sessionStorage.setItem(`ecomos_attempt_${cartId}`, id);
+      } catch {
+        // ignore
+      }
+    }
+    return id;
   });
 
   // Initialize shipping method if not set
