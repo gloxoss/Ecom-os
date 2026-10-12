@@ -21,7 +21,7 @@ This assessment consolidates the baseline audit (`Sprint progress audit 2026-10-
 |---|---|---|---|---|
 | **F1** | Commerce | After 15s, PENDING attempt with lookup miss triggered a second Store API POST while first worker was active | Added `inFlightCheckoutAttempts` tracking to prevent concurrent POSTs; removed time-based expiry of active PENDING attempts | **PASS** (verified by `audit-checkout.test.ts`) |
 | **F2** | Commerce | Network error with null lookup fell through to `failAttempt`, turning uncertain outcome into retryable FAILED | Preserved uncertain submissions as `PENDING` when lookup returns null; failAttempt is never called on unverified negatives | **PASS** (verified by `audit-checkout.test.ts`) |
-| **F3** | Commerce | `findOrderByAttemptCorrelation` scanned only page 1 (100 orders), missing older attempts | Paginates through up to 50 pages (`page=1..maxPages`); attempt ID persisted in `sessionStorage` per cart session with cryptographic bytes | **PASS** (verified by `audit-checkout.test.ts`) |
+| **F3** | Commerce | `findOrderByAttemptCorrelation` scanned only page 1 (100 orders), missing older attempts | Paginates up to 10 pages x 100 orders by default (configurable to 50 pages / 5,000 orders); reaching the cap with full pages now throws as an unknown outcome instead of returning null; attempt ID persisted in `sessionStorage` per cart session with cryptographic bytes | **PASS** (verified by `audit-checkout.test.ts`) |
 | **F4** | Discovery | `/api/search/suggestions` returned hardcoded `DEMO_ITEMS` on engine error or empty catalog | Removed all `DEMO_ITEMS`; returns honest empty groups on empty catalog or upstream error | **PASS** (verified by `audit-search.test.ts`) |
 | **F5** | Platform / Addons | PHP migration guard regex bypassed by multi-table drops/renames and alias deletes | Upgraded `ecomos_sql_targets_core_table` in `lifecycle.php` to block any destructive statement referencing core tables; verified by direct PHP CLI | **PASS** (verified by `audit-migration-guard.php`) |
 
@@ -45,7 +45,7 @@ This assessment consolidates the baseline audit (`Sprint progress audit 2026-10-
   - Suggestion endpoint (`/api/search/suggestions`) strictly bound to upstream engine with French accent-insensitivity (`Crème` matches `creme`).
   - Removed all demo product injections; empty and error states fail cleanly without masquerading demo data.
   - 120-document scale corpus with p50=1.07ms and p95=6.66ms measured without synthetic thresholds.
-  - *Disclosed Boundary:* Live staging environment contains fixture products; live multi-tenant catalog scale requires production database seeding.
+  - *Disclosed Boundary:* Live staging environment contains fixture products; live catalog scale (>=100 mixed products, keyboard/mobile search, measured freshness and p95) is NOT RUN and must use owned synthetic staging fixtures, not production seeding.
 
 ### 2.3 Guest Purchase, Idempotency & Order Recovery
 - **Status:** **PASS (UNIT & INTEGRATION CONTRACTS)** · **BLOCKED (LIVE BROWSER PURCHASE ON RUNNING SERVER)**

@@ -905,6 +905,49 @@ describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => 
       expect(await findOrderByAttemptCorrelation('att-missing', { email: 'buyer@example.com' })).toBeNull();
     });
 
+    it('throws instead of returning null when the scan cap is reached with full pages', async () => {
+      vi.stubEnv('WC_REST_URL', 'http://woo.test/wp-json/wc/v3');
+      vi.stubEnv('WC_REST_KEY', 'ck_test');
+      vi.stubEnv('WC_REST_SECRET', 'cs_test');
+      const fullPage = [
+        { id: 1, customer_note: 'x', billing: { email: 'a@example.com' }, order_key: 'wc_1' },
+        { id: 2, customer_note: 'y', billing: { email: 'b@example.com' }, order_key: 'wc_2' },
+      ];
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => fullPage,
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(
+        findOrderByAttemptCorrelation('att-deep', { perPage: 2, maxPages: 3 })
+      ).rejects.toThrow(/limit of 6 orders/i);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    });
+
+    it('returns null only when a short final page proves the scan was complete', async () => {
+      vi.stubEnv('WC_REST_URL', 'http://woo.test/wp-json/wc/v3');
+      vi.stubEnv('WC_REST_KEY', 'ck_test');
+      vi.stubEnv('WC_REST_SECRET', 'cs_test');
+      const page = (n: number) =>
+        Array.from({ length: n }, (_, i) => ({
+          id: i + 1,
+          customer_note: 'other',
+          billing: { email: 'a@example.com' },
+          order_key: `wc_${i + 1}`,
+        }));
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => page(2) })
+        .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => page(1) });
+      vi.stubGlobal('fetch', fetchMock);
+
+      expect(await findOrderByAttemptCorrelation('att-none', { perPage: 2, maxPages: 5 })).toBeNull();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
     it('fails closed when correlation lookup receives a non-array response', async () => {
       vi.stubEnv('WC_REST_URL', 'http://woo.test/wp-json/wc/v3');
       vi.stubEnv('WC_REST_KEY', 'ck_test');

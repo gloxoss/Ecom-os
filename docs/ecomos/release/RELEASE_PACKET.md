@@ -60,7 +60,7 @@ Every deliverable across Sprint A, Sprint B, Sprint C, and the October 12 audit 
 ### 3.1 Checkout Attempt Durability, In-Flight Protection & Multi-Page Recovery
 - **File-Claim Locking & In-Flight Tracking**: Simultaneous purchase attempts across separate OS processes acquire atomic filesystem locks (`FileClaimAttemptStore`). In-flight attempts register active workers (`inFlightCheckoutAttempts`), strictly preventing duplicate Store API POST submissions for active workers even after the 15-second window.
 - **Uncertain Outcome Preservation**: When network errors occur during Store API submission, if lookup returns `null`, the attempt remains `PENDING` rather than transitioning to `FAILED`, preventing hazardous premature retries.
-- **Multi-Page Correlation Query**: The live `WooCommerceEngine` adapter query traverses up to 50 pages of orders to discover matching correlation tokens `[ecomos-attempt:<key>]`, ensuring attempts are not missed when store history exceeds 100 orders.
+- **Multi-Page Correlation Query**: The live `WooCommerceEngine` adapter query traverses up to 10 pages (1,000 orders) by default, 50 pages (5,000) at most, to discover matching correlation tokens `[ecomos-attempt:<key>]`, ensuring attempts are not missed when store history exceeds 100 orders.
 - **Session Intent Retention**: `purchaseAttemptId` is preserved in `sessionStorage` per cart session, ensuring attempts remain bound across browser reloads.
 
 ### 3.2 Discovery & Truthful Search Autocomplete
@@ -113,3 +113,5 @@ Every deliverable across Sprint A, Sprint B, Sprint C, and the October 12 audit 
 3. **Data Protection Invariant**: The dynamic core table guard (`ecomos_sql_targets_core_table`) prevents destruction of core WooCommerce orders, posts, postmeta, options, users, or order items tables during addon migrations and rollbacks.
 
 
+
+> **Recovery limit (2026-10-12 follow-up audit).** If the order scan reaches its cap with every page full, the lookup now throws and checkout keeps the attempt PENDING. It no longer returns "not found", which would not prove an older order is absent.

@@ -151,10 +151,14 @@ export async function findOrderByAttemptCorrelation(
       };
     }
     if (orders.length < perPage) {
-      break;
+      return null;
     }
   }
-  return null;
+  // Every scanned page was full, so older orders were never examined. "Not found"
+  // here is not proof of absence; callers must treat it as an unknown outcome.
+  throw new Error(
+    `Order recovery scan reached its limit of ${maxPages * perPage} orders without a conclusive result.`
+  );
 }
 
 const inFlightCheckoutAttempts = new Set<string>();

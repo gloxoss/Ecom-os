@@ -137,3 +137,11 @@ Read with `release/CORRECTION_2026-10-11.md` and `release/READINESS_2026-10-11.m
 - **Checks run on this tree:** vitest 604/604 (67 files), `tsc --noEmit` 0 errors, `next build --webpack` exit 0.
 - **Environment note:** the `pnpm` shim in the shell pointed into a missing Codex runtime, so checks were run through `node_modules/.bin` directly. Repair the shim before relying on `pnpm -r`.
 - **Still open, unchanged:** live browser journeys (needs `wp-graphql-woocommerce` and a running staging server), storefront RFQ routes writing to WordPress, a second isolated client deployment, owner-approved merchant facts and medical claims (`clients/paraloca/content-approval.md`), hosting plan for `paraloca.ma`, production TLS/CSP, one high dev dependency advisory. Release status stays **NOT CERTIFIED for production**.
+
+## 2026-10-12 — follow-up audit (`Follow-up audit 2026-10-12.md`)
+
+- **Confirmed fixed in tested scope:** F1 to F5 (5/5 audit tests, PHP guard blocks 4/4 probed SQL forms). Not a guarantee for every SQL form or runtime topology.
+- **F6/F7 stay BLOCKED, not complete.** Needs page-driven guest buying, RFQ with a real staff session, PDF, real Woo conversion, RFQ-off proof, live catalog scale (>=100 products), and an executed application rollback rehearsal. Relabeling RFQ tests as contracts fixed reporting only.
+- **Fixed here:** order recovery used to return `null` after scanning its cap (default 10 pages x 100 = 1,000 orders; max 50 pages = 5,000). It now throws, so checkout keeps the attempt PENDING. Two tests added. Docs that claimed a 50-page default or "production seeding" were corrected.
+- **Still open from the audit:** search turns upstream failures into HTTP 200 empty groups (should signal unavailable); no exact-SHA independent verdict exists for `2c0ba95` or `20189eb`; eight merchant approvals still UNAPPROVED.
+- **Rule going forward:** final gate runs on one pinned integrated SHA with a distinct verifier, each condition recorded PASS/FAIL/BLOCKED/NOT RUN. Do not clear other workers' untracked files or the dirty `plugins/wordpress-mcp` to get a clean status.
