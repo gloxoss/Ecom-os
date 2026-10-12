@@ -16,12 +16,11 @@ export async function GET(request: NextRequest): Promise<NextResponse<Suggestion
 
   try {
     const engine = await getEngine();
-    const productResult = await engine
-      .listProducts({
-        search: trimmed,
-        limit: 10,
-      })
-      .catch(() => ({ items: [], total: 0 }));
+    // A failed product lookup must surface as unavailable (503), not an empty 200.
+    const productResult = await engine.listProducts({
+      search: trimmed,
+      limit: 10,
+    });
 
     const products: Suggestion[] = (productResult.items || []).map((p) => ({
       id: p.id,
@@ -59,11 +58,11 @@ export async function GET(request: NextRequest): Promise<NextResponse<Suggestion
       brands: [],
     });
   } catch {
-    // Upstream engine error: return honest empty groups without invented products
-    return NextResponse.json({
-      products: [],
-      categories: [],
-      brands: [],
-    });
+    // Upstream engine error: no invented products, and the status says search is
+    // unavailable so callers can tell it apart from a genuinely empty result.
+    return NextResponse.json(
+      { products: [], categories: [], brands: [] },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } },
+    );
   }
 }

@@ -72,9 +72,22 @@ describe('Search suggestions API route & fetcher', () => {
     vi.mocked(getEngine).mockRejectedValue(new Error('synthetic upstream unavailable'));
     const req = new NextRequest('http://localhost:3000/api/search/suggestions?q=creme');
     const res = await GET(req);
+    expect(res.status).toBe(503);
     const body = await res.json();
     expect(body.products).toEqual([]);
     expect(body.categories).toEqual([]);
+  });
+
+  it('reports unavailable (503), not an empty 200, when the product lookup fails', async () => {
+    vi.mocked(getEngine).mockResolvedValue({
+      listProducts: async () => {
+        throw new Error('synthetic product lookup failure');
+      },
+      listCategories: async () => [],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loosely typed test fixture
+    } as any);
+    const res = await GET(new NextRequest('http://localhost:3000/api/search/suggestions?q=creme'));
+    expect(res.status).toBe(503);
   });
 
   it('must preserve a genuinely empty upstream catalog', async () => {
@@ -85,6 +98,7 @@ describe('Search suggestions API route & fetcher', () => {
     } as any);
     const req = new NextRequest('http://localhost:3000/api/search/suggestions?q=creme');
     const res = await GET(req);
+    expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.products).toEqual([]);
     expect(body.categories).toEqual([]);
