@@ -152,3 +152,11 @@ Read with `release/CORRECTION_2026-10-11.md` and `release/READINESS_2026-10-11.m
 - Search suggestions now return 503 (not an empty 200) when the upstream lookup fails.
 - Ran the CI commands locally on this tree: `pnpm -r lint` 0 errors (35 warnings), `pnpm -r typecheck` 0 errors, `pnpm test` 607/607, `pnpm hub:test` 0 fail, `pnpm --filter storefront build` exit 0. This is a local run, not the GitHub workflow, and not a pinned-SHA verifier gate.
 - Shell note: the `pnpm` on PATH points to a replaced Codex runtime folder (`ad3b…`). The newer folder (`cfb3…`) works via `corepack pnpm` with `COREPACK_ENABLE_NETWORK=0`. PATH was not changed.
+
+## 2026-10-12 — agent tooling: WordPress MCP and Playwright
+
+- **Playwright:** `playwright-cli` 0.1.22 installed globally (cheapest for agents: snapshots go to files). Playwright MCP 0.0.83 registered for Claude Code (user scope) and Codex (`~/.codex/config.toml`, backup beside it) with `--headless --isolated --snapshot-mode none --image-responses omit --console-level error`. Call `browser_snapshot` when page state is needed. Verified: CLI opened `http://paraloca.local`.
+- **WordPress MCP:** registered for both agents, running `plugins/wordpress-mcp/server.py` (46 proxy tools). Installed on the isolated `paraloca.local` site only: `vendor/` at the site root and `wp-content/mu-plugins/load-mcp-adapter.php`. Admin user `bassim` has an application password named `claude-codex-mcp-2026-10-12`, stored only in the gitignored `plugins/wordpress-mcp/sites.json` and the site database. Verified: `get_info` returns WordPress 7.1.3 / PHP 8.2.29.
+- **Rollback:** delete the two site items above and revoke the application password (`wp user application-password delete bassim <uuid>`). Fresh DB backup before the change: `Local Sites/paraloca/ecomos-backups/pre-mcp-2026-10-12/database.sql` (outside the repo).
+- **Scope warning:** this gives agents admin-level control of the site. Local staging only; do not copy to a production site without a limited-permission user. The submodule `plugins/wordpress-mcp` was not modified (its `composer.json` change predates this).
+- **Windows tip:** WP-CLI against Local needs Local's generated `php.ini` (`AppData/Roaming/Local/run/<id>/conf/php`) and `--host=127.0.0.1 --port=10005` for `db export`.
