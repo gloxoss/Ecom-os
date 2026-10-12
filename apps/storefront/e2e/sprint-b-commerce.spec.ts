@@ -17,7 +17,7 @@ import { test, expect, devices, type APIRequestContext, type Page } from '@playw
  * ECOM_CHROME_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe"
  */
 
-const STAGING = process.env.ECOM_STAGING_URL || 'http://paraloca.local';
+const STAGING = process.env.ECOM_STAGING_URL || 'https://paraloca.local';
 const LIVE_MUTATIONS = process.env.ECOM_LIVE_MUTATIONS === '1';
 const HPOS_CREDS = Boolean(
   process.env.WC_REST_URL && process.env.WC_REST_KEY && process.env.WC_REST_SECRET
@@ -25,7 +25,7 @@ const HPOS_CREDS = Boolean(
 const CHROME_PATH =
   process.env.ECOM_CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
-test.use({ launchOptions: { executablePath: CHROME_PATH } });
+test.use({ launchOptions: { executablePath: CHROME_PATH }, ignoreHTTPSErrors: true });
 
 interface FixtureSet {
   simpleId: number;
@@ -173,11 +173,13 @@ async function fillGuestAddress(page: Page): Promise<void> {
   await page.fill('input[name="firstName"]', GUEST.firstName);
   await page.fill('input[name="lastName"]', GUEST.lastName);
   await page.fill('input[name="phone"]', GUEST.phone);
-  await page.fill('input[name="address1"]', GUEST.address1);
+  await page.fill('textarea[name="address1"], input[name="address1"]', GUEST.address1);
   await page.fill('input[name="city"]', GUEST.city);
   await page.fill('input[name="postcode"]', GUEST.postcode);
   const country = page.locator('select[name="country"]');
   if (await country.isVisible()) await country.selectOption(GUEST.country);
+  const state = page.locator('select[name="state"]');
+  if (await state.isVisible()) await state.selectOption({ index: 1 });
 }
 
 test.describe('ECO-1201 guest catalog and PDP (read-only)', () => {
@@ -205,7 +207,9 @@ test.describe('ECO-1201 guest catalog and PDP (read-only)', () => {
     if (await search.isVisible()) {
       await search.fill(fixtures.simpleSku);
       await page.keyboard.press('Enter');
-      await expect(page.locator(`text=${fixtures.simpleSku}`).first()).toBeVisible({ timeout: 20000 });
+      await page.waitForURL(/\/search/, { timeout: 15000 }).catch(() => {});
+      const resultMatch = page.locator(`a[href*="${fixtures.simpleId}"], a[href*="ecomos-test-simple"]`).first();
+      await expect(resultMatch).toBeVisible({ timeout: 20000 });
     } else {
       test.info().annotations.push({
         type: 'not-measured',
@@ -227,7 +231,7 @@ test.describe('ECO-1201 guest catalog and PDP (read-only)', () => {
     await page.goto(`/product/${slug}`);
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 20000 });
 
-    const optionButtons = page.locator('[role="option"], button[class*="variation"], button[class*="option"]');
+    const optionButtons = page.locator('[role="radio"], [role="option"], button[class*="variation"], button[class*="option"]');
     const optionCount = await optionButtons.count();
     test.info().annotations.push({ type: 'observation', description: `variation options rendered: ${optionCount}` });
     if (optionCount > 0) {
@@ -276,6 +280,8 @@ test.describe('ECO-1201 cart edits (staging mutations)', () => {
     )[0];
     const slug = typeof variable?.slug === 'string' ? variable.slug : 'ecomos-test-variable';
     await page.goto(`/product/${slug}`);
+    const options = page.locator('[role="radio"]');
+    if ((await options.count()) > 0) await options.first().click();
     await page.locator('button', { hasText: /add to (bag|cart)/i }).first().click();
 
     const bagLink = page.locator('a[href="/cart"]').first();
@@ -288,15 +294,19 @@ test.describe('ECO-1201 cart edits (staging mutations)', () => {
     await page.reload();
     await expect(page.locator('text=Your cart is currently empty')).toHaveCount(0);
 
+    const increaseBtn = page.locator('button[aria-label="Increase quantity"]').first();
     const qtyInput = page.locator('input[type="number"], input[name="quantity"]').first();
-    if (await qtyInput.isVisible()) {
+    if (await increaseBtn.isVisible()) {
+      await increaseBtn.click();
+      await expect(page.locator('text=Your cart is currently empty')).toHaveCount(0);
+    } else if (await qtyInput.isVisible()) {
       await qtyInput.fill('2');
       await expect(page.locator('text=Your cart is currently empty')).toHaveCount(0);
     } else {
       test.info().annotations.push({ type: 'not-measured', description: 'No quantity control on cart UI revision.' });
     }
 
-    const remove = page.locator('button', { hasText: /remove|retirer|supprimer/i }).first();
+    const remove = page.locator('button[aria-label="Remove item"], button:has-text("remove"), button:has-text("retirer"), button:has-text("supprimer")').first();
     if (await remove.isVisible()) {
       await remove.click();
       await expect(page.locator('text=Your cart is currently empty')).toBeVisible({ timeout: 20000 });
@@ -319,12 +329,14 @@ test.describe('ECO-1201 COD checkout to owned confirmation (staging mutations)',
     }
   });
 
-  async function buyOnce(page: Page, tag: string): Promise<{ orderRef: string }> {
+  async function buyOnce(page: Page, tag: string): Promise<{ orderRef: string; token: string }> {
     await page.goto('/');
     const productLink = page.locator('a[href*="/product/"]').first();
     await expect(productLink).toBeVisible({ timeout: 20000 });
     await productLink.click();
     await page.waitForURL(/\/product\//);
+    const options = page.locator('[role="radio"]');
+    if ((await options.count()) > 0) await options.first().click();
     await page.locator('button', { hasText: /add to (bag|cart)/i }).first().click();
     await page.locator('a[href="/cart"]').first().click();
     await page.waitForURL(/\/cart$/);
@@ -334,14 +346,16 @@ test.describe('ECO-1201 COD checkout to owned confirmation (staging mutations)',
     await fillGuestAddress(page);
     const cod = page.locator('#payment-cod');
     if (await cod.isVisible()) await cod.check();
-    const submit = page.locator('button[type="submit"]').first();
+    const submit = page.locator('button:has-text("Place Order"), button:has-text("Passer la commande"), form:not([role="search"]) button[type="submit"]').first();
     await submit.click();
     await page.waitForURL(/\/checkout\/success/, { timeout: 60000 });
-    const heading = (await page.locator('h1').first().textContent())?.trim() ?? '';
-    const refMatch = heading.match(/#?\d{2,}/) ?? (await page.content()).match(/order[^<>]*#?\d{2,}/i);
-    const orderRef = refMatch ? refMatch[0] : '';
+    const url = new URL(page.url());
+    const hash = page.url().split('#')[1] || '';
+    const token = hash.startsWith('token=') ? decodeURIComponent(hash.slice(6)) : '';
+    const orderRef = url.searchParams.get('order') || '';
+    await expect(page.locator('text=/Commande enregistrée|Commande confirmée/i')).toBeVisible({ timeout: 15000 });
     test.info().annotations.push({ type: 'observation', description: `${tag} success ref: ${orderRef || 'unparsed'}` });
-    return { orderRef };
+    return { orderRef, token };
   }
 
   test('full journey creates exactly one COD order matching HPOS lines and totals', async ({ page, request }) => {
@@ -356,7 +370,7 @@ test.describe('ECO-1201 COD checkout to owned confirmation (staging mutations)',
       return;
     }
     const before = await hposRecentIds(120);
-    const { orderRef } = await buyOnce(page, 'first-purchase');
+    const { orderRef, token } = await buyOnce(page, 'first-purchase');
     expect(orderRef.length).toBeGreaterThan(0);
 
     const after = await hposRecentIds(120);
@@ -374,6 +388,23 @@ test.describe('ECO-1201 COD checkout to owned confirmation (staging mutations)',
     });
     const hposKeys = order.lines.map((l) => `${l.variationId > 0 ? `v:${l.variationId}` : `p:${l.productId}`}x${l.quantity}`).sort();
     expect(hposKeys.length).toBeGreaterThan(0);
+
+    if (token) {
+      const ownerRes = await request.get(`/api/orders/status?orderId=${orderRef}`, {
+        headers: { 'x-order-token': token },
+      });
+      expect(ownerRes.status()).toBe(200);
+      const ownerData = (await ownerRes.json()) as { ok?: boolean; orderId?: string };
+      expect(ownerData.ok).toBe(true);
+
+      const foreignRes = await request.get(`/api/orders/status?orderId=${orderRef}`, {
+        headers: { 'x-order-token': 'invalid_token_12345' },
+      });
+      expect(foreignRes.status()).toBe(403);
+
+      const noTokenRes = await request.get(`/api/orders/status?orderId=${orderRef}`);
+      expect(noTokenRes.status()).toBe(400);
+    }
   });
 
   test('repeated submit of one attempt cannot mint a second order', async ({ page, request }) => {
@@ -464,6 +495,8 @@ test.describe('ECO-1201 mobile viewport (read-only)', () => {
       await page.locator('a[href*="/product/"]').first().click();
       await page.waitForURL(/\/product\//);
       await expect(page.locator('h1').first()).toBeVisible({ timeout: 20000 });
+      const options = page.locator('[role="radio"]');
+      if ((await options.count()) > 0) await options.first().click();
       await expect(page.locator('button', { hasText: /add to (bag|cart)/i }).first()).toBeVisible();
     } finally {
       await mobile.close();
