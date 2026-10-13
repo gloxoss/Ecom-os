@@ -22,7 +22,7 @@ $manifest = get_option('ecomos_instance_fixture_manifest');
 
 if ($mode === 'remove') {
     if (!$manifest) { WP_CLI::line('No fixtures recorded.'); return; }
-    foreach (array_filter(array($manifest['variationId'], $manifest['variableId'], $manifest['simpleId'])) as $id) {
+    foreach (array_filter(array($manifest['variationId'], $manifest['variableId'], $manifest['simpleId'], isset($manifest['bedId']) ? $manifest['bedId'] : 0)) as $id) {
         wp_delete_post((int) $id, true);
     }
     if (!empty($manifest['categoryId'])) wp_delete_term((int) $manifest['categoryId'], 'product_cat');
@@ -109,5 +109,22 @@ if (!$manifest) {
 }
 if ((int) $manifest['version'] !== $version) {
     throw new RuntimeException('Unsupported existing fixture version.');
+}
+
+// Third product so quote (RFQ) journeys can build a basket of three distinct items.
+if (empty($manifest['bedId']) && !wc_get_product_id_by_sku('ECOMOS-TEST-BED')) {
+    $bed = new WC_Product_Simple();
+    $bed->set_name('EcomOS TEST medical bed');
+    $bed->set_slug('ecomos-test-bed');
+    $bed->set_sku('ECOMOS-TEST-BED');
+    $bed->set_status('publish');
+    $bed->set_description('Synthetic quote fixture. Not a merchant product.');
+    $bed->set_regular_price('850.00');
+    $bed->set_manage_stock(true);
+    $bed->set_stock_quantity(5);
+    $bed->set_category_ids(array((int) $manifest['categoryId']));
+    $bed->update_meta_data('_ecomos_instance_fixture', $version);
+    $manifest['bedId'] = $bed->save();
+    update_option('ecomos_instance_fixture_manifest', $manifest, false);
 }
 WP_CLI::line(wp_json_encode($manifest));

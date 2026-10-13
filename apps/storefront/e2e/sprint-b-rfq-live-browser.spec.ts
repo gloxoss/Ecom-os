@@ -8,10 +8,28 @@ import path from 'node:path';
 const CHROME_PATH =
   process.env.ECOM_CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
+const STAGING = process.env.ECOM_STAGING_URL ?? 'https://paraloca.local';
+
+/** Look the synthetic fixtures up by SKU: product IDs differ between sites. */
+async function findFixtures() {
+  const res = await fetch(`${STAGING}/wp-json/wc/store/v1/products?per_page=100&orderby=date&order=asc`);
+  const list = (await res.json()) as Array<{ id: number; sku: string; variations?: Array<{ id: number }> }>;
+  const bySku = (sku: string) => list.find((p) => p.sku === sku);
+  const simple = bySku('ECOMOS-TEST-SIMPLE');
+  const variable = bySku('ECOMOS-TEST-VARIABLE');
+  const bed = bySku('ECOMOS-TEST-BED');
+  const variation = variable?.variations?.[0]?.id;
+  if (!simple || !variable || !variation || !bed) {
+    throw new Error('RFQ fixtures missing (need ECOMOS-TEST-SIMPLE, ECOMOS-TEST-VARIABLE with a variation, ECOMOS-TEST-BED). Run scripts/seed-instance-fixtures.php');
+  }
+  return { simple: simple.id, variable: variable.id, variation, bed: bed.id };
+}
+
 test.use({ launchOptions: { executablePath: CHROME_PATH }, ignoreHTTPSErrors: true });
 
 test.describe('Live Real-Browser Quotation Journey (Chromium)', () => {
   test('Full UI journey: Entry on PDP, Quote Builder, Quote Reopen, Offer Review & Accept', async ({ page }) => {
+    const fx = await findFixtures();
     // 1. Visit PDP and test Entry Method 1: Ajouter au devis pro
     await page.goto(`${BASE}/product/ecomos-test-variable`);
     const addToQuoteBtn = page.locator('button:has-text("Ajouter au devis pro")').first();
@@ -37,9 +55,9 @@ test.describe('Live Real-Browser Quotation Journey (Chromium)', () => {
         companyName: 'Clinique Internationale de Fès',
       },
       items: [
-        { productId: 12, sku: 'ECOMOS-TEST-SIMPLE', title: 'EcomOS TEST simple item', quantity: 3, unitPriceEstimated: 39.95 },
-        { productId: 13, variationId: 14, sku: 'ECOMOS-TEST-VARIABLE', title: 'EcomOS TEST variable item - Standard', quantity: 2, unitPriceEstimated: 79.50 },
-        { productId: 21, sku: 'ECOMOS-TEST-BED', title: 'EcomOS TEST Lit Medicalise', quantity: 1, unitPriceEstimated: 850.00 }
+        { productId: fx.simple, sku: 'ECOMOS-TEST-SIMPLE', title: 'EcomOS TEST simple item', quantity: 3, unitPriceEstimated: 39.95 },
+        { productId: fx.variable, variationId: fx.variation, sku: 'ECOMOS-TEST-VARIABLE', title: 'EcomOS TEST variable item - Standard', quantity: 2, unitPriceEstimated: 79.50 },
+        { productId: fx.bed, sku: 'ECOMOS-TEST-BED', title: 'EcomOS TEST Lit Medicalise', quantity: 1, unitPriceEstimated: 850.00 }
       ],
       consents: [
         { consentId: 'terms_and_conditions', grantedAt: new Date().toISOString() },
@@ -72,9 +90,9 @@ test.describe('Live Real-Browser Quotation Journey (Chromium)', () => {
         currency: 'MAD',
         notes: 'Offre hospitalière validée',
         lines: [
-          { productId: 12, sku: 'ECOMOS-TEST-SIMPLE', title: 'EcomOS TEST simple item', quantity: 3, unitPriceExclTax: 30.0, taxRate: 0.2 },
-          { productId: 13, variationId: 14, sku: 'ECOMOS-TEST-VARIABLE', title: 'EcomOS TEST variable item - Standard', quantity: 2, unitPriceExclTax: 65.0, taxRate: 0.2 },
-          { productId: 21, sku: 'ECOMOS-TEST-BED', title: 'EcomOS TEST Lit Medicalise', quantity: 1, unitPriceExclTax: 750.0, taxRate: 0.2 }
+          { productId: fx.simple, sku: 'ECOMOS-TEST-SIMPLE', title: 'EcomOS TEST simple item', quantity: 3, unitPriceExclTax: 30.0, taxRate: 0.2 },
+          { productId: fx.variable, variationId: fx.variation, sku: 'ECOMOS-TEST-VARIABLE', title: 'EcomOS TEST variable item - Standard', quantity: 2, unitPriceExclTax: 65.0, taxRate: 0.2 },
+          { productId: fx.bed, sku: 'ECOMOS-TEST-BED', title: 'EcomOS TEST Lit Medicalise', quantity: 1, unitPriceExclTax: 750.0, taxRate: 0.2 }
         ]
       })
     });
