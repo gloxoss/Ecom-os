@@ -10,6 +10,8 @@ All notable changes to the EcomOS codebase across all development phases are doc
 
 - **Fixed:** `THEME_NAME` from `.env.local` is honored by the theme generator; an unknown theme fails loudly.
 - **Added:** `scripts/seed-instance-fixtures.php`, configurable Playwright `STOREFRONT_URL`, connector-role guidance.
+- **Fixed (tests):** the live RFQ browser spec no longer depends on the starter site: it reads `STOREFRONT_URL`, `ECOM_STAGING_URL`, finds fixtures by SKU and takes staff credentials from `ECOM_RFQ_WP_*`.
+- **Proven on an instance:** the ParaLoca instance (own WordPress, own database, HPOS only, no legacy sync) passes the guest checkout spec (8 passed, 1 not measured) and the RFQ browser journey, and a staff quote-to-order conversion is idempotent.
 - **Migration:** see `MIGRATIONS.md` section 1.0.0-rc.4.
 
 ## [1.0.0-rc.3] - 2026-10-13

@@ -36,6 +36,10 @@ wp cap add ecomos_connector read manage_woocommerce read_private_shop_orders rea
 
 Use two users with this role (catalog reader with a `read` REST key, RFQ bridge with an application password). Confirm reads return 200 and writes (`POST /orders`, `PUT /settings/...`) return 401. Never use an administrator login in the storefront.
 
+## Application passwords
+
+`WP_Application_Passwords::create_new_application_password()` returns `[plain_password, item]`. Use index 0. Saving the item (index 1) stores a useless value and the storefront then fails with `INCORRECT_PASSWORD`. Write the secret straight into `.env.local`; never print it.
+
 ## Fixtures (local test sites only)
 
 `wp eval-file scripts/seed-instance-fixtures.php` seeds synthetic products and a Morocco delivery zone; `... remove` deletes them. Remove them before real content.

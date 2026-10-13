@@ -1,6 +1,6 @@
 # ParaLoca instance plan
 
-**Status:** proposal for owner review, 2026-10-13. Nothing here has been executed.
+**Status:** steps 1 to 6 executed on 2026-10-13 for the instance `ParaLoca/paraloca-store` (site `paraloca-store.local`, own database, HPOS only). Instance setup report: `paraloca-store/docs/instances/SETUP_2026-10-13.md`. Still open: ParaLoca storefront content (ledger item 15), merchant approvals, real catalog, hosting, launch authorization.
 **Sources read:** `00-PRODUCT-VISION-AND-SCOPE.md`, ADR-003 (one app per client), `docs/ecomos/INSTALL.md`, `EXTENDING.md` section 5, `operations/PROVISION.md`, `clients/paraloca/README.md`, `release/CORRECTION_2026-10-11.md`.
 
 ## Model
