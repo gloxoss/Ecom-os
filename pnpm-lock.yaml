@@ -41,6 +41,9 @@ importers:
       '@ecom-os/addons-multi-payment':
         specifier: workspace:*
         version: link:../../packages/addons-multi-payment
+      '@ecom-os/addons-rfq':
+        specifier: workspace:*
+        version: link:../../packages/addons-rfq
       '@ecom-os/brand-config':
         specifier: workspace:*
         version: link:../../packages/brand-config
