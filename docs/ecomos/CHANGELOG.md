@@ -6,6 +6,16 @@ All notable changes to the EcomOS codebase across all development phases are doc
 
 ---
 
+## [1.0.0-rc.2] - 2026-10-13
+
+First release cut with git tags and instance tooling. A release candidate, not production-certified (see `release/CORRECTION_2026-10-13_LIVE.md`).
+
+- **Fixed:** order recovery no longer reports "not found" after a capped scan; search suggestions report 503 instead of an empty 200 on upstream failure; storefront lint is clean (0 errors); `typescript` pinned in two packages; `@ecom-os/addons-rfq` added to the lockfile so a fresh install works.
+- **Tested live on HPOS:** guest COD checkout, duplicate-submit guard, RFQ browser journey and staff quote-to-order conversion with idempotent replay.
+- **Added:** `scripts/ecomos-release.mjs` (validate, bump, tag), `scripts/ecomos-upgrade.mjs` (preview or apply a starter update in an instance), `docs/ecomos/MIGRATIONS.md`, `docs/ecomos/FIX_LEDGER.md`, `docs/ecomos/UPDATING_INSTANCES.md`, `docs/ecomos/PARALOCA_INSTANCE_PLAN.md`, and the `ecomos-*` skills for instances.
+- **Migration:** see `MIGRATIONS.md` section 1.0.0-rc.2.
+- **Not done:** application rollback rehearsal, exact indexed order correlation, a second isolated client, merchant approvals.
+
 ## [1.0.0] - 2026-10-10
 
 ### Phase 9: Release Readiness, Hardening & Final Launch Gate
