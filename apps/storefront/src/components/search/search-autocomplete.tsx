@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useTranslations } from "next-intl";
 import { useDebouncedSuggestions } from "./use-debounced-suggestions";
 import {
   countSuggestions,
@@ -160,6 +161,7 @@ function SuggestionList({
   activeIndex: number;
   onPick: (suggestion: Suggestion) => void;
 }) {
+  const t = useTranslations("search");
   const productStart = 0;
   const categoryStart = groups.products.length;
   const brandStart = categoryStart + groups.categories.length;
@@ -167,11 +169,11 @@ function SuggestionList({
     <ul
       id={listId}
       role="listbox"
-      aria-label="Search suggestions"
+      aria-label={t("suggestions")}
       className="flex max-h-[60vh] flex-col gap-1 overflow-y-auto p-1"
     >
       <GroupSection
-        title="Products"
+        title={t("groupProducts")}
         items={groups.products}
         listId={listId}
         startIndex={productStart}
@@ -179,7 +181,7 @@ function SuggestionList({
         onPick={onPick}
       />
       <GroupSection
-        title="Categories"
+        title={t("groupCategories")}
         items={groups.categories}
         listId={listId}
         startIndex={categoryStart}
@@ -187,7 +189,7 @@ function SuggestionList({
         onPick={onPick}
       />
       <GroupSection
-        title="Brands"
+        title={t("groupBrands")}
         items={groups.brands}
         listId={listId}
         startIndex={brandStart}
@@ -201,14 +203,19 @@ function SuggestionList({
 export function SearchAutocomplete({
   fetchSuggestions,
   onSelect,
-  placeholder = "Search products, categories, brands",
+  placeholder,
   debounceMs,
   minQueryLength = 2,
   searchHref = (query) => `/search?q=${encodeURIComponent(query)}`,
-  inputLabel = "Search the catalog",
+  inputLabel,
   popularSearches = DEFAULT_POPULAR_SEARCHES,
   isOffline: isOfflineProp,
 }: SearchAutocompleteProps) {
+  const t = useTranslations("search");
+  // Callers that already translate may pass their own copy; otherwise the
+  // catalogue supplies it, so no user-visible string is stuck in English.
+  const resolvedPlaceholder = placeholder ?? t("defaultPlaceholder");
+  const resolvedInputLabel = inputLabel ?? t("inputLabel");
   const { query, setQuery, snapshot, retry, clear } =
     useDebouncedSuggestions({ fetchSuggestions, debounceMs, minQueryLength });
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -346,7 +353,7 @@ export function SearchAutocomplete({
             className="flex items-center gap-2 rounded-md bg-amber-50 p-2.5 text-xs text-amber-800"
           >
             <span aria-hidden="true" className="font-bold">⚠</span>
-            <span>You are currently offline. Showing recent and popular terms.</span>
+            <span>{t("offlineRecent")}</span>
           </div>
         ) : null}
 
@@ -354,14 +361,14 @@ export function SearchAutocomplete({
           <div>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-                Recent Searches
+                {t("recent")}
               </span>
               <button
                 type="button"
                 onClick={handleClearRecent}
                 className="text-[11px] font-medium text-neutral-400 hover:text-neutral-700 underline"
               >
-                Clear all
+                {t("clearAll")}
               </button>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -380,7 +387,7 @@ export function SearchAutocomplete({
                   </button>
                   <button
                     type="button"
-                    aria-label={`Remove recent search ${item}`}
+                    aria-label={t("removeRecent", { term: item })}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={(e) => handleRemoveRecent(e, item)}
                     className="ml-0.5 text-neutral-400 hover:text-neutral-700"
@@ -396,7 +403,7 @@ export function SearchAutocomplete({
         {popularSearches.length > 0 ? (
           <div>
             <span className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-              Popular Searches
+              {t("popular")}
             </span>
             <div className="flex flex-wrap gap-1.5">
               {popularSearches.map((term) => (
@@ -425,7 +432,7 @@ export function SearchAutocomplete({
     if (snapshot.status === "loading") {
       return (
         <p role="status" className="px-4 py-6 text-sm text-neutral-600">
-          Searching…
+          {t("searching")}
         </p>
       );
     }
@@ -433,9 +440,7 @@ export function SearchAutocomplete({
       return (
         <div role="alert" className="flex flex-col gap-2 px-4 py-6">
           <p className="text-sm text-neutral-900">
-            {isOffline
-              ? "You are currently offline. Search is unavailable."
-              : "Search is unavailable right now."}
+            {isOffline ? t("offlineUnavailable") : t("unavailable")}
           </p>
           {!isOffline ? (
             <button
@@ -446,7 +451,7 @@ export function SearchAutocomplete({
               }}
               className="w-fit rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-100"
             >
-              Retry
+              {t("retry")}
             </button>
           ) : null}
         </div>
@@ -456,7 +461,7 @@ export function SearchAutocomplete({
       return (
         <div role="alert" className="flex flex-col gap-2 px-4 py-6">
           <p className="text-sm text-neutral-900">
-            Too many searches in a short time. Please wait a moment.
+            {t("rateLimited")}
           </p>
           <button
             type="button"
@@ -466,7 +471,7 @@ export function SearchAutocomplete({
             }}
             className="w-fit rounded-md border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-100"
           >
-            Try again
+            {t("tryAgain")}
           </button>
         </div>
       );
@@ -474,7 +479,7 @@ export function SearchAutocomplete({
     if (snapshot.status === "ready" && isEmptyGroups(snapshot.groups)) {
       return (
         <p role="status" className="px-4 py-6 text-sm text-neutral-600">
-          No matches for “{snapshot.query}”. Try a full product name, SKU, category, or brand.
+          {t("noMatches", { query: snapshot.query })}
         </p>
       );
     }
@@ -500,7 +505,7 @@ export function SearchAutocomplete({
     return (
       <form
         role="search"
-        aria-label={inputLabel}
+        aria-label={resolvedInputLabel}
         onSubmit={(event) => {
           event.preventDefault();
           if (open && isQueryActive && activeIndex >= 0 && activeIndex < total) {
@@ -531,19 +536,19 @@ export function SearchAutocomplete({
                 window.setTimeout(() => setOpen(false), 150);
               }}
               onKeyDown={(event) => handleInputKeyDown(event)}
-              placeholder={placeholder}
+              placeholder={resolvedPlaceholder}
               role="combobox"
               aria-expanded={showPanel}
               aria-controls={currentListId}
               aria-activedescendant={activeId}
               aria-autocomplete="list"
-              aria-label={inputLabel}
+              aria-label={resolvedInputLabel}
               className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none placeholder:text-neutral-500 focus:border-neutral-900"
             />
             {query.length > 0 ? (
               <button
                 type="button"
-                aria-label="Clear search"
+                aria-label={t("clearSearch")}
                 onClick={() => {
                   clear();
                   setActiveIndex(-1);
@@ -559,7 +564,7 @@ export function SearchAutocomplete({
             type="submit"
             className="flex-none rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-700"
           >
-            Search
+            {t("button")}
           </button>
         </div>
         {showPanel ? (
@@ -571,7 +576,7 @@ export function SearchAutocomplete({
                 onClick={() => submitFullSearch()}
                 className="w-full border-t border-neutral-100 px-4 py-2 text-left text-xs font-medium text-neutral-600 hover:bg-neutral-50"
               >
-                See all {countSuggestions(snapshot.groups)} results for “{query.trim()}” →
+                {t("seeAll", { count: countSuggestions(snapshot.groups), query: query.trim() })}
               </button>
             ) : null}
           </div>
@@ -589,7 +594,7 @@ export function SearchAutocomplete({
       <div className="md:hidden">
         <button
           type="button"
-          aria-label="Open search"
+          aria-label={t("openSearch")}
           aria-haspopup="dialog"
           onClick={() => {
             setMobileOpen(true);
@@ -606,14 +611,14 @@ export function SearchAutocomplete({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={inputLabel}
+          aria-label={resolvedInputLabel}
           className="fixed inset-0 z-[1100] flex flex-col bg-white md:hidden"
         >
           <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3">
-            <p className="text-sm font-semibold uppercase tracking-widest">Search</p>
+            <p className="text-sm font-semibold uppercase tracking-widest">{t("dialogTitle")}</p>
             <button
               type="button"
-              aria-label="Close search"
+              aria-label={t("closeSearch")}
               onClick={() => {
                 setMobileOpen(false);
                 setOpen(false);
