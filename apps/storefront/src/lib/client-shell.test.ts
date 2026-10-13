@@ -13,8 +13,7 @@ describe('getClientShell', () => {
     expect(getClientShell('other', registry)).toEqual({});
   });
 
-  it('starter ships no client shells', () => {
-    // Client content belongs to instances. If this fails, move that content to the instance.
-    expect(getClientShell('paraloca')).toEqual({});
+  it('falls back to the default storefront for an unknown client key', () => {
+    expect(getClientShell('definitely-not-a-client')).toEqual({});
   });
 });
