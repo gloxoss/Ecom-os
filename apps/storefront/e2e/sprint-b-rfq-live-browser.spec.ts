@@ -76,7 +76,12 @@ test.describe('Live Real-Browser Quotation Journey (Chromium)', () => {
     const { quoteId, quoteNumber, accessSecret } = quoteData;
 
     // 4. Staff creates offer revision with discounts
-    const creds = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), '../../.agent-hub/.runtime/staff-credentials.json'), 'utf8'));
+    // Staff credentials: the instance env (service user with manage_woocommerce) first, then the
+    // machine-local file used on the starter staging site.
+    const creds =
+      process.env.ECOM_RFQ_WP_USER && process.env.ECOM_RFQ_WP_APP_PASSWORD
+        ? { username: process.env.ECOM_RFQ_WP_USER, app_password: process.env.ECOM_RFQ_WP_APP_PASSWORD }
+        : JSON.parse(fs.readFileSync(path.resolve(process.cwd(), '../../.agent-hub/.runtime/staff-credentials.json'), 'utf8'));
     const staffBasicAuth = Buffer.from(`${creds.username}:${creds.app_password}`).toString('base64');
 
     const staffRes = await fetch(`https://paraloca.local/wp-json/ecomos/v1/rfq/quotes/${quoteId}/offers`, {
