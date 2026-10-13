@@ -6,6 +6,11 @@ All notable changes to the EcomOS codebase across all development phases are doc
 
 ---
 
+## [1.0.0-rc.3] - 2026-10-13
+
+- **Added:** `scripts/generate-clients.mjs` generates the client profile and theme registries from the folders on disk. Adding a client no longer edits `client-profile.ts` or the themes index. The guard fails if the generated files are stale.
+- **Migration:** see `MIGRATIONS.md` section 1.0.0-rc.3.
+
 ## [1.0.0-rc.2] - 2026-10-13
 
 First release cut with git tags and instance tooling. A release candidate, not production-certified (see `release/CORRECTION_2026-10-13_LIVE.md`).

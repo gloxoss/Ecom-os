@@ -28,5 +28,4 @@ From the instance root, tracked files clean:
 
 - Updates are manual merges driven by the preview script; there is no one-command provisioning (`operations/PROVISION.md`) and no automatic deploy.
 - `--verify` runs only the architecture guard and unit tests. Lint, typecheck, build and live specs stay your responsibility.
-- Registering a brand-new client still edits `apps/storefront/src/lib/client-profile.ts` in the starter (fix ledger item 7).
 - Database or plugin schema changes need their own migration notes and a backup step.
