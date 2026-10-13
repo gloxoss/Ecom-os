@@ -2,23 +2,31 @@
 
 An instance (for example `ParaLoca/paraloca-store`, next to this repo, branch `paraloca-instance`) is a git clone of this starter. Its remote `starter` points at the starter repo, so improvements flow one way: starter to instance.
 
+Agent skills for this workflow ship with the starter: `ecomos-instance-creation`, `ecomos-instance-updates`, `ecomos-upstream-first`, `ecomos-code-map` (in `.agents/skills/`, with pointers in `.claude/skills/`).
+
 ## Keep merges clean
 
 - Change core code (`packages/`, `apps/storefront/src`, `plugins/`, `scripts/`) only in the starter, then pull it into instances.
-- Client-specific work stays in client-owned places: `clients/<client>/`, `packages/themes/src/clients/<client>/`, `apps/storefront/.env.local`, content, and addons the client owns. These rarely conflict with starter changes.
-- If an instance needs a core change, make it in the starter (behind config or an addon) and pull it back. A hand edit to core in the instance becomes a merge conflict later.
+- Client-specific work stays in client-owned places: `clients/<client>/`, `packages/themes/src/clients/<client>/`, `apps/storefront/.env.local`, content, and addons the client owns.
+- A problem found in an instance is fixed in the starter first and logged in `FIX_LEDGER.md` (`ecomos-upstream-first`).
 
 ## Update steps
 
-1. In the instance: `git status` must be clean. Commit or stash first.
-2. `git fetch starter`, then read `git log HEAD..starter/<branch> --oneline` and the starter's `docs/ecomos/CHANGELOG.md`.
-3. `git merge starter/<branch>` (or merge a tagged release once tags exist).
-4. `pnpm install --frozen-lockfile`, then run guard, lint, typecheck, unit tests and build.
-5. Run the live specs against the instance's own staging site before deploying. Deploy staging first, production only with explicit authorization.
-6. If a starter change touches WordPress plugins, update them on the instance's WordPress through its own staged process and keep a database backup first.
+From the instance root, tracked files clean:
+
+1. Preview, changes nothing: `node scripts/ecomos-upgrade.mjs` (add `--to vX.Y.Z` to pick a release). It shows incoming commits, plugin and dependency changes, new migration notes, files changed on both sides and a trial merge.
+2. Read `MIGRATIONS.md` and `CHANGELOG.md`. Back up the instance database if WordPress plugins changed.
+3. Apply on a new branch: `node scripts/ecomos-upgrade.mjs --apply --verify`. Conflicts abort cleanly and leave your branch untouched.
+4. Run the full gate on the upgrade branch (guard, lint, typecheck, unit tests, build) and the live specs on the instance's staging site.
+5. Merge the upgrade branch into the instance branch. Production only with explicit authorization.
+
+## Releasing the starter
+
+`node scripts/ecomos-release.mjs X.Y.Z --verify` (dry run), then `--yes` to bump the version, commit and create annotated tag `vX.Y.Z`. It needs `CHANGELOG.md` and `MIGRATIONS.md` sections for that version and never pushes. Pre-releases use `-rc.N`. A tag is not a production certification.
 
 ## Limits today
 
-- There are no release tags or semantic versions yet. Until tagged releases exist, instances follow a starter branch tip, which is less safe than pinning a tag.
-- There is no automated upgrade or provisioning command (`PROVISION.md`). Updates are manual git merges.
-- Database or plugin schema changes need their own migration notes in the starter changelog.
+- Updates are manual merges driven by the preview script; there is no one-command provisioning (`operations/PROVISION.md`) and no automatic deploy.
+- `--verify` runs only the architecture guard and unit tests. Lint, typecheck, build and live specs stay your responsibility.
+- Registering a brand-new client still edits `apps/storefront/src/lib/client-profile.ts` in the starter (fix ledger item 7).
+- Database or plugin schema changes need their own migration notes and a backup step.
