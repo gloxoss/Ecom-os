@@ -4,6 +4,10 @@ What an instance owner must do when updating from the starter. One section per r
 
 Write each note as: what changed, who is affected, exact steps, how to confirm, how to roll back. Cover four areas when relevant: environment variables, dependencies, WordPress plugins and database, and behavior changes callers depend on.
 
+## 1.0.0-rc.6
+
+- **None required.** `apps/storefront/.ecomos/` is now ignored; if it was committed in an instance, remove it from the index (`git rm -r --cached apps/storefront/.ecomos`). Instances should set their own `apps/storefront/brand.config.ts` and commit the regenerated `brand.tokens.css` (see the creation skill).
+
 ## 1.0.0-rc.5
 
 - **New: client shell overrides.** A client can replace the page language (`htmlLang`), header, footer and home page by adding `apps/storefront/src/client-shells/<client-id>.tsx` exporting one `<name>Shell` constant (type `ClientShellOverrides` from `@/lib/client-shell`). `node scripts/generate-clients.mjs` registers it; `predev`/`prebuild` and the guard run it. With no file, nothing changes: the default storefront is used. `apps/storefront/src/clients.generated.ts` gains `generatedShells` (regenerated, commit it).

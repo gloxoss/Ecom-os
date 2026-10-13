@@ -6,6 +6,12 @@ All notable changes to the EcomOS codebase across all development phases are doc
 
 ---
 
+## [1.0.0-rc.6] - 2026-10-13
+
+- **Fixed:** `apps/storefront/.ecomos/` runtime store is git-ignored; a shared test no longer assumes the starter has no client shell.
+- **Docs:** creation skill covers the per-client `brand.config.ts`; ledger items 17 to 20.
+- **Migration:** see `MIGRATIONS.md` section 1.0.0-rc.6.
+
 ## [1.0.0-rc.5] - 2026-10-13
 
 - **Added:** client shell overrides (`client-shells/<id>.tsx`: `htmlLang`, `Header`, `Footer`, `Landing`) so a client instance can own its storefront without editing core files. The starter ships none.

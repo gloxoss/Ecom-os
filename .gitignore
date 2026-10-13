@@ -66,3 +66,6 @@ node_modules/.pnpm/@next+swc-win32-x64-msvc@16.2.10/node_modules/@next/swc-win32
 node_modules/.pnpm/@next+swc-win32-x64-msvc@16.2.9/node_modules/@next/swc-win32-x64-msvc/next-swc.win32-x64-msvc.node
 
 # Large Binary Exclusions (Detected during onboarding)
+
+# Runtime stores (checkout attempts and similar) written by the running storefront
+apps/storefront/.ecomos/
