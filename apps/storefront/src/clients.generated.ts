@@ -3,6 +3,7 @@ import type { ClientProfile } from '@ecom-os/brand-config';
 import type { ClientShellOverrides } from './lib/client-shell';
 import { demo2Profile } from '../../../clients/demo-2/profile';
 import { paralocaProfile } from '../../../clients/paraloca/profile';
+import { paralocaShell } from './client-shells/paraloca';
 
 export const generatedProfiles: Record<string, ClientProfile> = {
   "demo-2": demo2Profile,
@@ -10,4 +11,6 @@ export const generatedProfiles: Record<string, ClientProfile> = {
 };
 
 // Optional per-client storefront overrides (header, footer, landing, html lang).
-export const generatedShells: Record<string, ClientShellOverrides> = {};
+export const generatedShells: Record<string, ClientShellOverrides> = {
+  paraloca: paralocaShell,
+};
