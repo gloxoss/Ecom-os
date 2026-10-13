@@ -1,0 +1,78 @@
+warning: in the working copy of 'apps/storefront/src/styles/brand.tokens.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/storefront/src/styles/theme-vars.css', LF will be replaced by CRLF the next time Git touches it
+diff --git a/apps/storefront/src/styles/brand.tokens.css b/apps/storefront/src/styles/brand.tokens.css
+index 6d7a1e8..b341a01 100644
+--- a/apps/storefront/src/styles/brand.tokens.css
++++ b/apps/storefront/src/styles/brand.tokens.css
+@@ -7,22 +7,25 @@
+   --color-background: var(--brand-background);
+   --color-foreground: var(--brand-foreground);
+   --color-muted: var(--brand-muted);
+-  
++
+   --font-sans: var(--brand-font-sans);
+   --font-mono: var(--brand-font-mono);
+-  
++
+   --radius-sm: var(--brand-radius-sm);
+   --radius-md: var(--brand-radius-md);
+   --radius-lg: var(--brand-radius-lg);
+ }
+ 
++/* The palette itself lives in theme-vars.css, written from this same
++   resolution. Pointing the tokens at it is what keeps the two systems
++   from disagreeing. */
+ :root {
+-  --brand-primary: #aa631a;
+-  --brand-secondary: #c69951;
+-  --brand-accent: #ffcebf;
+-  --brand-background: #ffffff;
+-  --brand-foreground: #3f100a;
+-  --brand-muted: #d9a594;
++  --brand-primary: hsl(var(--primary));
++  --brand-secondary: hsl(var(--secondary));
++  --brand-accent: hsl(var(--accent));
++  --brand-background: hsl(var(--background));
++  --brand-foreground: hsl(var(--foreground));
++  --brand-muted: hsl(var(--muted));
+ 
+   --brand-font-sans: Inter Tight Variable, ui-sans-serif, system-ui, sans-serif;
+   --brand-font-mono: monospace, ui-monospace, monospace;
+diff --git a/apps/storefront/src/styles/theme-vars.css b/apps/storefront/src/styles/theme-vars.css
+index c663979..a49816b 100644
+--- a/apps/storefront/src/styles/theme-vars.css
++++ b/apps/storefront/src/styles/theme-vars.css
+@@ -1,26 +1,25 @@
+-/* AUTO-GENERATED: DO NOT EDIT */
++/* AUTO-GENERATED from apps/storefront/brand.config.ts and the active theme — DO NOT EDIT BY HAND */
+ @layer base {
+   :root {
+     --background: 0 0% 100%;
+-    --foreground: 7 73% 14%;
++    --foreground: 6.7925 72.6027% 14.3137%;
+     --card: 37 52% 55%;
+     --card-foreground: 0 0% 100%;
+     --popover: 0 0% 100%;
+     --popover-foreground: 7 73% 14%;
+-    --primary: 30 73% 38%;
++    --primary: 30.4167 73.4694% 38.4314%;
+     --primary-foreground: 0 0% 100%;
+-    --secondary: 37 52% 55%;
++    --secondary: 36.9231 50.6494% 54.7059%;
+     --secondary-foreground: 0 0% 100%;
+-    --muted: 15 45% 72%;
++    --muted: 14.7826 47.5862% 71.5686%;
+     --muted-foreground: 7 73% 14%;
+-    --accent: 14 100% 87%;
++    --accent: 14.0625 100% 87.451%;
+     --accent-foreground: 20 35% 13%;
+     --destructive: 0 84.2% 60.2%;
+     --destructive-foreground: 0 0% 98%;
+     --border: 14 100% 97%;
+     --input: 14 100% 97%;
+     --ring: 30 73% 38%;
+-    --radius: 1rem;
+-
++    --radius: 16px;
+   }
+ }

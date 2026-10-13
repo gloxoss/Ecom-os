@@ -7,22 +7,25 @@
   --color-background: var(--brand-background);
   --color-foreground: var(--brand-foreground);
   --color-muted: var(--brand-muted);
-  
+
   --font-sans: var(--brand-font-sans);
   --font-mono: var(--brand-font-mono);
-  
+
   --radius-sm: var(--brand-radius-sm);
   --radius-md: var(--brand-radius-md);
   --radius-lg: var(--brand-radius-lg);
 }
 
+/* The palette itself lives in theme-vars.css, written from this same
+   resolution. Pointing the tokens at it is what keeps the two systems
+   from disagreeing. */
 :root {
-  --brand-primary: #aa631a;
-  --brand-secondary: #c69951;
-  --brand-accent: #ffcebf;
-  --brand-background: #ffffff;
-  --brand-foreground: #3f100a;
-  --brand-muted: #d9a594;
+  --brand-primary: hsl(var(--primary));
+  --brand-secondary: hsl(var(--secondary));
+  --brand-accent: hsl(var(--accent));
+  --brand-background: hsl(var(--background));
+  --brand-foreground: hsl(var(--foreground));
+  --brand-muted: hsl(var(--muted));
 
   --brand-font-sans: Inter Tight Variable, ui-sans-serif, system-ui, sans-serif;
   --brand-font-mono: monospace, ui-monospace, monospace;

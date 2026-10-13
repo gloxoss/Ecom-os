@@ -1,26 +1,25 @@
-/* AUTO-GENERATED: DO NOT EDIT */
+/* AUTO-GENERATED from apps/storefront/brand.config.ts and the active theme — DO NOT EDIT BY HAND */
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 7 73% 14%;
+    --foreground: 6.7925 72.6027% 14.3137%;
     --card: 37 52% 55%;
     --card-foreground: 0 0% 100%;
     --popover: 0 0% 100%;
     --popover-foreground: 7 73% 14%;
-    --primary: 30 73% 38%;
+    --primary: 30.4167 73.4694% 38.4314%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 37 52% 55%;
+    --secondary: 36.9231 50.6494% 54.7059%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 15 45% 72%;
+    --muted: 14.7826 47.5862% 71.5686%;
     --muted-foreground: 7 73% 14%;
-    --accent: 14 100% 87%;
+    --accent: 14.0625 100% 87.451%;
     --accent-foreground: 20 35% 13%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 14 100% 97%;
     --input: 14 100% 97%;
     --ring: 30 73% 38%;
-    --radius: 1rem;
-
+    --radius: 16px;
   }
 }

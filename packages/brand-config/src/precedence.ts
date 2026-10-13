@@ -29,6 +29,9 @@ export interface ResolvedBrandConfiguration {
     mutedForeground: string;
     card: string;
     cardForeground: string;
+    popover: string;
+    popoverForeground: string;
+    input: string;
     border: string;
     ring: string;
     destructive: string;
@@ -63,6 +66,25 @@ export interface ResolvedBrandConfiguration {
   generateCSS: (selector?: string) => string;
 }
 
+/**
+ * Trim a float to at most `digits` decimals, dropping trailing zeros, so the
+ * emitted CSS stays readable ("30.4167", not "30.416700").
+ */
+function formatHslChannel(value: number, digits = 4): string {
+  return String(Number(value.toFixed(digits)));
+}
+
+/**
+ * Convert a brand colour to the bare HSL triplet the stylesheets use
+ * ("30.4167 73.4694% 38.4314%"), which callers read back as `hsl(<triplet>)`.
+ *
+ * The channels are deliberately NOT rounded to whole numbers. Rounding is lossy:
+ * #aa631a rounded to "30 73% 38%" renders as #a8611a, so every colour that took
+ * the trip would come back a shade off. 4 decimals keeps the worst-case error
+ * near 0.03/255, well inside the eight-bit rounding boundary, so
+ * `hsl(hexToHsl(c))` renders exactly `c` and the generated tokens cannot drift
+ * away from the brand file they came from.
+ */
 export function hexToHsl(value: string): string {
   const trimmed = value.trim();
   // If already in HSL format (e.g. "30 73% 38%" or "hsl(...)"), normalize it
@@ -104,10 +126,7 @@ export function hexToHsl(value: string): string {
     h /= 6;
   }
 
-  const hDeg = Math.round(h * 360);
-  const sPct = Math.round(s * 100);
-  const lPct = Math.round(l * 100);
-  return `${hDeg} ${sPct}% ${lPct}%`;
+  return `${formatHslChannel(h * 360)} ${formatHslChannel(s * 100)}% ${formatHslChannel(l * 100)}%`;
 }
 
 export const DEFAULT_COMMERCE_CONFIG: CommerceConfig = {
@@ -174,6 +193,10 @@ export function resolveBrandConfiguration(
       ? hexToHsl(profile.colors.card)
       : themeConfig.colors.card,
     cardForeground: themeConfig.colors.cardForeground,
+    // The profile schema has no popover or input colour, so these stay theme-only.
+    popover: themeConfig.colors.popover,
+    popoverForeground: themeConfig.colors.popoverForeground,
+    input: themeConfig.colors.input,
     border: profile.colors.border
       ? hexToHsl(profile.colors.border)
       : themeConfig.colors.border,
@@ -233,6 +256,9 @@ export function resolveBrandConfiguration(
     '--foreground': resolvedColors.foreground,
     '--card': resolvedColors.card,
     '--card-foreground': resolvedColors.cardForeground,
+    '--popover': resolvedColors.popover,
+    '--popover-foreground': resolvedColors.popoverForeground,
+    '--input': resolvedColors.input,
     '--primary': resolvedColors.primary,
     '--primary-foreground': resolvedColors.primaryForeground,
     '--secondary': resolvedColors.secondary,
