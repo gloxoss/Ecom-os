@@ -75,13 +75,19 @@ async function storeGet(request: APIRequestContext, path: string): Promise<unkno
 /** Discover the synthetic fixtures by SKU so the suite never hardcodes IDs. */
 async function findFixtures(request: APIRequestContext): Promise<FixtureSet | null> {
   try {
-    const products = (await storeGet(request, '/products?per_page=100')) as Array<Record<string, unknown>>;
+    // Oldest first, and prefer the ECOMOS-TEST SKUs: seeded scale products
+    // (ECOMOS-SCALE-*) would otherwise be picked as the "simple" fixture.
+    const products = (await storeGet(
+      request,
+      '/products?per_page=100&orderby=date&order=asc'
+    )) as Array<Record<string, unknown>>;
     const bySku = new Map<string, Record<string, unknown>>();
     for (const p of products) {
       if (p && typeof p.sku === 'string' && p.sku) bySku.set(p.sku, p);
     }
-    const simple = [...bySku.values()].find((p) => p.type === 'simple');
-    const variable = [...bySku.values()].find((p) => p.type === 'variable');
+    const isTestFixture = (p: Record<string, unknown>) => /^ECOMOS-TEST/i.test(String(p.sku ?? ''));
+    const simple = [...bySku.values()].find((p) => p.type === 'simple' && isTestFixture(p));
+    const variable = [...bySku.values()].find((p) => p.type === 'variable' && isTestFixture(p));
     if (!simple || !variable || typeof simple.id !== 'number' || typeof variable.id !== 'number') {
       return null;
     }

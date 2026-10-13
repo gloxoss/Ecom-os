@@ -29,3 +29,15 @@ Checked against the running `paraloca.local` database and the repository at `f78
 - Eight merchant approvals: UNAPPROVED.
 - Independent verifier result (`verification/LIVE-GATE`): not yet written at the time of this check.
 - Staging holds test data: 13 quotes (one stray `DEV-2026-9999`) and 9 orders.
+
+## Update 2026-10-13 (later): HPOS now actually tested
+
+Staging storage was switched from legacy posts to HPOS with sync on (`wp wc hpos enable --with-sync --ignore-plugin-compatibility`; the override was needed because WP-CLI reports "GraphQL for eCommerce" as undeclared although its code declares `custom_order_tables`). Backups taken before and after, outside the repo.
+
+- `wc_orders` now holds every order (19 at the time of the run) and legacy posts mirror it (sync mode). Guest COD orders 186 to 195: customer 0, `cod`, status `processing`.
+- `sprint-b-commerce.spec.ts`: 8 passed, 1 skipped (`excessive quantity`, NOT MEASURED: the default theme's product page has no quantity input). This includes catalog, variation, cart edits, full COD journey, duplicate-submit guard and a second purchase.
+- `sprint-b-rfq-live-browser.spec.ts`: 1 passed.
+- Staff conversion under HPOS: accepted quote DEV-2026-7908 became order 196 in `wc_orders` (customer 0, MAD, 3 lines, one linked order). A second convert call returned the same order with `isDuplicate: true`.
+- Test fix: the fixture finder in `sprint-b-commerce.spec.ts` picked a seeded scale product once 103 products existed. It now reads oldest-first and requires the `ECOMOS-TEST` SKU prefix.
+- Theme note: runs used the starter's default theme (`THEME_NAME=angelina`). That is expected: EcomOS is the starter and ParaLoca is a later instance. Reports that say "ParaLoca" mean the platform on its default theme.
+- Still NOT RUN: application/plugin rollback rehearsal, exact indexed order correlation (not implemented), second isolated client.

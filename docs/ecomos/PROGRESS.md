@@ -180,3 +180,10 @@ Execution of live acceptance items against the real local staging environment (`
 ## 2026-10-13 — check of the LIVE-001..009 run
 
 Independent spot check of `f781569` against the live database. Journeys ran and RFQ persistence is real, but several report claims were wrong (HPOS is off, "indexed correlation" is not implemented, LIVE-006 is not an application rollback, order numbers in the chat summary were wrong). See `release/CORRECTION_2026-10-13_LIVE.md`. Read that before citing LIVE-005 or LIVE-006.
+
+## 2026-10-13 — HPOS enabled on staging, Local recovery
+
+- HPOS is on for `paraloca.local` (sync mode). Guest checkout and RFQ conversion re-tested on it; see the update at the end of `release/CORRECTION_2026-10-13_LIVE.md`. Commerce spec 8 passed / 1 NOT MEASURED, RFQ browser spec 1 passed, staff conversion to order 196 verified with idempotent replay.
+- **Do not run `.agent-hub/.runtime/staging-supervisor.mjs`.** It launched Local's MySQL, PHP, nginx and mailpit outside the Local app with auto-restart. When Local was also started, the two collided: MySQL was left running as an orphan, held the database lock, and Local failed to start with "Unable to start site" (ports 10012 to 10014). Agents must use the Local app to start and stop the site, never raw service processes. MySQL data was preserved (backups in `Local Sites/paraloca/ecomos-backups/`: `pre-hpos`, `post-hpos`, `pre-restart`).
+- Local's MySQL port changes on every start. `~/wpl.sh` now reads it from Local's `my.cnf` and probes a range.
+- Instance plan for ParaLoca: `PARALOCA_INSTANCE_PLAN.md` (proposal, awaiting owner decisions).
