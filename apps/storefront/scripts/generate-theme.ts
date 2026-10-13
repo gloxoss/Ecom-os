@@ -1,9 +1,14 @@
 import fs from 'fs';
 import path from 'path';
-import { getTheme } from '@ecom-os/themes';
+import { themeRegistry } from '@ecom-os/themes';
+import { loadEnv } from '../../../scripts/generate-addons';
+
+// Load apps/storefront/.env.local like the addon generator does; without this THEME_NAME in
+// .env.local was ignored and the generator silently fell back to the default theme.
+loadEnv();
 
 const themeName = process.env.THEME_NAME || 'angelina';
-const theme = getTheme(themeName);
+const theme = themeRegistry[themeName];
 
 if (!theme) {
   console.error(`Theme "${themeName}" not found in registry!`);

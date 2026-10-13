@@ -25,6 +25,21 @@ Minimum `.env.local` keys: `ECOM_CLIENT_PROFILE`, `THEME_NAME`, `ADDONS` (for ex
 
 Local's MySQL port changes on every start and `wp` needs Local's generated `php.ini`. Read the port from the site's `conf/mysql/my.cnf` under `AppData/Roaming/Local/run/<id>/`, run PHP with `PHPRC=<run>/conf/php -d mysqli.default_port=<port>`, and pass `--host=127.0.0.1 --port=<port>` to `wp db export`.
 
+## Connector role (read-only REST key)
+
+Create a role with `read` and `manage_woocommerce`, then add the four read capabilities the storefront needs, or REST calls for orders, products, brands and coupons return 403:
+
+```
+wp role create ecomos_connector "EcomOS Connector"
+wp cap add ecomos_connector read manage_woocommerce read_private_shop_orders read_private_products read_private_shop_coupons manage_product_terms
+```
+
+Use two users with this role (catalog reader with a `read` REST key, RFQ bridge with an application password). Confirm reads return 200 and writes (`POST /orders`, `PUT /settings/...`) return 401. Never use an administrator login in the storefront.
+
+## Fixtures (local test sites only)
+
+`wp eval-file scripts/seed-instance-fixtures.php` seeds synthetic products and a Morocco delivery zone; `... remove` deletes them. Remove them before real content.
+
 ## Verify
 
 ```
