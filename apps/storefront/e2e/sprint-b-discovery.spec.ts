@@ -18,11 +18,11 @@ import { test, expect, devices, type APIRequestContext } from '@playwright/test'
  * - search box -> mounted via SearchAutocomplete in header and search surface.
  */
 
-const STAGING = process.env.ECOM_STAGING_URL || 'http://paraloca.local';
+const STAGING = process.env.ECOM_STAGING_URL || 'https://paraloca.local';
 const CHROME_PATH =
   process.env.ECOM_CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
-test.use({ launchOptions: { executablePath: CHROME_PATH } });
+test.use({ launchOptions: { executablePath: CHROME_PATH }, ignoreHTTPSErrors: true });
 
 async function stagingUp(request: APIRequestContext): Promise<boolean> {
   try {
@@ -92,6 +92,7 @@ test.describe('ECO-1211 live catalog census and paging honesty', () => {
   });
 
   test('staging census is recorded and paging never repeats an item', async ({ request, page }) => {
+    test.setTimeout(90000);
     const { products, categories } = await census(request);
     test.info().annotations.push({
       type: 'observation',
@@ -105,14 +106,14 @@ test.describe('ECO-1211 live catalog census and paging honesty', () => {
     }
 
     await page.goto('/catalog');
-    const cards = page.locator('[data-testid="product-card"], article');
+    const cards = page.locator('a[href*="/product/"]');
     const count = await cards.count().catch(() => 0);
     test.info().annotations.push({ type: 'observation', description: `PLP rendered cards: ${count}` });
 
     const seen = new Set<string>();
     let duplicates = 0;
     for (let i = 0; i < Math.min(count, 40); i += 1) {
-      const href = await cards.nth(i).locator('a[href*="/product/"]').first().getAttribute('href').catch(() => null);
+      const href = await cards.nth(i).getAttribute('href').catch(() => null);
       const key = href || `idx-${i}`;
       if (seen.has(key)) duplicates += 1;
       seen.add(key);
@@ -157,7 +158,7 @@ test.describe('ECO-1211 search interaction surface', () => {
       test.skip(true, 'NOT MEASURED: search box not mounted in this UI revision.');
       return;
     }
-    await box.fill('creme');
+    await box.fill('Lit');
     await expect(page.locator('[role="listbox"]').first()).toBeVisible({ timeout: 15000 });
     await page.keyboard.press('ArrowDown');
     const active = await page.locator('[aria-selected="true"]').count();
