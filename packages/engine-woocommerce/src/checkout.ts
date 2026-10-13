@@ -1,6 +1,6 @@
 import { storeApiFetch, type StoreAddress } from './cart';
 import { globalAttemptManager, CheckoutAttemptManager, attemptPayloadHash, BUSY_ATTEMPT_ERROR } from './checkout-attempts';
-import { restFetch } from './rest';
+import { restFetch, fetchOrderByAttempt, type AttemptRouteResult } from './rest';
 
 export interface StoreCheckoutInput {
   billing_address: StoreAddress;
@@ -120,6 +120,65 @@ export async function findOrderByAttemptCorrelation(
   opts: { email?: string | undefined; perPage?: number | undefined; maxPages?: number | undefined } = {}
 ): Promise<OrderCorrelation | null> {
   if (!attemptKey) throw new Error('Invalid checkout attempt key.');
+
+  // 1. Try exact indexed REST route first: GET /wp-json/ecomos/v1/orders/by-attempt/<id>
+  let routeResult: AttemptRouteResult | undefined;
+  try {
+    routeResult = await fetchOrderByAttempt(attemptKey);
+  } catch (err: unknown) {
+    const causeMsg = err instanceof Error && (err as any).cause ? ` (cause: ${(err as any).cause.message || (err as any).cause.code || (err as any).cause})` : '';
+    const msg = err instanceof Error ? `${err.message}${causeMsg}` : 'Request failed';
+    throw new Error(`Order recovery route request failed: ${msg}`);
+  }
+
+  if (routeResult.status === 200) {
+    const data = routeResult.data as Record<string, unknown> | null;
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      throw new Error('Malformed response from order recovery route.');
+    }
+    const orderId = data.orderId;
+    const orderKey = typeof data.orderKey === 'string' ? data.orderKey : '';
+    if (orderId === undefined || orderId === null || !orderKey) {
+      throw new Error('Malformed response from order recovery route: missing orderId or orderKey.');
+    }
+
+    const orderEmail =
+      typeof data.billingEmail === 'string'
+        ? data.billingEmail
+        : typeof data.email === 'string'
+          ? data.email
+          : '';
+
+    // Enforce email ownership barrier: matching attempt with different email returns null
+    if (opts.email) {
+      if (orderEmail.toLowerCase() !== opts.email.toLowerCase()) {
+        return null;
+      }
+    }
+
+    return {
+      orderId: orderId as string | number,
+      orderKey,
+      ...(opts.email ? { email: opts.email } : (orderEmail ? { email: orderEmail } : {})),
+    };
+  }
+
+  if (routeResult.status === 404) {
+    const errorData = routeResult.data as Record<string, unknown> | null;
+    const code = typeof errorData?.code === 'string' ? errorData.code : '';
+    if (code === 'order_not_found') {
+      return null;
+    }
+    // If route is absent (e.g. rest_no_route or other 404), fall through to capped scan
+  } else if (routeResult.status === 401 || routeResult.status === 403) {
+    // Caller lacks permission or unauthenticated: outcome is unknown
+    throw new Error(`Order recovery route permission denied (HTTP ${routeResult.status}).`);
+  } else {
+    // Other error statuses (e.g. 500, 502)
+    throw new Error(`Order recovery route returned unexpected status HTTP ${routeResult.status}.`);
+  }
+
+  // 2. Fallback: capped order scan for older backends without the route
   const marker = correlationMarker(attemptKey);
   const perPage = Math.min(Math.max(opts.perPage ?? 100, 1), 100);
   const maxPages = Math.min(Math.max(opts.maxPages ?? 10, 1), 50);

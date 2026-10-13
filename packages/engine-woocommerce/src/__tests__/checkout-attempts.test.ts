@@ -872,99 +872,252 @@ describe('Authoritative COD Checkout & Idempotency Protection (ECO-204)', () => 
       expect(String(plain.customer_note ?? '')).not.toContain('ecomos-attempt');
     });
 
-    it('matches the correlated order by marker and email through the REST lookup', async () => {
-      vi.stubEnv('WC_REST_URL', 'http://woo.test/wp-json/wc/v3');
-      vi.stubEnv('WC_REST_KEY', 'ck_test');
-      vi.stubEnv('WC_REST_SECRET', 'cs_test');
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          status: 200,
-          headers: new Headers(),
-          json: async () => [
-            { id: 1, customer_note: 'nothing here', billing: { email: 'buyer@example.com' }, order_key: 'wc_1' },
-            {
-              id: 2,
-              customer_note: 'gift ' + correlationMarker('att-9'),
-              billing: { email: 'other@example.com' },
-              order_key: 'wc_2',
-            },
-            {
-              id: 3,
-              customer_note: 'note ' + correlationMarker('att-9'),
-              billing: { email: 'buyer@example.com' },
-              order_key: 'wc_3',
-            },
-          ],
-        })
-      );
-
-      const found = await findOrderByAttemptCorrelation('att-9', { email: 'buyer@example.com' });
-      expect(found).toEqual({ orderId: 3, orderKey: 'wc_3', email: 'buyer@example.com' });
-      expect(await findOrderByAttemptCorrelation('att-missing', { email: 'buyer@example.com' })).toBeNull();
-    });
-
-    it('throws instead of returning null when the scan cap is reached with full pages', async () => {
-      vi.stubEnv('WC_REST_URL', 'http://woo.test/wp-json/wc/v3');
-      vi.stubEnv('WC_REST_KEY', 'ck_test');
-      vi.stubEnv('WC_REST_SECRET', 'cs_test');
-      const fullPage = [
-        { id: 1, customer_note: 'x', billing: { email: 'a@example.com' }, order_key: 'wc_1' },
-        { id: 2, customer_note: 'y', billing: { email: 'b@example.com' }, order_key: 'wc_2' },
-      ];
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        headers: new Headers(),
-        json: async () => fullPage,
+    describe('Exact order recovery route and legacy fallback (ECO-1406)', () => {
+      beforeEach(() => {
+        vi.stubEnv('WC_REST_URL', 'http://woo.test/wp-json/wc/v3');
+        vi.stubEnv('WC_REST_KEY', 'ck_test');
+        vi.stubEnv('WC_REST_SECRET', 'cs_test');
       });
-      vi.stubGlobal('fetch', fetchMock);
 
-      await expect(
-        findOrderByAttemptCorrelation('att-deep', { perPage: 2, maxPages: 3 })
-      ).rejects.toThrow(/limit of 6 orders/i);
-      expect(fetchMock).toHaveBeenCalledTimes(3);
-    });
+      it('route hit: resolves order directly via authenticated route', async () => {
+        const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+          if (url.includes('/orders/by-attempt/att-hit')) {
+            return {
+              ok: true,
+              status: 200,
+              headers: new Headers(),
+              json: async () => ({
+                orderId: 42,
+                orderKey: 'wc_order_42',
+                billingEmail: 'buyer@example.com',
+              }),
+            };
+          }
+          throw new Error('Unexpected URL ' + url);
+        });
+        vi.stubGlobal('fetch', fetchMock);
 
-    it('returns null only when a short final page proves the scan was complete', async () => {
-      vi.stubEnv('WC_REST_URL', 'http://woo.test/wp-json/wc/v3');
-      vi.stubEnv('WC_REST_KEY', 'ck_test');
-      vi.stubEnv('WC_REST_SECRET', 'cs_test');
-      const page = (n: number) =>
-        Array.from({ length: n }, (_, i) => ({
-          id: i + 1,
-          customer_note: 'other',
-          billing: { email: 'a@example.com' },
-          order_key: `wc_${i + 1}`,
-        }));
-      const fetchMock = vi
-        .fn()
-        .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => page(2) })
-        .mockResolvedValueOnce({ ok: true, status: 200, headers: new Headers(), json: async () => page(1) });
-      vi.stubGlobal('fetch', fetchMock);
+        const found = await findOrderByAttemptCorrelation('att-hit', { email: 'buyer@example.com' });
+        expect(found).toEqual({ orderId: 42, orderKey: 'wc_order_42', email: 'buyer@example.com' });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      });
 
-      expect(await findOrderByAttemptCorrelation('att-none', { perPage: 2, maxPages: 5 })).toBeNull();
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-    });
+      it('route hit: conclusively returns null when route reports order_not_found', async () => {
+        const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+          if (url.includes('/orders/by-attempt/att-none')) {
+            return {
+              ok: false,
+              status: 404,
+              headers: new Headers(),
+              json: async () => ({
+                code: 'order_not_found',
+                message: 'No order found for this attempt ID.',
+                data: { status: 404 },
+              }),
+            };
+          }
+          throw new Error('Should not fallback to /orders when route explicitly answered order_not_found');
+        });
+        vi.stubGlobal('fetch', fetchMock);
 
-    it('fails closed when correlation lookup receives a non-array response', async () => {
-      vi.stubEnv('WC_REST_URL', 'http://woo.test/wp-json/wc/v3');
-      vi.stubEnv('WC_REST_KEY', 'ck_test');
-      vi.stubEnv('WC_REST_SECRET', 'cs_test');
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          status: 200,
-          headers: new Headers(),
-          json: async () => ({ code: 'woocommerce_rest_cannot_view', message: 'Sorry' }),
-        })
-      );
+        const found = await findOrderByAttemptCorrelation('att-none', { email: 'buyer@example.com' });
+        expect(found).toBeNull();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      });
 
-      await expect(
-        findOrderByAttemptCorrelation('att-corrupt', { email: 'buyer@example.com' })
-      ).rejects.toThrow(/Malformed WooCommerce orders response/i);
+      it('route missing: falls back to capped scan when route returns 404 rest_no_route', async () => {
+        const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+          if (url.includes('/orders/by-attempt/att-fallback')) {
+            return {
+              ok: false,
+              status: 404,
+              headers: new Headers(),
+              json: async () => ({
+                code: 'rest_no_route',
+                message: 'No route was found matching the URL and request method.',
+                data: { status: 404 },
+              }),
+            };
+          }
+          if (url.includes('/orders?')) {
+            return {
+              ok: true,
+              status: 200,
+              headers: new Headers(),
+              json: async () => [
+                {
+                  id: 88,
+                  customer_note: 'Order placed ' + correlationMarker('att-fallback'),
+                  billing: { email: 'buyer@example.com' },
+                  order_key: 'wc_order_88',
+                },
+              ],
+            };
+          }
+          throw new Error('Unexpected URL ' + url);
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const found = await findOrderByAttemptCorrelation('att-fallback', { email: 'buyer@example.com' });
+        expect(found).toEqual({ orderId: 88, orderKey: 'wc_order_88', email: 'buyer@example.com' });
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+      });
+
+      it('403: throws when caller lacks capability or permissions are denied', async () => {
+        const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+          if (url.includes('/orders/by-attempt/att-forbidden')) {
+            return {
+              ok: false,
+              status: 403,
+              headers: new Headers(),
+              json: async () => ({
+                code: 'rest_forbidden',
+                message: 'Caller lacks the read_private_shop_orders capability.',
+                data: { status: 403 },
+              }),
+            };
+          }
+          throw new Error('Unexpected URL ' + url);
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        await expect(
+          findOrderByAttemptCorrelation('att-forbidden', { email: 'buyer@example.com' })
+        ).rejects.toThrow(/Order recovery route permission denied \(HTTP 403\)/i);
+      });
+
+      it('malformed response: throws when route returns non-object or missing keys', async () => {
+        const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+          if (url.includes('/orders/by-attempt/att-corrupt')) {
+            return {
+              ok: true,
+              status: 200,
+              headers: new Headers(),
+              json: async () => ({
+                unexpected: 'payload',
+              }),
+            };
+          }
+          throw new Error('Unexpected URL ' + url);
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        await expect(
+          findOrderByAttemptCorrelation('att-corrupt', { email: 'buyer@example.com' })
+        ).rejects.toThrow(/Malformed response from order recovery route/i);
+      });
+
+      it('email mismatch: returns null when correlated order has a different billing email', async () => {
+        const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+          if (url.includes('/orders/by-attempt/att-mismatch')) {
+            return {
+              ok: true,
+              status: 200,
+              headers: new Headers(),
+              json: async () => ({
+                orderId: 99,
+                orderKey: 'wc_order_99',
+                billingEmail: 'impostor@example.com',
+              }),
+            };
+          }
+          throw new Error('Unexpected URL ' + url);
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const found = await findOrderByAttemptCorrelation('att-mismatch', { email: 'legitimate@example.com' });
+        expect(found).toBeNull();
+      });
+
+      it('cap: throws when route is missing and legacy scan cap is reached with full pages', async () => {
+        const fullPage = [
+          { id: 1, customer_note: 'x', billing: { email: 'a@example.com' }, order_key: 'wc_1' },
+          { id: 2, customer_note: 'y', billing: { email: 'b@example.com' }, order_key: 'wc_2' },
+        ];
+        const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+          if (url.includes('/orders/by-attempt/att-deep')) {
+            return {
+              ok: false,
+              status: 404,
+              headers: new Headers(),
+              json: async () => ({
+                code: 'rest_no_route',
+                message: 'No route was found',
+                data: { status: 404 },
+              }),
+            };
+          }
+          return {
+            ok: true,
+            status: 200,
+            headers: new Headers(),
+            json: async () => fullPage,
+          };
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        await expect(
+          findOrderByAttemptCorrelation('att-deep', { perPage: 2, maxPages: 3 })
+        ).rejects.toThrow(/limit of 6 orders/i);
+        // 1 call to /by-attempt + 3 calls to /orders (pages 1, 2, 3)
+        expect(fetchMock).toHaveBeenCalledTimes(4);
+      });
+
+      it('legacy scan returns null only when a short final page proves the scan was complete', async () => {
+        const page = (n: number) =>
+          Array.from({ length: n }, (_, i) => ({
+            id: i + 1,
+            customer_note: 'other',
+            billing: { email: 'a@example.com' },
+            order_key: `wc_${i + 1}`,
+          }));
+        let ordersCall = 0;
+        const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+          if (url.includes('/orders/by-attempt/att-none-scan')) {
+            return {
+              ok: false,
+              status: 404,
+              headers: new Headers(),
+              json: async () => ({ code: 'rest_no_route' }),
+            };
+          }
+          ordersCall++;
+          return {
+            ok: true,
+            status: 200,
+            headers: new Headers(),
+            json: async () => (ordersCall === 1 ? page(2) : page(1)),
+          };
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        expect(await findOrderByAttemptCorrelation('att-none-scan', { perPage: 2, maxPages: 5 })).toBeNull();
+        expect(fetchMock).toHaveBeenCalledTimes(3);
+      });
+
+      it('legacy scan fails closed when correlation lookup receives a non-array response', async () => {
+        const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+          if (url.includes('/orders/by-attempt/att-corrupt-scan')) {
+            return {
+              ok: false,
+              status: 404,
+              headers: new Headers(),
+              json: async () => ({ code: 'rest_no_route' }),
+            };
+          }
+          return {
+            ok: true,
+            status: 200,
+            headers: new Headers(),
+            json: async () => ({ code: 'woocommerce_rest_cannot_view', message: 'Sorry' }),
+          };
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        await expect(
+          findOrderByAttemptCorrelation('att-corrupt-scan', { email: 'buyer@example.com' })
+        ).rejects.toThrow(/Malformed WooCommerce orders response/i);
+      });
     });
   });
 
