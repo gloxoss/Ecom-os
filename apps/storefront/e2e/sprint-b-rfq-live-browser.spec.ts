@@ -84,7 +84,7 @@ test.describe('Live Real-Browser Quotation Journey (Chromium)', () => {
         : JSON.parse(fs.readFileSync(path.resolve(process.cwd(), '../../.agent-hub/.runtime/staff-credentials.json'), 'utf8'));
     const staffBasicAuth = Buffer.from(`${creds.username}:${creds.app_password}`).toString('base64');
 
-    const staffRes = await fetch(`https://paraloca.local/wp-json/ecomos/v1/rfq/quotes/${quoteId}/offers`, {
+    const staffRes = await fetch(`${STAGING}/wp-json/ecomos/v1/rfq/quotes/${quoteId}/offers`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
