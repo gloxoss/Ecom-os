@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
+
+// Storefront under test; set STOREFRONT_URL to run against a client instance on another port.
+const BASE = process.env.STOREFRONT_URL ?? 'http://localhost:3000';
 import path from 'node:path';
 
 const CHROME_PATH =
@@ -10,14 +13,14 @@ test.use({ launchOptions: { executablePath: CHROME_PATH }, ignoreHTTPSErrors: tr
 test.describe('Live Real-Browser Quotation Journey (Chromium)', () => {
   test('Full UI journey: Entry on PDP, Quote Builder, Quote Reopen, Offer Review & Accept', async ({ page }) => {
     // 1. Visit PDP and test Entry Method 1: Ajouter au devis pro
-    await page.goto('http://localhost:3000/product/ecomos-test-variable');
+    await page.goto(`${BASE}/product/ecomos-test-variable`);
     const addToQuoteBtn = page.locator('button:has-text("Ajouter au devis pro")').first();
     await expect(addToQuoteBtn).toBeVisible({ timeout: 10000 });
     await addToQuoteBtn.click();
     await expect(page.locator('button:has-text("Ajouté au devis ✓")').first()).toBeVisible();
 
     // 2. Visit /devis (Entry Method 2 / Quote Builder)
-    await page.goto('http://localhost:3000/devis');
+    await page.goto(`${BASE}/devis`);
     const quoteBuilder = page.locator('[data-testid="quote-builder"]');
     await expect(quoteBuilder).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=EcomOS TEST variable item')).toBeVisible();
@@ -44,7 +47,7 @@ test.describe('Live Real-Browser Quotation Journey (Chromium)', () => {
       ]
     };
 
-    const res = await fetch('http://localhost:3000/api/rfq', {
+    const res = await fetch(`${BASE}/api/rfq`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(quotePayload)
@@ -78,7 +81,7 @@ test.describe('Live Real-Browser Quotation Journey (Chromium)', () => {
     expect(staffRes.status).toBe(200);
 
     // 5. Guest reopens quote in browser with token hash: /devis/offer?quoteId=...#token=...
-    await page.goto(`http://localhost:3000/devis/offer?quoteId=${encodeURIComponent(quoteId)}#token=${encodeURIComponent(accessSecret)}`);
+    await page.goto(`${BASE}/devis/offer?quoteId=${encodeURIComponent(quoteId)}#token=${encodeURIComponent(accessSecret)}`);
 
     // Verify DOM renders the quote number, lines, and totals
     await expect(page.locator(`text=${quoteNumber}`)).toBeVisible({ timeout: 10000 });
@@ -99,7 +102,7 @@ test.describe('Live Real-Browser Quotation Journey (Chromium)', () => {
     // 7. Security barrier in browser: attempt reopen in a new context with invalid token
     const badContext = await page.context().browser()!.newContext();
     const badPage = await badContext.newPage();
-    await badPage.goto(`http://localhost:3000/devis/offer?quoteId=${encodeURIComponent(quoteId)}#token=invalid_forged_token`);
+    await badPage.goto(`${BASE}/devis/offer?quoteId=${encodeURIComponent(quoteId)}#token=invalid_forged_token`);
     await expect(badPage.locator('[data-testid="offer-access-denied"]')).toBeVisible({ timeout: 10000 });
     await badContext.close();
   });
