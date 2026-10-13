@@ -199,3 +199,8 @@ Independent spot check of `f781569` against the live database. Journeys ran and 
 - Instance `ParaLoca/paraloca-store` has its own Local site `paraloca-store.local` (own MySQL, own keys, HPOS only without sync), WooCommerce, WPGraphQL, bridge and RFQ plugin, a read-only connector key and a separate RFQ service user. Storefront runs on port 3100 (the starter keeps 3000).
 - Live on the instance: commerce spec 8 passed / 1 not measured, RFQ browser journey passed, staff conversion order 18 with idempotent replay. Orders exist only in `wc_orders` (0 legacy posts).
 - Findings logged in `FIX_LEDGER.md` items 11 to 16. Biggest open one: item 15, the ParaLoca profile does not drive the storefront shell (header "Beano Coffee", `lang="en"`, Angelina landing).
+
+## 2026-10-13 — client shell hooks and ParaLoca storefront (instance only)
+
+- Starter `v1.0.0-rc.5`/`rc.6`: neutral client shell overrides (`client-shells/<id>.tsx`: `htmlLang`, `Header`, `Footer`, `Landing`) registered by `generate-clients.mjs`. The starter ships no client content. Open: ledger item 17 (ParaLoca content still inside the starter: `ClientShell` French strings, default key `paraloca`, `clients/paraloca`, ParaLoca theme and their tests; moving it needs an owner decision).
+- The ParaLoca storefront look lives only in `ParaLoca/paraloca-store` (shell files, `brand.config.ts`, generated tokens). Verified there: French home page in a real browser, commerce spec 8 passed / 1 not measured, RFQ journey passed, 610 unit tests, types and lint clean. Report: `paraloca-store/docs/instances/SETUP_2026-10-13.md`.
