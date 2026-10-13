@@ -1,6 +1,6 @@
 # Updating a client instance from the EcomOS starter
 
-An instance (for example `C:\dev\paraloca-store`, branch `paraloca-instance`) is a git clone of this starter. Its remote `starter` points at the starter repo, so improvements flow one way: starter to instance.
+An instance (for example `ParaLoca/paraloca-store`, next to this repo, branch `paraloca-instance`) is a git clone of this starter. Its remote `starter` points at the starter repo, so improvements flow one way: starter to instance.
 
 ## Keep merges clean
 
