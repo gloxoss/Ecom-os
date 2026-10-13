@@ -24,6 +24,7 @@ EcomOS is the starter. A client store is an **instance**: a separate git clone w
    cd <id>-store && git remote rename origin starter && git checkout -b <id>-instance
    ```
    Prefer a pinned release tag over the branch tip once tags exist: `git checkout -b <id>-instance vX.Y.Z`.
+   Set a repo-local git identity in the new clone (`git config user.name` and `user.email`); without it merges and commits fail.
 3. **Install:** `pnpm install --frozen-lockfile` (offline works with a warm store). If the shell `pnpm` is broken, see `references/instance-checklist.md`. A failing frozen install is a starter bug: fix it upstream.
 4. **Create the WordPress site (human step).** Ask the owner to create it in the Local app (PHP 8.2.29, MySQL 8.4.0, nginx) and tell you when it runs. Then use WP-CLI for everything else.
 5. **Configure WordPress:** install WooCommerce, WPGraphQL and the WPGraphQL for WooCommerce bridge; enable HPOS (`wp wc hpos sync`, then `wp wc hpos enable --with-sync`); set currency and country; allow guest checkout; activate the optional companion plugins only when needed (`wp-ecomos-rfq` for quotes). Back up the database before each structural change.

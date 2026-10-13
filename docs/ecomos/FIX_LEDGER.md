@@ -13,6 +13,7 @@ Rule: a problem found in a client instance (or in a live test against one) is fi
 | 7 | New client needs a core file edit | Planning the ParaLoca instance | `apps/storefront/src/lib/client-profile.ts` hard-registers `paraloca` and `demo-2` imports | Proposed: generate the registry from `clients/*/profile.ts` like `addons.generated.ts` | OPEN |
 | 8 | HPOS pre-check blocks enabling although the plugin declares support | Enabling HPOS on staging | WP-CLI reports the eCommerce bridge as "uncertain" | Documented override in `MIGRATIONS.md` | DOCUMENTED |
 | 9 | WP-CLI cannot reach Local's database | Staging tooling | Local's MySQL port changes on every start | Helper script reads `my.cnf` and probes ports (machine-local, not in repo) | DOCUMENTED |
+| 10 | First instance upgrade failed with "Committer identity unknown", and the script blamed conflicts | First real run of `ecomos-upgrade.mjs` on the ParaLoca instance | New clones have no git identity; the script treated every merge failure as a conflict | `40aa66b` (identity pre-check, honest error); creation skill now sets identity | FIXED |
 
 ## How to add a fix
 
