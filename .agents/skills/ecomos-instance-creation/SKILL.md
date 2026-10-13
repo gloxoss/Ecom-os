@@ -32,8 +32,9 @@ EcomOS is the starter. A client store is an **instance**: a separate git clone w
 7. **Write `apps/storefront/.env.local`** with fresh secrets (commands in `references/instance-checklist.md`): profile, theme, addons, WooCommerce URLs and keys.
 8. **Client profile and theme.** Add `clients/<id>/profile.ts` (exactly one `export const <name>Profile`) and `packages/themes/src/clients/<id>/theme.ts` (exactly one `export const <name>Theme`), then run `node scripts/generate-clients.mjs`. Registration is automatic; do not edit `client-profile.ts` or the themes index. Select the client with `ECOM_CLIENT_PROFILE` and `THEME_NAME`.
 9. **Storefront look (instance only).** Put the client header, footer, language and home page in `apps/storefront/src/client-shells/<id>.tsx` (`ClientShellOverrides`, see `docs/ecomos/EXTENDING.md` 5a). Never put client content in shared components or in the starter.
-10. **Verify** (see `references/instance-checklist.md`): guard, lint, typecheck, unit tests, then the live specs against the instance's own site. Prove isolation: different database, different keys, zero catalog crossover with the starter site.
-11. **Record** the instance in the starter's `docs/ecomos/PROGRESS.md` and add any problem found to `docs/ecomos/FIX_LEDGER.md`.
+10. **Brand file.** Replace the demo values in `apps/storefront/brand.config.ts` with the client palette, fonts, radii and hero copy (Tailwind colors come from this file, not from the theme). The schema requires `contact`: use obviously fake values until the owner approves real ones. Run `node node_modules/tsx/dist/cli.mjs scripts/generate-tokens.ts` and commit `brand.tokens.css` (`pnpm --filter storefront build` does not run it).
+11. **Verify** (see `references/instance-checklist.md`): guard, lint, typecheck, unit tests, then the live specs against the instance's own site. Prove isolation: different database, different keys, zero catalog crossover with the starter site.
+12. **Record** the instance in the starter's `docs/ecomos/PROGRESS.md` and add any problem found to `docs/ecomos/FIX_LEDGER.md`.
 
 ## What counts as done
 
