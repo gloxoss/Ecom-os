@@ -19,6 +19,7 @@ Rule: a problem found in a client instance (or in a live test against one) is fi
 | 13 | Generated files tracked in git differ per client (`addons.generated.ts`, `theme-vars.css`) | Building the ParaLoca instance | Instance builds rewrite tracked files, so every update can conflict on them | Proposed: stop tracking them or generate to an ignored path | OPEN |
 | 14 | RFQ live browser spec could not run against an instance | Running specs on the ParaLoca instance | `sprint-b-rfq-live-browser.spec.ts` hard-coded `http://localhost:3000` | Spec reads `STOREFRONT_URL` | FIXED |
 | 15 | Client profile does not drive the storefront shell: header says "Beano Coffee", `<html lang="en">` is fixed, landing and nav are the Angelina template | Inspecting the built ParaLoca instance | `getActiveClientProfile` is used only for theme colors and the quotes flag; brand name, logo, nav, footer, locale and landing content are not read from the profile | Proposed: profile-driven header, footer, locale and landing sections in the starter, with ParaLoca content in `clients/paraloca/` | OPEN |
+| 16 | Live RFQ spec could only run on the starter staging site | Running specs on the ParaLoca instance | Hard-coded product IDs (12, 13, 14, 21), fixed host `paraloca.local`, staff credentials read from a machine-local file | Fixtures found by SKU, host from `ECOM_STAGING_URL`, staff credentials from `ECOM_RFQ_WP_*` first; seeder adds `ECOMOS-TEST-BED` | FIXED |
 
 ## How to add a fix
 

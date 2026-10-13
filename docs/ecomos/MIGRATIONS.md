@@ -7,6 +7,7 @@ Write each note as: what changed, who is affected, exact steps, how to confirm, 
 ## 1.0.0-rc.4
 
 - **Behavior: theme selection.** `THEME_NAME` set in `apps/storefront/.env.local` is now honored by `generate-theme.ts` (it was ignored; the build used `angelina`). An unknown theme name now stops the build instead of using the default theme. Instances that relied on the silent fallback must set a valid `THEME_NAME`. Confirm: `generate-theme.ts` prints `Generated theme-vars.css for theme: <your theme>`. Rollback: revert the merge.
+- **Live specs are portable.** `sprint-b-rfq-live-browser.spec.ts` uses `STOREFRONT_URL`, `ECOM_STAGING_URL`, SKU lookup and `ECOM_RFQ_WP_USER`/`ECOM_RFQ_WP_APP_PASSWORD`. Run `scripts/seed-instance-fixtures.php` first so the three `ECOMOS-TEST-*` products exist.
 - **Tooling.** `scripts/seed-instance-fixtures.php` seeds synthetic test products on any `*.local` site (`remove` mode deletes them); `apps/storefront/playwright.config.ts` reads `STOREFRONT_URL`.
 - **WordPress connector role.** The read-only REST connector needs four read capabilities for the storefront to work: `read_private_shop_orders`, `read_private_products`, `read_private_shop_coupons`, `manage_product_terms` (see `.agents/skills/ecomos-instance-creation/references/instance-checklist.md`). The API key stays read-only.
 - **Dependencies, environment.** None.
