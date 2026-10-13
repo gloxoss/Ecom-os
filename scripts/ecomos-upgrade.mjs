@@ -94,16 +94,25 @@ if (!apply) {
   process.exit(0);
 }
 
+if (!tryGit('config', 'user.email') || !tryGit('config', 'user.name')) {
+  die('Git identity is not set in this repository, so a merge commit cannot be made. Set it first:\n  git config user.name "Your Name"\n  git config user.email "you@example.com"');
+}
+
 const stamp = new Date().toISOString().slice(0, 10);
 const branch = `upgrade/${target.replace(/[^\w.-]/g, '-')}-${stamp}`;
 const original = git('rev-parse', '--abbrev-ref', 'HEAD');
 git('checkout', '-b', branch);
 const merge = spawnSync('git', ['merge', '--no-ff', '-m', `chore(upgrade): merge EcomOS ${target}`, targetSha], { stdio: 'inherit' });
 if (merge.status !== 0) {
-  spawnSync('git', ['merge', '--abort'], { stdio: 'inherit' });
+  const conflicted = Boolean(tryGit('ls-files', '--unmerged'));
+  if (tryGit('rev-parse', '-q', '--verify', 'MERGE_HEAD')) spawnSync('git', ['merge', '--abort'], { stdio: 'inherit' });
   git('checkout', original);
   git('branch', '-D', branch);
-  die(`\nMerge conflicted and was aborted. Your branch ${original} is untouched. Resolve by hand on a scratch branch.`);
+  die(
+    conflicted
+      ? `\nMerge conflicted and was aborted. Your branch ${original} is untouched. Resolve by hand on a scratch branch.`
+      : `\nMerge failed for a reason other than conflicts (see the git message above) and was undone. Your branch ${original} is untouched.`
+  );
 }
 console.log(`\nMerged on branch ${branch}. Your original branch ${original} is untouched.`);
 
