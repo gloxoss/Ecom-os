@@ -4,6 +4,13 @@ What an instance owner must do when updating from the starter. One section per r
 
 Write each note as: what changed, who is affected, exact steps, how to confirm, how to roll back. Cover four areas when relevant: environment variables, dependencies, WordPress plugins and database, and behavior changes callers depend on.
 
+## 1.0.0-rc.5
+
+- **New: client shell overrides.** A client can replace the page language (`htmlLang`), header, footer and home page by adding `apps/storefront/src/client-shells/<client-id>.tsx` exporting one `<name>Shell` constant (type `ClientShellOverrides` from `@/lib/client-shell`). `node scripts/generate-clients.mjs` registers it; `predev`/`prebuild` and the guard run it. With no file, nothing changes: the default storefront is used. `apps/storefront/src/clients.generated.ts` gains `generatedShells` (regenerated, commit it).
+- **Who is affected.** Instances that edited `app/layout.tsx`, `app/[locale]/layout.tsx` or `app/[locale]/(shop)/page.tsx` to change the header, footer, language or landing page. Take the starter version of those files during the merge and move your changes into a client shell.
+- **Confirm.** `node scripts/generate-clients.mjs --check` passes, unit tests pass, the home page still renders. Rollback: revert the merge.
+- **Dependencies, WordPress, environment.** None.
+
 ## 1.0.0-rc.4
 
 - **Behavior: theme selection.** `THEME_NAME` set in `apps/storefront/.env.local` is now honored by `generate-theme.ts` (it was ignored; the build used `angelina`). An unknown theme name now stops the build instead of using the default theme. Instances that relied on the silent fallback must set a valid `THEME_NAME`. Confirm: `generate-theme.ts` prints `Generated theme-vars.css for theme: <your theme>`. Rollback: revert the merge.

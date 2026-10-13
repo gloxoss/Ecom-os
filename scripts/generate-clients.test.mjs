@@ -72,3 +72,24 @@ test('two clients exporting the same name are rejected', () => {
   write('clients/b/profile.ts', 'export const sameProfile = {};\n');
   assert.throws(() => discover(path.join(root, 'clients'), 'profile.ts', 'Profile'), /used by both/);
 });
+
+test('shell overrides are optional and discovered by file name', () => {
+  const { root, write } = scratchRepo();
+  write('clients/acme/profile.ts', 'export const acmeProfile = {};\n');
+  const none = generate(root)[0].content;
+  assert.match(none, /generatedShells: Record<string, ClientShellOverrides> = \{\};/);
+  assert.doesNotMatch(none, /client-shells/);
+
+  write('apps/storefront/src/client-shells/acme.tsx', 'export const acmeShell = { htmlLang: "fr" };\n');
+  write('apps/storefront/src/client-shells/README.md', 'docs, ignored\n');
+  const withShell = generate(root)[0].content;
+  assert.match(withShell, /import \{ acmeShell \} from '.\/client-shells\/acme';/);
+  assert.match(withShell, /acme: acmeShell,/);
+});
+
+test('a shell file without exactly one <name>Shell export fails loudly', () => {
+  const { root, write } = scratchRepo();
+  write('clients/acme/profile.ts', 'export const acmeProfile = {};\n');
+  write('apps/storefront/src/client-shells/acme.tsx', 'export const nothing = {};\n');
+  assert.throws(() => generate(root), /exactly one/);
+});

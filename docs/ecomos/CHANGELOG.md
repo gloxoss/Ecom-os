@@ -6,6 +6,11 @@ All notable changes to the EcomOS codebase across all development phases are doc
 
 ---
 
+## [1.0.0-rc.5] - 2026-10-13
+
+- **Added:** client shell overrides (`client-shells/<id>.tsx`: `htmlLang`, `Header`, `Footer`, `Landing`) so a client instance can own its storefront without editing core files. The starter ships none.
+- **Migration:** see `MIGRATIONS.md` section 1.0.0-rc.5.
+
 ## [1.0.0-rc.4] - 2026-10-13
 
 - **Fixed:** `THEME_NAME` from `.env.local` is honored by the theme generator; an unknown theme fails loudly.

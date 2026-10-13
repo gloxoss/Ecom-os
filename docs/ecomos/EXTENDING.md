@@ -183,6 +183,16 @@ Note: none of the three project plugins under `plugins/` (`wp-ecomos-addons`, `w
 
 ---
 
+## 5a. Client shell overrides (header, footer, language, home page)
+
+A client instance owns its storefront look without editing core files. Add `apps/storefront/src/client-shells/<client-id>.tsx` (the id is `ECOM_CLIENT_PROFILE`) exporting exactly one `<name>Shell` constant of type `ClientShellOverrides` (`@/lib/client-shell`):
+
+- `htmlLang`: value for `<html lang>` (default `en`).
+- `Header` / `Footer`: replace the default site header and footer.
+- `Landing`: replaces the whole home page and receives the active `locale`.
+
+Every field is optional. Run `node scripts/generate-clients.mjs` to register the file (it also runs in `predev`, `prebuild` and the guard). The starter ships no shells; client content never goes into the shared components.
+
 ## 5. Creating a client profile and theme
 
 1. Add `clients/<client-id>/profile.ts` exporting a `ClientProfile` (type: `packages/brand-config/src/client-profile.ts`). Model it on `clients/paraloca/profile.ts`. The validated shape includes:

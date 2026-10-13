@@ -21,8 +21,13 @@ const clientThemeRegistry: Record<string, EcomTheme> = themeRegistry;
  * 1. ECOM_CLIENT_PROFILE environment variable (e.g., 'paraloca', 'demo-2')
  * 2. Default: 'paraloca'
  */
+/** Key of the active client (ECOM_CLIENT_PROFILE, default 'paraloca'). Shared by profile, theme and shell lookups. */
+export function getActiveClientKey(): string {
+  return (process.env.ECOM_CLIENT_PROFILE || 'paraloca').trim().toLowerCase();
+}
+
 export function getActiveClientProfile(): ClientProfile {
-  const profileKey = (process.env.ECOM_CLIENT_PROFILE || 'paraloca').trim().toLowerCase();
+  const profileKey = getActiveClientKey();
   const rawProfile = profileRegistry[profileKey] || paralocaProfile;
 
   const envOverrides = resolveEnvironmentUrlsFromEnv(process.env);

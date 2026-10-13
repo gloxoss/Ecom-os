@@ -4,6 +4,7 @@ import localFont from 'next/font/local';
 import { initAddons } from '@/lib/addons';
 import { TailwindIndicator } from '@/components/tailwind-indicator';
 import { validateRuntimeConfig } from '@/lib/runtime-config';
+import { getClientShell } from '@/lib/client-shell';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,8 +16,9 @@ const interTight = localFont({ src: '../fonts/InterTight-Variable.ttf', variable
 initAddons({ engineType: process.env.ECOM_ENGINE ?? 'fake' });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const shell = getClientShell();
   return (
-    <html lang="en" className={`${sentient.variable} ${interTight.variable}`}>
+    <html lang={shell.htmlLang ?? 'en'} className={`${sentient.variable} ${interTight.variable}`}>
       <body className="bg-background text-foreground font-sans antialiased">
         {children}
         <TailwindIndicator />
