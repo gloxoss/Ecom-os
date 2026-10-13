@@ -79,10 +79,9 @@ if (both.length) {
 const mig = tryGit('diff', `${base}..${targetSha}`, '--', 'docs/ecomos/MIGRATIONS.md');
 if (mig) {
   console.log('\nMigration notes added by this update:');
-  mig
-    .split('\n')
-    .filter((l) => l.startsWith('+') && !l.startsWith('+++'))
-    .forEach((l) => console.log(`  ${l.slice(1)}`));
+  const added = mig.split('\n').filter((l) => l.startsWith('+') && !l.startsWith('+++'));
+  added.slice(0, 40).forEach((l) => console.log(`  ${l.slice(1)}`));
+  if (added.length > 40) console.log(`  ... ${added.length - 40} more lines, read docs/ecomos/MIGRATIONS.md after the merge`);
 }
 
 const trial = spawnSync('git', ['merge-tree', '--write-tree', '--no-messages', head, targetSha], { encoding: 'utf8' });
