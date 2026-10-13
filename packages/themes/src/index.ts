@@ -1,10 +1,6 @@
 import { EcomTheme } from './types';
 import { defaultTheme } from './clients/default/theme';
-import { minimalTheme } from './clients/minimal/theme';
-import { luxuryTheme } from './clients/luxury/theme';
-import { angelinaTheme } from './clients/angelina/theme';
-import { demo2Theme } from './clients/demo-2/theme';
-import { paralocaTheme } from './clients/paraloca/theme';
+import { generatedThemes } from "./registry.generated";
 
 export * from './types';
 export { defaultTheme } from './clients/default/theme';
@@ -14,14 +10,8 @@ export { angelinaTheme } from './clients/angelina/theme';
 export { demo2Theme } from './clients/demo-2/theme';
 export { paralocaTheme } from './clients/paraloca/theme';
 
-export const themeRegistry: Record<string, EcomTheme> = {
-  default: defaultTheme,
-  minimal: minimalTheme,
-  luxury: luxuryTheme,
-  angelina: angelinaTheme,
-  'demo-2': demo2Theme,
-  paraloca: paralocaTheme,
-};
+// Built from packages/themes/src/clients/*/theme.ts by scripts/generate-clients.mjs.
+export const themeRegistry: Record<string, EcomTheme> = generatedThemes;
 
 export function getTheme(name: string): EcomTheme {
   return themeRegistry[name] || defaultTheme;

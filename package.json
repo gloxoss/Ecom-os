@@ -1,7 +1,7 @@
 {
   "name": "ecom-os",
   "private": true,
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "description": "EPIOSO's modular dual-engine e-commerce starter kit",
   "repository": {
     "type": "git",
@@ -17,10 +17,10 @@
     "hub:test": "node --test .agent-hub/test/*.test.mjs",
     "release": "node scripts/ecomos-release.mjs",
     "upgrade": "node scripts/ecomos-upgrade.mjs",
-    "guard": "tsx scripts/check-engine-imports.ts && node --test scripts/check-engine-imports.test.mjs",
+    "guard": "tsx scripts/check-engine-imports.ts && node scripts/generate-clients.mjs --check && node --test scripts/check-engine-imports.test.mjs scripts/generate-clients.test.mjs",
     "create": "tsx scripts/create-ecom-os.ts",
-    "predev": "tsx scripts/generate-tokens.ts && tsx scripts/generate-addons.ts",
-    "prebuild": "tsx scripts/generate-tokens.ts && tsx scripts/generate-addons.ts",
+    "predev": "node scripts/generate-clients.mjs && tsx scripts/generate-tokens.ts && tsx scripts/generate-addons.ts",
+    "prebuild": "node scripts/generate-clients.mjs && tsx scripts/generate-tokens.ts && tsx scripts/generate-addons.ts",
     "build": "pnpm -r --if-present build",
     "dev": "pnpm --filter storefront dev",
     "lint": "pnpm -r --if-present lint",

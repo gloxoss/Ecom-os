@@ -17,7 +17,7 @@ A Next.js storefront (`apps/storefront`) talks to commerce only through the `Eco
 2. **Every `packages/addons-*` exports `register` and `disable`** from `src/index.ts`, and has a `manifest.json`. Addon names resolve by package suffix or declared `ecom-os.flag` (the RFQ package `addons-rfq` is named `quotes`).
 3. **Features sit behind capabilities.** When an addon is off, its routes return 404 (`lib/addon-route-guard.ts`) and its UI does not mount. Test the off state.
 4. **Adapters map, UI renders.** Raw WooCommerce responses are converted in `mappers.ts`; nothing engine-specific leaks upward.
-5. **Client-specific behavior is config, theme or an addon, never an `if (client === ...)` in core.**
+5. **Client-specific behavior is config, theme or an addon, never an `if (client === ...)` in core.** Clients register by folder: `clients/<id>/profile.ts` and `themes/src/clients/<id>/theme.ts`, discovered by `scripts/generate-clients.mjs` (the guard checks the generated files are fresh).
 
 Run the guard with `node node_modules/tsx/dist/cli.mjs scripts/check-engine-imports.ts` (13 tests in `scripts/check-engine-imports.test.mjs`).
 

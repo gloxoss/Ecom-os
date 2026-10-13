@@ -1,5 +1,5 @@
 import { paralocaProfile } from '../../../../clients/paraloca/profile';
-import { demo2Profile } from '../../../../clients/demo-2/profile';
+import { generatedProfiles } from '../clients.generated';
 import {
   type ClientProfile,
   type PublicClientProfile,
@@ -8,20 +8,12 @@ import {
   loadClientProfile,
 } from '@ecom-os/brand-config';
 import { paralocaTheme } from '../../../../packages/themes/src/clients/paraloca/theme';
-import { demo2Theme } from '../../../../packages/themes/src/clients/demo-2/theme';
-import { defaultTheme } from '../../../../packages/themes/src/clients/default/theme';
-import type { EcomTheme } from '@ecom-os/themes';
+import { themeRegistry, type EcomTheme } from '@ecom-os/themes';
 
-const profileRegistry: Record<string, ClientProfile> = {
-  paraloca: paralocaProfile,
-  'demo-2': demo2Profile,
-};
-
-const clientThemeRegistry: Record<string, EcomTheme> = {
-  paraloca: paralocaTheme,
-  'demo-2': demo2Theme,
-  default: defaultTheme,
-};
+// Registries are generated from clients/*/profile.ts and packages/themes/src/clients/*/theme.ts
+// (scripts/generate-clients.mjs), so adding a client never edits this file.
+const profileRegistry: Record<string, ClientProfile> = generatedProfiles;
+const clientThemeRegistry: Record<string, EcomTheme> = themeRegistry;
 
 /**
  * Resolves the active validated ClientProfile based on deployment configuration.

@@ -4,6 +4,14 @@ What an instance owner must do when updating from the starter. One section per r
 
 Write each note as: what changed, who is affected, exact steps, how to confirm, how to roll back. Cover four areas when relevant: environment variables, dependencies, WordPress plugins and database, and behavior changes callers depend on.
 
+## 1.0.0-rc.3
+
+- **Behavior: client registration is generated.** New tracked files `apps/storefront/src/clients.generated.ts` and `packages/themes/src/registry.generated.ts` are built by `node scripts/generate-clients.mjs` (run automatically by `predev` and `prebuild`). A client is now a folder: `clients/<id>/profile.ts` exporting exactly one `<name>Profile`, and `packages/themes/src/clients/<id>/theme.ts` exporting exactly one `<name>Theme`. Run the script after adding one; `pnpm guard` fails when the generated files are stale.
+- **Who is affected.** Instances that edited `apps/storefront/src/lib/client-profile.ts` or `packages/themes/src/index.ts` to register a client. During the merge take the starter version of both files and delete the manual registration; the folders are discovered automatically.
+- **Behavior change.** `getActiveClientTheme` now resolves every theme in the registry (including `angelina`, `luxury`, `minimal`) instead of falling back to the ParaLoca theme for ids it did not list.
+- **Confirm.** `node scripts/generate-clients.mjs --check` prints "up to date"; type check and unit tests pass. Rollback: revert the merge.
+- **Dependencies, WordPress, environment.** None.
+
 ## 1.0.0-rc.2
 
 - **Dependencies.** `typescript` in `packages/brand-config` and `packages/ecom-engine` is now pinned to `^5.9.3` (it was `latest`, which resolved to 7.0.2 and broke type checking). `@ecom-os/addons-rfq` is now in `pnpm-lock.yaml`. Run `pnpm install --frozen-lockfile`. Confirm: `pnpm -r typecheck` passes. Rollback: revert the merge.
