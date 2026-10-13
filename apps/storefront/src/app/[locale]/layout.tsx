@@ -7,6 +7,7 @@ import type { Locale } from '@ecom-os/addons-i18n/src/config';
 import { routing } from '@/i18n/routing';
 import { SiteHeader } from '@/components/shared/site-header';
 import { BrandFooter } from '@/components/shared/brand-footer';
+import { getClientShell } from '@/lib/client-shell';
 import { headers } from 'next/headers';
 
 export function generateStaticParams() {
@@ -25,6 +26,10 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
   const messages = await getMessages();
+
+  const shell = getClientShell();
+  const Header = shell.Header ?? SiteHeader;
+  const Footer = shell.Footer ?? BrandFooter;
 
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const nonce = (await headers()).get('x-nonce') ?? undefined;
@@ -49,9 +54,9 @@ export default async function LocaleLayout({
             />
           </>
         )}
-        <SiteHeader />
+        <Header />
         {children}
-        <BrandFooter />
+        <Footer />
       </div>
     </NextIntlClientProvider>
   );

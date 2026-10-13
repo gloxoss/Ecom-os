@@ -3,6 +3,7 @@
 // adding a client means adding files, not editing core registries.
 //   clients/<id>/profile.ts                 -> apps/storefront/src/clients.generated.ts
 //   packages/themes/src/clients/<id>/theme.ts -> packages/themes/src/registry.generated.ts
+//   apps/storefront/src/client-shells/<id>.tsx (optional) -> generatedShells in clients.generated.ts
 // Usage: node scripts/generate-clients.mjs [--check]   (--check fails if files are stale)
 import fs from 'node:fs';
 import path from 'node:path';
@@ -38,12 +39,37 @@ export function discover(baseDir, file, suffix) {
   return sorted;
 }
 
+/** Find files `<dir>/<id>.tsx` that export exactly one `<name><suffix>` constant (optional per client). */
+export function discoverFiles(baseDir, ext, suffix) {
+  if (!fs.existsSync(baseDir)) return [];
+  const found = [];
+  for (const entry of fs.readdirSync(baseDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(ext)) continue;
+    const source = fs.readFileSync(path.join(baseDir, entry.name), 'utf8');
+    const names = [...source.matchAll(new RegExp(`export const (\\w+${suffix})\\b`, 'g'))].map((m) => m[1]);
+    if (names.length !== 1) {
+      throw new Error(`${path.join(path.basename(baseDir), entry.name)} must export exactly one "<name>${suffix}" constant, found ${names.length}.`);
+    }
+    found.push({ id: entry.name.slice(0, -ext.length), exportName: names[0] });
+  }
+  return found.sort((a, b) => a.id.localeCompare(b.id));
+}
+
 const key = (id) => (/^[A-Za-z_$][\w$]*$/.test(id) ? id : JSON.stringify(id));
 
-export function renderProfiles(items) {
+export function renderProfiles(items, shells = []) {
   const imports = items.map((i) => `import { ${i.exportName} } from '../../../clients/${i.id}/profile';`).join('\n');
+  const shellImports = shells.map((i) => `import { ${i.exportName} } from './client-shells/${i.id}';`).join('\n');
   const body = items.map((i) => `  ${key(i.id)}: ${i.exportName},`).join('\n');
-  return `${HEADER}import type { ClientProfile } from '@ecom-os/brand-config';\n${imports}\n\nexport const generatedProfiles: Record<string, ClientProfile> = {\n${body}\n};\n`;
+  const shellBody = shells.map((i) => `  ${key(i.id)}: ${i.exportName},`).join('\n');
+  return (
+    `${HEADER}import type { ClientProfile } from '@ecom-os/brand-config';\n` +
+    `import type { ClientShellOverrides } from './lib/client-shell';\n` +
+    `${imports}${shellImports ? `\n${shellImports}` : ''}\n\n` +
+    `export const generatedProfiles: Record<string, ClientProfile> = {\n${body}\n};\n\n` +
+    `// Optional per-client storefront overrides (header, footer, landing, html lang).\n` +
+    `export const generatedShells: Record<string, ClientShellOverrides> = {${shellBody ? `\n${shellBody}\n` : ''}};\n`
+  );
 }
 
 export function renderThemes(items) {
@@ -55,8 +81,9 @@ export function renderThemes(items) {
 export function generate(rootDir) {
   const profiles = discover(path.join(rootDir, 'clients'), 'profile.ts', 'Profile');
   const themes = discover(path.join(rootDir, 'packages/themes/src/clients'), 'theme.ts', 'Theme');
+  const shells = discoverFiles(path.join(rootDir, 'apps/storefront/src/client-shells'), '.tsx', 'Shell');
   return [
-    { file: path.join(rootDir, 'apps/storefront/src/clients.generated.ts'), content: renderProfiles(profiles), count: profiles.length },
+    { file: path.join(rootDir, 'apps/storefront/src/clients.generated.ts'), content: renderProfiles(profiles, shells), count: profiles.length },
     { file: path.join(rootDir, 'packages/themes/src/registry.generated.ts'), content: renderThemes(themes), count: themes.length },
   ];
 }
