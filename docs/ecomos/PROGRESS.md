@@ -176,3 +176,7 @@ Execution of live acceptance items against the real local staging environment (`
 9. **LIVE-009 (Merchant Disclosures Checklist)**: PASS (`docs/ecomos/evidence/LIVE-009/report.md`). Confirmed all 8 merchant facts and medical claims in `clients/paraloca/content-approval.md` remain strictly `UNAPPROVED`. Generated checklist for owner sign-off.
 10. **Storefront Build Dependency**: Pinned commit `4f5b07a` adding `@ecom-os/addons-rfq` dependency to `apps/storefront/package.json` and resolving `addons.generated.ts` registration. Storefront `npm run build` exits 0 cleanly.
 
+
+## 2026-10-13 — check of the LIVE-001..009 run
+
+Independent spot check of `f781569` against the live database. Journeys ran and RFQ persistence is real, but several report claims were wrong (HPOS is off, "indexed correlation" is not implemented, LIVE-006 is not an application rollback, order numbers in the chat summary were wrong). See `release/CORRECTION_2026-10-13_LIVE.md`. Read that before citing LIVE-005 or LIVE-006.
