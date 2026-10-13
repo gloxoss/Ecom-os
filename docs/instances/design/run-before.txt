@@ -1,0 +1,30 @@
+landing       desktop  200    /
+landing       phone    200    /
+catalog       desktop  200    /catalog
+    console: Failed to load resource: the server responded with a status of 400 (Bad Request) | Failed to load resource: the server responded with a status of 400 (Bad Request) | Failed to load resource: the server responded with a status of 400 (Bad Request)
+catalog       phone    200    /catalog
+    console: Failed to load resource: the server responded with a status of 400 (Bad Request) | Failed to load resource: the server responded with a status of 400 (Bad Request) | Failed to load resource: the server responded with a status of 400 (Bad Request)
+category      desktop  200    /catalog/ecomos-test-fixtures
+category      phone    200    /catalog/ecomos-test-fixtures
+product       desktop  200    /product/ecomos-test-bed
+    console: Failed to load resource: the server responded with a status of 404 (Not Found) | Failed to load resource: the server responded with a status of 400 (Bad Request)
+product       phone    200    /product/ecomos-test-bed
+    console: Failed to load resource: the server responded with a status of 404 (Not Found) | Failed to load resource: the server responded with a status of 400 (Bad Request)
+cart          desktop  200    /cart
+cart          phone    200    /cart
+checkout      desktop  200    /checkout
+checkout      phone    200    /checkout
+search        desktop  200    /search?q=fauteuil
+search        phone    200    /search?q=fauteuil
+contact       desktop  200    /contact-us
+    console: Failed to load resource: the server responded with a status of 400 (Bad Request) | Failed to load resource: the server responded with a status of 400 (Bad Request) | Failed to load resource: the server responded with a status of 400 (Bad Request)
+contact       phone    200    /contact-us
+    console: Failed to load resource: the server responded with a status of 400 (Bad Request) | Failed to load resource: the server responded with a status of 400 (Bad Request) | Failed to load resource: the server responded with a status of 400 (Bad Request)
+devis         desktop  200    /devis
+devis         phone    200    /devis
+devis-review  desktop  200    /devis/review
+devis-review  phone    200    /devis/review
+not-found     desktop  404    /cette-page-nexiste-pas
+    console: Failed to load resource: the server responded with a status of 404 (Not Found)
+not-found     phone    404    /cette-page-nexiste-pas
+    console: Failed to load resource: the server responded with a status of 404 (Not Found)

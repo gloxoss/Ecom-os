@@ -4,14 +4,31 @@ import { getActiveClientProfile } from '@/lib/client-profile';
 import { isAddonActive } from '@/lib/addon-capabilities';
 import { ProductGrid } from '@/features/catalog/ui/product-grid';
 
+/**
+ * Categories that must never be offered to a shopper as navigation.
+ *
+ * `uncategorized` is WordPress's built-in default bucket: every store has one,
+ * it holds nothing a customer should browse, and WooCommerce reports it with a
+ * count of 0. `ecomos-test-fixtures` is the fixture set the engine and live
+ * specs use to prove the catalogue works; it is deliberately left in the store
+ * so those tests keep passing, but it is not a product family.
+ *
+ * This list lives in the instance because it is ParaLoca's editorial decision,
+ * not a rule the shared platform should impose on every client.
+ */
+const HIDDEN_CATEGORY_SLUGS = new Set(['uncategorized', 'ecomos-test-fixtures']);
+
 export async function ParalocaLanding() {
   const profile = getActiveClientProfile();
   const hero = profile.brand.hero;
   const engine = await getEngine();
-  const [products, categories] = await Promise.all([
+  const [products, allCategories] = await Promise.all([
     engine.listProducts({ limit: 8 }).then((result) => result.items).catch(() => []),
     engine.listCategories().catch(() => []),
   ]);
+  const categories = allCategories.filter(
+    (category) => !HIDDEN_CATEGORY_SLUGS.has(category.slug),
+  );
   const showQuotes = isAddonActive('quotes');
 
   return (
