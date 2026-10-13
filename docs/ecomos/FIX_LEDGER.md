@@ -14,6 +14,9 @@ Rule: a problem found in a client instance (or in a live test against one) is fi
 | 8 | HPOS pre-check blocks enabling although the plugin declares support | Enabling HPOS on staging | WP-CLI reports the eCommerce bridge as "uncertain" | Documented override in `MIGRATIONS.md` | DOCUMENTED |
 | 9 | WP-CLI cannot reach Local's database | Staging tooling | Local's MySQL port changes on every start | Helper script reads `my.cnf` and probes ports (machine-local, not in repo) | DOCUMENTED |
 | 10 | First instance upgrade failed with "Committer identity unknown", and the script blamed conflicts | First real run of `ecomos-upgrade.mjs` on the ParaLoca instance | New clones have no git identity; the script treated every merge failure as a conflict | `40aa66b` (identity pre-check, honest error); creation skill now sets identity | FIXED |
+| 11 | `THEME_NAME` in `.env.local` was ignored, the build silently used `angelina` | Building the ParaLoca instance | `apps/storefront/scripts/generate-theme.ts` read only the shell environment; an unknown name also fell back to the default theme | `generate-theme.ts` now loads `.env.local` and fails on an unknown theme | FIXED |
+| 12 | The documented read-only connector got 403 on orders, products, brands and coupons | Verifying the instance connector | Role with only `read` + `manage_woocommerce` lacks read access to those resources; the storefront calls them | Role needs `read_private_shop_orders`, `read_private_products`, `read_private_shop_coupons`, `manage_product_terms` (key stays read-only, writes return 401). Added to creation checklist and INSTALL | DOCUMENTED |
+| 13 | Generated files tracked in git differ per client (`addons.generated.ts`, `theme-vars.css`) | Building the ParaLoca instance | Instance builds rewrite tracked files, so every update can conflict on them | Proposed: stop tracking them or generate to an ignored path | OPEN |
 
 ## How to add a fix
 

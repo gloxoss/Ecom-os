@@ -6,6 +6,12 @@ All notable changes to the EcomOS codebase across all development phases are doc
 
 ---
 
+## [1.0.0-rc.4] - 2026-10-13
+
+- **Fixed:** `THEME_NAME` from `.env.local` is honored by the theme generator; an unknown theme fails loudly.
+- **Added:** `scripts/seed-instance-fixtures.php`, configurable Playwright `STOREFRONT_URL`, connector-role guidance.
+- **Migration:** see `MIGRATIONS.md` section 1.0.0-rc.4.
+
 ## [1.0.0-rc.3] - 2026-10-13
 
 - **Added:** `scripts/generate-clients.mjs` generates the client profile and theme registries from the folders on disk. Adding a client no longer edits `client-profile.ts` or the themes index. The guard fails if the generated files are stale.

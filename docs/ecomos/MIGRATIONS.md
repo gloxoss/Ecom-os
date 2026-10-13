@@ -4,6 +4,13 @@ What an instance owner must do when updating from the starter. One section per r
 
 Write each note as: what changed, who is affected, exact steps, how to confirm, how to roll back. Cover four areas when relevant: environment variables, dependencies, WordPress plugins and database, and behavior changes callers depend on.
 
+## 1.0.0-rc.4
+
+- **Behavior: theme selection.** `THEME_NAME` set in `apps/storefront/.env.local` is now honored by `generate-theme.ts` (it was ignored; the build used `angelina`). An unknown theme name now stops the build instead of using the default theme. Instances that relied on the silent fallback must set a valid `THEME_NAME`. Confirm: `generate-theme.ts` prints `Generated theme-vars.css for theme: <your theme>`. Rollback: revert the merge.
+- **Tooling.** `scripts/seed-instance-fixtures.php` seeds synthetic test products on any `*.local` site (`remove` mode deletes them); `apps/storefront/playwright.config.ts` reads `STOREFRONT_URL`.
+- **WordPress connector role.** The read-only REST connector needs four read capabilities for the storefront to work: `read_private_shop_orders`, `read_private_products`, `read_private_shop_coupons`, `manage_product_terms` (see `.agents/skills/ecomos-instance-creation/references/instance-checklist.md`). The API key stays read-only.
+- **Dependencies, environment.** None.
+
 ## 1.0.0-rc.3
 
 - **Behavior: client registration is generated.** New tracked files `apps/storefront/src/clients.generated.ts` and `packages/themes/src/registry.generated.ts` are built by `node scripts/generate-clients.mjs` (run automatically by `predev` and `prebuild`). A client is now a folder: `clients/<id>/profile.ts` exporting exactly one `<name>Profile`, and `packages/themes/src/clients/<id>/theme.ts` exporting exactly one `<name>Theme`. Run the script after adding one; `pnpm guard` fails when the generated files are stale.

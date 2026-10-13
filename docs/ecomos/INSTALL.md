@@ -108,7 +108,7 @@ On the WordPress side:
 
 1. Install and activate WooCommerce, then enable High-Performance Order Storage (HPOS).
 2. Install the WPGraphQL plugin **and** the WPGraphQL for WooCommerce bridge (`wp-graphql/wp-graphql-woocommerce`). The `<your-site>/graphql` endpoint responds 404 until the bridge is active.
-3. Generate REST API keys with read scope. The recorded baseline used a dedicated connector user with only `read` + `manage_woocommerce` and a **read-only** key; settings writes are expected to be denied.
+3. Generate REST API keys with read scope. The recorded baseline used a dedicated connector user and a **read-only** key; settings writes are expected to be denied. The connector role needs `read`, `manage_woocommerce`, `read_private_shop_orders`, `read_private_products`, `read_private_shop_coupons` and `manage_product_terms`, otherwise orders, products, brands and coupons return 403.
 
 WooCommerce owns prices, stock, totals and orders. Never treat browser-supplied amounts as authoritative.
 
