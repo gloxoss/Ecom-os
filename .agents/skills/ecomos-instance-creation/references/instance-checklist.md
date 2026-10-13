@@ -36,6 +36,11 @@ wp cap add ecomos_connector read manage_woocommerce read_private_shop_orders rea
 
 Use two users with this role (catalog reader with a `read` REST key, RFQ bridge with an application password). Confirm reads return 200 and writes (`POST /orders`, `PUT /settings/...`) return 401. Never use an administrator login in the storefront.
 
+## Playwright and certificates (found by agent-1)
+
+- Playwright 1.64.0 wants browser build 1248 but the local cache may only hold 1243. Point Chromium at an installed browser with an explicit `executablePath` (the live specs read `ECOM_CHROME_PATH`, default system Chrome) or run `playwright install chromium`.
+- A storefront build or run only reaches a Local site over HTTPS when `NODE_EXTRA_CA_CERTS` points at that site's certificate under `AppData/Roaming/Local/run/router/nginx/certs/<site>.crt`, set before Node starts.
+
 ## Application passwords
 
 `WP_Application_Passwords::create_new_application_password()` returns `[plain_password, item]`. Use index 0. Saving the item (index 1) stores a useless value and the storefront then fails with `INCORRECT_PASSWORD`. Write the secret straight into `.env.local`; never print it.
