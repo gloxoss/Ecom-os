@@ -1,0 +1,572 @@
+{
+  "schemaVersion": 1,
+  "plan": "2026-10-11 stabilization",
+  "repo": "C:/Users/OMEN/OneDrive/Documents/projects/ParaLoca/Ecom-os",
+  "observedHead": "c2ec316d672c9386d39cace2a870dd5aba0d50e9",
+  "executionScope": "Sprint A now; prepare Sprint B only after A accepted; release preparation is gated and production deployment excluded",
+  "readinessBaseline": {
+    "weightedEstimatePercent": 58,
+    "source": "October 11 audit, provisional and not a production certificate"
+  },
+  "agents": [
+    {
+      "number": 1,
+      "id": "sprint-commerce-1",
+      "role": "executor",
+      "lane": "commerce",
+      "prompt": "prompts/01-commerce.md"
+    },
+    {
+      "number": 2,
+      "id": "sprint-rfq-1",
+      "role": "executor",
+      "lane": "commerce",
+      "prompt": "prompts/02-rfq.md"
+    },
+    {
+      "number": 3,
+      "id": "sprint-recovery-1",
+      "role": "executor",
+      "lane": "platform",
+      "prompt": "prompts/03-recovery.md"
+    },
+    {
+      "number": 4,
+      "id": "sprint-lead-1",
+      "verificationId": "sprint-verifier-1",
+      "role": "orchestrator plus distinct verifier identity, no feature implementation",
+      "lane": "verification",
+      "prompt": "prompts/04-coordinator-verifier.md"
+    }
+  ],
+  "activation": "Start Agent 4 first; coordinate existing worker handoff/leave and claims before joining replacement workers. Three executors plus one verifier maximum.",
+  "tasks": [
+    {
+      "id": "ECO-1100",
+      "stage": "A0",
+      "owner": "recovery",
+      "title": "Pin a clean stabilization baseline and reconcile active work",
+      "dependsOn": [],
+      "files": [
+        "docs/ecomos/evidence/ECO-1100"
+      ],
+      "resources": [
+        "workspace-build",
+        "workspace-install"
+      ],
+      "acceptance": [
+        "Record exact branch, SHA, porcelain status, tool/runtime versions, existing worktrees, claims and process ownership.",
+        "Preserve active changes and wordpress-mcp; obtain backend handoff and resolve genuine worker capacity before launching overlapping work.",
+        "Run guard, lint, all typechecks, unit and hub tests, production build from a clean isolated worktree at one pinned SHA; document any scoped blocker rather than bypassing it."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1100/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1101",
+      "stage": "A1",
+      "owner": "commerce",
+      "title": "Synchronize and exactly reconcile the authoritative WooCommerce cart",
+      "dependsOn": [
+        "ECO-1100"
+      ],
+      "files": [
+        "packages/engine-woocommerce/src/cart.ts",
+        "packages/engine-woocommerce/src/checkout.ts",
+        "packages/engine-woocommerce/src/__tests__/cart.test.ts",
+        "packages/engine-woocommerce/src/__tests__/checkout-quote.test.ts",
+        "apps/storefront/src/stores/cart-store.ts",
+        "apps/storefront/src/features/cart",
+        "apps/storefront/src/features/checkout",
+        "apps/storefront/e2e/sprint-a-cart.spec.ts",
+        "docs/ecomos/evidence/ECO-1101"
+      ],
+      "resources": [
+        "storefront-dev",
+        "php-staging",
+        "browser"
+      ],
+      "acceptance": [
+        "Add/update/remove reaches Woo; preserve separate variation identities and correct stock constraints across refresh/navigation.",
+        "Compare the complete normalized Woo line multiset against intended product IDs, variation IDs and quantities; reject missing, duplicate, extra or mismatched lines.",
+        "Displayed and submitted products, currency, totals, taxes, destination shipping and order lines agree with authoritative Woo."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1101/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1102",
+      "stage": "A1",
+      "owner": "commerce",
+      "title": "Make checkout attempts durable, atomic and retry-safe across processes",
+      "dependsOn": [
+        "ECO-1100",
+        "ECO-1101"
+      ],
+      "files": [
+        "packages/engine-woocommerce/src/checkout-attempts.ts",
+        "packages/engine-woocommerce/src/checkout.ts",
+        "packages/engine-woocommerce/src/__tests__/checkout-attempts.test.ts",
+        "apps/storefront/src/features/checkout",
+        "apps/storefront/e2e/sprint-a-attempts.spec.ts",
+        "docs/ecomos/evidence/ECO-1102"
+      ],
+      "resources": [
+        "php-staging",
+        "storefront-dev",
+        "browser"
+      ],
+      "acceptance": [
+        "Exactly one authoritative Woo order per purchase attempt under concurrent OS processes, repeated submits and restarts.",
+        "Persist atomic ownership and Woo order correlation; reconcile response-loss after order creation before allowing a retry. Never reset a corrupt attempt store or use in-memory fallback to authorize a duplicate.",
+        "Fresh attempt IDs allow legitimate later purchases with identical products/address; changed payload under one attempt is refused. Unknown outcomes remain recoverable and cannot display invented success.",
+        "Implement within the existing approved commerce/backend architecture. No new addons or new deployed plugin installation during stabilization; coordinate narrow ownership of any existing backend module that needs changes."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1102/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1103",
+      "stage": "A1",
+      "owner": "rfq",
+      "title": "Separate guest RFQ proof from staff capability and propagate persistence errors",
+      "dependsOn": [
+        "ECO-1100"
+      ],
+      "handoff": [
+        "ECO-1006",
+        "ECO-1007"
+      ],
+      "files": [
+        "apps/storefront/src/features/rfq/model",
+        "apps/storefront/src/app/api/rfq",
+        "packages/addons-rfq/src",
+        "plugins/wp-ecomos-rfq/routes.php",
+        "plugins/wp-ecomos-rfq/repository.php",
+        "plugins/wp-ecomos-rfq/tests",
+        "apps/storefront/src/__tests__/security/sprint-a-rfq-auth.test.ts",
+        "docs/ecomos/evidence/ECO-1103"
+      ],
+      "resources": [
+        "php-staging"
+      ],
+      "acceptance": [
+        "Separate guest and authenticated capability-checked staff operations; privileged backend service credentials cannot substitute for guest proof.",
+        "Missing, forged, expired and wrong-quote proofs cannot read or mutate any quote, offer, document, acceptance or conversion, including when staff credentials are configured.",
+        "Non-2xx, timeouts, transport failures and malformed/empty upstream success responses produce honest failure; no successful creation/update response when persistence failed.",
+        "Verify initial guest quote creation receives usable secure ownership proof without requiring an existing proof; all later operations enforce that quote's proof."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1103/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1104",
+      "stage": "A1",
+      "owner": "rfq",
+      "title": "Preserve immutable quote revisions and enforce terminal/replay-safe transitions",
+      "dependsOn": [
+        "ECO-1103"
+      ],
+      "handoff": [
+        "ECO-1006",
+        "ECO-1007"
+      ],
+      "files": [
+        "packages/addons-rfq/src",
+        "apps/storefront/src/features/rfq/model",
+        "apps/storefront/src/app/api/rfq",
+        "plugins/wp-ecomos-rfq",
+        "docs/ecomos/evidence/ECO-1104"
+      ],
+      "resources": [
+        "php-staging"
+      ],
+      "acceptance": [
+        "Explicitly map persisted revisions into domain types; old offer snapshots remain immutable across edits/retries.",
+        "Reject expired/superseded offers and invalid terminal transitions; bind acceptance and conversion to the exact authorized revision.",
+        "Concurrent/replayed conversion produces one linked Woo order and durable duplicate response across process restart; stale or spoofed guest events cannot authorize an action.",
+        "Private PDFs and quote responses require ownership/capability and avoid shared/public cache; RFQ OFF rejects direct APIs and creates no side effects."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1104/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1105",
+      "stage": "A1",
+      "owner": "recovery",
+      "title": "Isolate restore imports from source databases and remove privileged import credentials",
+      "dependsOn": [
+        "ECO-1100"
+      ],
+      "files": [
+        "scripts/verify-restore.ts",
+        "scripts/restore-isolation",
+        "scripts/verify-restore.test.mjs",
+        "docs/ecomos/operations/restore-isolation.md",
+        "docs/ecomos/evidence/ECO-1105"
+      ],
+      "resources": [],
+      "acceptance": [
+        "Use a distinct disposable database service with a distinct data directory and service identity; restricted target-only import credentials have no source privileges, FILE/admin privileges or credentials to source.",
+        "Source access, if needed, is separately scoped read-only. Identity checks fail before import if the target is the source or a source-reachable service.",
+        "Adversarial USE/qualified-table/trigger/event/routine fixtures run only inside disposable synthetic services against synthetic decoys; importer cannot modify any source.",
+        "Default tests and planning authorization never DROP, truncate, overwrite or migrate an existing database; obtain explicit approval before any destructive execution or cleanup."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1105/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1106",
+      "stage": "A1",
+      "owner": "recovery",
+      "title": "Prove safe database fidelity and compatible application recovery",
+      "dependsOn": [
+        "ECO-1105"
+      ],
+      "files": [
+        "scripts/verify-restore.ts",
+        "scripts/restore-isolation",
+        "scripts/verify-restore.test.mjs",
+        "docs/ecomos/operations/restore-isolation.md",
+        "docs/ecomos/operations/rollback.md",
+        "docs/ecomos/evidence/ECO-1106"
+      ],
+      "resources": [],
+      "acceptance": [
+        "Compare expected tables/schema/key row counts, HPOS orders/items/variations/totals, quotes, immutable revisions and relationships; zero-table or incomplete restores fail.",
+        "Prove source unchanged before and after success, partial import, timeout, connection error and hostile synthetic dump cases, with service/credential isolation as the primary protection.",
+        "Exercise compatible app/plugin/config rollback and recovered application reads in an isolated synthetic environment; dropping a scratch database is not application rollback proof.",
+        "Destructive cleanup is disabled unless its exact ephemeral target and operation receive explicit approval; never infer consent from the term disposable."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1106/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1107",
+      "stage": "A2",
+      "owner": "recovery",
+      "title": "Integrate accepted stabilization slices and publish the Sprint A gate",
+      "dependsOn": [
+        "ECO-1101",
+        "ECO-1102",
+        "ECO-1103",
+        "ECO-1104",
+        "ECO-1105",
+        "ECO-1106"
+      ],
+      "files": [
+        "docs/ecomos/evidence/ECO-1107",
+        "docs/ecomos/release/SPRINT_A_ACCEPTANCE.md"
+      ],
+      "resources": [
+        "git-index",
+        "workspace-build",
+        "storefront-dev",
+        "php-staging",
+        "browser"
+      ],
+      "acceptance": [
+        "Agent 4 coordinates local integration only after exact-SHA independent acceptance of each stream; report records accepted SHAs, final merge SHA and changed files.",
+        "Execute complete guard/lint/typecheck/unit/hub/PHP/build suite and decisive browser/security/recovery checks against the same pinned integrated SHA.",
+        "Distinct verifier signs the integrated SHA. Any code conflict repair is assigned to an implementer and independently re-reviewed.",
+        "No security/correctness acceptance failures; unavailable decisive tests mean BLOCKED, not accepted. Update readiness by demonstrated product outcomes, not task counts."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1107/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1201",
+      "stage": "B",
+      "owner": "commerce",
+      "title": "Prove full guest-commerce browser journeys on real WooCommerce",
+      "dependsOn": [
+        "ECO-1107"
+      ],
+      "files": [
+        "apps/storefront/e2e/sprint-b-commerce.spec.ts",
+        "apps/storefront/src/features/catalog",
+        "apps/storefront/src/features/product",
+        "apps/storefront/src/features/cart",
+        "apps/storefront/src/features/checkout",
+        "apps/storefront/src/stores/cart-store.ts",
+        "packages/engine-woocommerce/src",
+        "docs/ecomos/evidence/ECO-1201"
+      ],
+      "resources": [
+        "storefront-dev",
+        "php-staging",
+        "browser"
+      ],
+      "acceptance": [
+        "Real catalog/PDP variation selection through cart edits, destination shipping/tax, COD, owned confirmation and guest status, with HPOS readback matching every line and total.",
+        "Browser tests cover out-of-stock, invalid variation, repeated submit, timeout/retry, refresh/navigation and new legitimate purchase, on desktop and mobile.",
+        "Validate pagination beyond 20, hierarchical categories, gallery/SKU/stock, filters and exact-SKU discovery; only targeted defects, no broad UI redesign.",
+        "Recheck supported catalog transport from current source; do not install a GraphQL bridge merely because a historical report required it."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1201/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1202",
+      "stage": "B",
+      "owner": "rfq",
+      "title": "Prove guest-to-staff quotation journeys and the RFQ disabled state",
+      "dependsOn": [
+        "ECO-1107"
+      ],
+      "files": [
+        "apps/storefront/e2e/sprint-b-rfq.spec.ts",
+        "apps/storefront/src/features/rfq",
+        "apps/storefront/src/app/api/rfq",
+        "packages/addons-rfq/src",
+        "plugins/wp-ecomos-rfq",
+        "docs/ecomos/evidence/ECO-1202"
+      ],
+      "resources": [
+        "storefront-dev",
+        "php-staging",
+        "browser"
+      ],
+      "acceptance": [
+        "Both quote entry paths feed one separate basket with three products; submit as guest, reopen securely, and demonstrate real capability-checked staff session.",
+        "Staff sends an immutable revised offer, guest views protected document and accepts the exact current revision; conversion produces one correct MAD Woo order.",
+        "Notifications use a local test sink; no messages to real recipients. Wrong-role staff and cross-quote guest proofs are rejected through the full UI/API path.",
+        "RFQ OFF removes navigation/CTA and rejects frontend/backend routes, staff actions and notification/conversion side effects; ordinary cart remains functional."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1202/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1203",
+      "stage": "B",
+      "owner": "recovery",
+      "title": "Prove supported backend boot, reproducible CI and operational recovery",
+      "dependsOn": [
+        "ECO-1107"
+      ],
+      "handoff": [
+        "ECO-1007"
+      ],
+      "files": [
+        "scripts/verify-backend-compatibility.ts",
+        "scripts/verify-production-runtime.mjs",
+        "plugins/tests",
+        "plugins/wp-ecomos-operations",
+        "plugins/wp-ecomos-addons",
+        "docs/ecomos/operations",
+        "docs/ecomos/evidence/ECO-1203",
+        ".github/workflows"
+      ],
+      "resources": [
+        "workspace-install",
+        "workspace-build",
+        "php-staging"
+      ],
+      "acceptance": [
+        "Execute real supported WP/Woo/PHP/HPOS combinations, normal plugin load order and required capability flows; narrow documented support to tested combinations.",
+        "Clean install/build/CI and production-mode config/CSP/private cache checks run on isolated local staging; accounts and uncertified payments remain disabled.",
+        "Operational recovery/rollback runbooks match the safely tested isolation model. No live production services or destructive DB operations.",
+        "RFQ plugin ownership stays with Agent 2; platform compatibility fixes there require an explicit assignment transfer, not overlapping edits."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1203/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1211",
+      "stage": "B",
+      "owner": "commerce",
+      "title": "Complete catalog scale and search freshness acceptance",
+      "dependsOn": [
+        "ECO-1201"
+      ],
+      "files": [
+        "packages/ecom-engine/src/search",
+        "packages/engine-woocommerce/src/products.ts",
+        "packages/engine-woocommerce/src/mappers.ts",
+        "packages/engine-woocommerce/src/graphql.ts",
+        "apps/storefront/src/features/catalog",
+        "apps/storefront/src/components/search",
+        "apps/storefront/e2e/sprint-b-discovery.spec.ts",
+        "docs/ecomos/evidence/ECO-1211"
+      ],
+      "resources": [
+        "php-staging",
+        "storefront-dev",
+        "browser"
+      ],
+      "acceptance": [
+        "Prove at least 100 mixed simple/variable products, pages beyond 20, exact SKU/variation/category/media/currency/stock and combined truthful filters/sorts. If full traversal is promised, include more than 50 variations on one product and more than 100 categories.",
+        "Exact-SKU, French accent and typo search work with accessible keyboard/mobile suggestions and nonrepeating paging.",
+        "Execute update/delete index synchronization, failure/retry/rebuild and public-cache behavior; measure freshness and p95 under reproducible load and record actual agreed budgets, never invented targets.",
+        "Synthetic fixtures are explicitly owned; coordinate seed scripts/contracts and installation scope before changing them."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1211/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1212",
+      "stage": "B",
+      "owner": "rfq",
+      "title": "Complete reusable themes, editable CMS and truthful SEO acceptance",
+      "dependsOn": [
+        "ECO-1202"
+      ],
+      "files": [
+        "packages/themes",
+        "packages/brand-config",
+        "apps/storefront/src/features/content",
+        "apps/storefront/src/lib/seo",
+        "apps/storefront/src/components/seo",
+        "apps/storefront/src/features/layout",
+        "clients/paraloca",
+        "docs/ecomos/evidence/ECO-1212"
+      ],
+      "resources": [
+        "storefront-dev",
+        "php-staging",
+        "browser"
+      ],
+      "acceptance": [
+        "Change client logo/colors/type/navigation/locale and optional features via validated profile/theme without changing commerce services; protect server-only environment values.",
+        "Real WordPress homepage/brand/content edits appear without code edits, with honest empty/error/fallback states.",
+        "Canonical/sitemap/robots and structured product offers match real visibility/Woo data; client staging/coming-soon indexing policy remains explicit.",
+        "Measure agreed accessibility/performance/keyboard/mobile budgets. Only targeted repairs to approved existing UI, no broad redesign/new addons. Return cart/PDP commerce repairs to Agent 1."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1212/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1213",
+      "stage": "B",
+      "owner": "recovery",
+      "title": "Complete scoped merchant jobs and existing addon lifecycle acceptance",
+      "dependsOn": [
+        "ECO-1203"
+      ],
+      "files": [
+        "plugins/wp-ecomos-operations",
+        "plugins/wp-ecomos-addons",
+        "plugins/tests",
+        "docs/ecomos/admin",
+        "docs/ecomos/evidence/ECO-1213"
+      ],
+      "resources": [
+        "php-staging",
+        "storefront-dev",
+        "browser"
+      ],
+      "acceptance": [
+        "A real capability-scoped manager edits a product/stock, processes a synthetic Woo order and changes homepage content; wrong-role staff cannot access secrets/settings.",
+        "Existing addon on/off projection agrees across frontend, backend, admin, routes/permissions and side effects.",
+        "Repeated/failed existing-addon lifecycle operations are recoverable and preserve core orders/catalog; do not create new addons or execute destructive migrations.",
+        "RFQ implementation stays with Agent 2; review its lifecycle proof jointly rather than edit its plugin under this task. Native/hybrid WordPress model remains."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1213/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1204",
+      "stage": "B",
+      "owner": "recovery",
+      "title": "Prove independent client reuse and complete the Sprint B gate",
+      "dependsOn": [
+        "ECO-1201",
+        "ECO-1202",
+        "ECO-1203",
+        "ECO-1211",
+        "ECO-1212",
+        "ECO-1213"
+      ],
+      "files": [
+        "docs/ecomos/evidence/ECO-1204",
+        "docs/ecomos/release/SPRINT_B_ACCEPTANCE.md",
+        "clients/demo-2"
+      ],
+      "resources": [
+        "workspace-build",
+        "storefront-dev",
+        "php-staging",
+        "browser"
+      ],
+      "acceptance": [
+        "Second differing client uses a distinct WP installation, database and secrets, its own theme/currency, RFQ OFF and the same reusable commerce core.",
+        "One real guest order and secure owned readback on each client; no client data, credentials, branding or state leaks across deployments.",
+        "Agent 4 independently executes integrated browser journeys and records precise environments/SHAs/artifacts; browser screenshots alone do not prove correct orders.",
+        "Sprint B accepted only when all guest-commerce/professional-quote criteria pass; targeted fixes return to their implementer."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1204/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1301",
+      "stage": "R",
+      "owner": "rfq",
+      "title": "Reconcile merchant facts and complete ParaLoca acceptance evidence",
+      "dependsOn": [
+        "ECO-1204"
+      ],
+      "files": [
+        "clients/paraloca/content-approval.md",
+        "docs/ecomos/evidence/ECO-1301",
+        "docs/ecomos/release/PARALOCA_UAT.md"
+      ],
+      "resources": [
+        "storefront-dev",
+        "browser"
+      ],
+      "acceptance": [
+        "Owner supplies/approves real contact/legal/policy/shipping/tax/product claims; preserve UNAPPROVED facts and hide placeholders until approval. Never invent facts or mark approval for the owner.",
+        "French/MAD/Morocco mobile/keyboard UAT for catalog, favorites, owned brands, CMS content, cart/checkout and RFQ on/off, with scoped merchant roles.",
+        "Verify agreed SEO/indexing/performance/accessibility budgets, including 44px targets where required by this project; record exact measured thresholds/results.",
+        "Missing owner facts keep client release BLOCKED even if engineering tasks pass."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1301/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    },
+    {
+      "id": "ECO-1302",
+      "stage": "R",
+      "owner": "recovery",
+      "title": "Publish an independently verified release packet and launch decision",
+      "dependsOn": [
+        "ECO-1301"
+      ],
+      "files": [
+        "docs/ecomos/evidence/ECO-1302",
+        "docs/ecomos/release/RELEASE_PACKET.md",
+        "docs/ecomos/release/READINESS_2026-10-11.md"
+      ],
+      "resources": [
+        "workspace-build",
+        "storefront-dev",
+        "php-staging",
+        "browser"
+      ],
+      "acceptance": [
+        "Pinned final SHA, exact files/commits, full suite/build/browser results, two-client proof, restore/rollback evidence, content signoff and rollback procedure in one release packet.",
+        "Agent 4 independently verifies readiness and reconciles legacy phase-9 tasks without deleting history or inventing verification. All required critical acceptance is demonstrated.",
+        "Report core, RFQ, ParaLoca and evidence coverage separately; weighted overall is an estimate with disclosed scoring and blockers, not a launch certificate.",
+        "Stop at a reviewable local release candidate. Production deployment, DNS, live payments, paid services and destructive database operations require separate explicit approval."
+      ],
+      "hubPhase": 9,
+      "evidence": "docs/ecomos/evidence/ECO-1302/report.md",
+      "stateSource": "canonical hub; this manifest does not store task status"
+    }
+  ]
+}
